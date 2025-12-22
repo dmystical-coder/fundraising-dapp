@@ -381,6 +381,10 @@
   (to-ascii? p)
 )
 
+(define-read-only (get-sbtc-token-contract)
+  (ok sbtc-token)
+)
+
 (define-read-only (get-contract-balance)
   (stx-get-balance (get-contract-principal))
 )
