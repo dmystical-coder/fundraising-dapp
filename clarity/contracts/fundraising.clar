@@ -16,11 +16,13 @@
 (define-constant err-already-withdrawn (err u107))
 (define-constant err-invalid-amount (err u108))
 (define-constant err-campaign-not-found (err u109))
+(define-constant err-invalid-end-at (err u110))
 
 ;; sBTC token contract (static identifier required by Clarity for contract-call?)
 (define-constant sbtc-token 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
 
-(define-constant default-duration u4320) ;; Duration in *Bitcoin* blocks. This default value means is if a block is 10 minutes, this is roughly 30 days.
+;; Default campaign duration in seconds (30 days).
+(define-constant default-duration-secs u2592000)
 
 ;; Data vars
 (define-data-var last-campaign-id uint u0)
@@ -33,6 +35,8 @@
     beneficiary: principal,
     goal: uint,
     start: uint,
+    createdAt: uint,
+    endAt: uint,
     duration: uint,
     totalStx: uint,
     totalSbtc: uint,
@@ -60,28 +64,40 @@
 )
 ;; (campaignId, donor) -> amount
 
+;; In Clarity 4, `as-contract` was replaced by `as-contract?`.
+;; We use it (with no allowances) to safely obtain the contract principal.
+(define-private (get-contract-principal)
+  (unwrap-panic (as-contract? () tx-sender))
+)
+
 ;; Create a new campaign.
-;; goal is informational (e.g. USD in UI). duration is in BTC blocks (0 => default).
+;; goal is informational (e.g. USD in UI).
+;; endAt is an absolute timestamp in seconds (same basis as stacks-block-time).
+;; Pass u0 to use default duration (30 days).
 (define-public (create-campaign
     (goal uint)
-    (duration uint)
+    (endAt uint)
     (beneficiary principal)
   )
   (let (
       (campaignId (+ (var-get last-campaign-id) u1))
-      (actual-duration (if (is-eq duration u0)
-        default-duration
-        duration
+      (startAt stacks-block-time)
+      (actual-end-at (if (is-eq endAt u0)
+        (+ stacks-block-time default-duration-secs)
+        endAt
       ))
     )
     (asserts! (> goal u0) err-invalid-amount)
+    (asserts! (> actual-end-at startAt) err-invalid-end-at)
     (var-set last-campaign-id campaignId)
     (map-set campaigns campaignId {
       owner: tx-sender,
       beneficiary: beneficiary,
       goal: goal,
       start: burn-block-height,
-      duration: actual-duration,
+      createdAt: startAt,
+      endAt: actual-end-at,
+      duration: (- actual-end-at startAt),
       totalStx: u0,
       totalSbtc: u0,
       donationCount: u0,
@@ -123,7 +139,7 @@
   )
   (let (
       (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
-      (end (+ (get start campaign) (get duration campaign)))
+      (end (get endAt campaign))
       (donationKey {
         campaignId: campaignId,
         donor: tx-sender,
@@ -132,8 +148,8 @@
     (begin
       (asserts! (> amount u0) err-invalid-amount)
       (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
-      (asserts! (< burn-block-height end) err-campaign-ended)
-      (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+      (asserts! (< stacks-block-time end) err-campaign-ended)
+      (try! (stx-transfer? amount tx-sender (get-contract-principal)))
       (map-set stx-donations donationKey
         (+ (default-to u0 (map-get? stx-donations donationKey)) amount)
       )
@@ -161,7 +177,7 @@
   )
   (let (
       (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
-      (end (+ (get start campaign) (get duration campaign)))
+      (end (get endAt campaign))
       (donationKey {
         campaignId: campaignId,
         donor: tx-sender,
@@ -170,9 +186,9 @@
     (begin
       (asserts! (> amount u0) err-invalid-amount)
       (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
-      (asserts! (< burn-block-height end) err-campaign-ended)
-      (try! (contract-call? sbtc-token transfer amount contract-caller
-        (as-contract tx-sender) none
+      (asserts! (< stacks-block-time end) err-campaign-ended)
+      (try! (contract-call? sbtc-token transfer amount tx-sender
+        (get-contract-principal) none
       ))
       (map-set sbtc-donations donationKey
         (+ (default-to u0 (map-get? sbtc-donations donationKey)) amount)
@@ -198,7 +214,7 @@
 (define-public (withdraw (campaignId uint))
   (let (
       (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
-      (end (+ (get start campaign) (get duration campaign)))
+      (end (get endAt campaign))
       (total-stx-amount (get totalStx campaign))
       (total-sbtc-amount (get totalSbtc campaign))
       (beneficiary (get beneficiary campaign))
@@ -207,31 +223,32 @@
       (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
       (asserts! (not (get isWithdrawn campaign)) err-already-withdrawn)
       (asserts! (is-eq tx-sender beneficiary) err-not-authorized)
-      (asserts! (>= burn-block-height end) err-campaign-not-ended)
-      (as-contract (begin
-        (if (> total-stx-amount u0)
-          (try! (stx-transfer? total-stx-amount (as-contract tx-sender) beneficiary))
+      (asserts! (>= stacks-block-time end) err-campaign-not-ended)
+      (try! (as-contract? ((with-stx total-stx-amount) (with-ft sbtc-token "*" total-sbtc-amount))
+        (begin
+          (if (> total-stx-amount u0)
+            (try! (stx-transfer? total-stx-amount tx-sender beneficiary))
+            true
+          )
+          (if (> total-sbtc-amount u0)
+            (try! (contract-call? sbtc-token transfer total-sbtc-amount tx-sender beneficiary none))
+            true
+          )
           true
         )
-        (if (> total-sbtc-amount u0)
-          (try! (contract-call? sbtc-token transfer total-sbtc-amount
-            (as-contract tx-sender) beneficiary none
-          ))
-          true
-        )
-        (map-set campaigns campaignId
-          (merge campaign {
-            isWithdrawn: true,
-            totalStx: u0,
-            totalSbtc: u0,
-          })
-        )
-        (print {
-          event: "campaign-withdrawn",
-          campaignId: campaignId,
-        })
-        (ok true)
       ))
+      (map-set campaigns campaignId
+        (merge campaign {
+          isWithdrawn: true,
+          totalStx: u0,
+          totalSbtc: u0,
+        })
+      )
+      (print {
+        event: "campaign-withdrawn",
+        campaignId: campaignId,
+      })
+      (ok true)
     )
   )
 )
@@ -251,13 +268,21 @@
     (begin
       (asserts! (get isCancelled campaign) err-not-cancelled)
       (if (> stx-amount u0)
-        (as-contract (try! (stx-transfer? stx-amount tx-sender contributor)))
+        (try! (as-contract? ((with-stx stx-amount))
+          (begin
+            (try! (stx-transfer? stx-amount tx-sender contributor))
+            true
+          )
+        ))
         true
       )
       (if (> sbtc-amount u0)
-        (as-contract (try! (contract-call? sbtc-token transfer sbtc-amount tx-sender contributor
-          none
-        )))
+        (try! (as-contract? ((with-ft sbtc-token "*" sbtc-amount))
+          (begin
+            (try! (contract-call? sbtc-token transfer sbtc-amount tx-sender contributor none))
+            true
+          )
+        ))
         true
       )
       (map-delete stx-donations donationKey)
@@ -319,19 +344,43 @@
       id: campaignId,
       owner: (get owner campaign),
       beneficiary: (get beneficiary campaign),
-      start: (get start campaign),
-      end: (+ (get start campaign) (get duration campaign)),
+      startBlock: (get start campaign),
+      start: (get createdAt campaign),
+      end: (get endAt campaign),
+      createdAt: (get createdAt campaign),
+      endAt: (get endAt campaign),
       goal: (get goal campaign),
       totalStx: (get totalStx campaign),
       totalSbtc: (get totalSbtc campaign),
       donationCount: (get donationCount campaign),
-      isExpired: (>= burn-block-height (+ (get start campaign) (get duration campaign))),
+      isExpired: (>= stacks-block-time (get endAt campaign)),
       isWithdrawn: (get isWithdrawn campaign),
       isCancelled: (get isCancelled campaign),
     })
   )
 )
 
+;; Clarity 4 helpers
+(define-read-only (get-current-stacks-block-time)
+  (ok stacks-block-time)
+)
+
+(define-read-only (get-campaign-created-at (campaignId uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+    (ok (get createdAt campaign))
+  )
+)
+
+(define-read-only (get-campaign-end-at (campaignId uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+    (ok (get endAt campaign))
+  )
+)
+
+(define-read-only (principal-to-ascii (p principal))
+  (to-ascii? p)
+)
+
 (define-read-only (get-contract-balance)
-  (stx-get-balance (as-contract tx-sender))
+  (stx-get-balance (get-contract-principal))
 )

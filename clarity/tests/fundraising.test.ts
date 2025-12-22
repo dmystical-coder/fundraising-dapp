@@ -1,6 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { Cl } from "@stacks/transactions";
-import { initSimnet } from "@hirosystems/clarinet-sdk";
+import { Cl, cvToString } from "@stacks/transactions";
+import { initSimnet } from "@stacks/clarinet-sdk";
+
+const DEFAULT_DURATION_SECS = 2592000n;
+
+function getNow(): bigint {
+  const nowResponse = simnet.callReadOnlyFn(
+    "fundraising",
+    "get-current-stacks-block-time",
+    [],
+    deployer
+  );
+  return parseOkUint(nowResponse.result);
+}
+
+function mineUntilTimeAtLeast(target: bigint, maxSteps = 200) {
+  for (let i = 0; i < maxSteps; i++) {
+    if (getNow() >= target) return;
+    simnet.mineEmptyBlocks(1);
+  }
+  throw new Error(`Timed out mining until stacks-block-time >= ${target}`);
+}
+
+function parseOkUint(result: unknown): bigint {
+  const s = cvToString(result as any);
+  const m = s.match(/^\(ok u(\d+)\)$/);
+  if (!m) throw new Error(`Expected (ok uN), got: ${s}`);
+  return BigInt(m[1]);
+}
 
 const simnet = await initSimnet();
 
@@ -15,15 +42,15 @@ function getCurrentStxBalance(address: string) {
 
 describe("fundraising campaign", () => {
   // helper to create a basic campaign
-  const createCampaign = (goal: number) => {
+  const createCampaign = (goal: number, endAt: bigint = 0n) => {
     const response = simnet.callPublicFn(
       "fundraising",
       "create-campaign",
-      [Cl.uint(goal), Cl.uint(0), Cl.principal(deployer)],
+      [Cl.uint(goal), Cl.uint(endAt), Cl.principal(deployer)],
       deployer
     );
     const block = simnet.burnBlockHeight;
-    const campaignId = 1;
+    const campaignId = Number(parseOkUint(response.result));
 
     return { response, block, campaignId };
   };
@@ -102,13 +129,24 @@ describe("fundraising campaign", () => {
       donor1
     );
 
+    const createdAtResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-campaign-created-at",
+      [Cl.uint(1)],
+      donor1
+    );
+    const createdAt = parseOkUint(createdAtResponse.result);
+
     expect(infoResponse.result).toBeOk(
       Cl.tuple({
         id: Cl.uint(1),
         owner: Cl.principal(donor1),
         beneficiary: Cl.principal(donor1),
-        start: Cl.uint(simnet.burnBlockHeight),
-        end: Cl.uint(simnet.burnBlockHeight + 4320),
+        startBlock: Cl.uint(simnet.burnBlockHeight),
+        start: Cl.uint(createdAt),
+        end: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
+        createdAt: Cl.uint(createdAt),
+        endAt: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
         goal: Cl.uint(100000),
         totalStx: Cl.uint(0),
         totalSbtc: Cl.uint(0),
@@ -149,10 +187,10 @@ describe("fundraising campaign", () => {
   });
 
   it("prevents donations after campaign ends", () => {
-    const { campaignId } = createCampaign(100000);
-
-    // move past campaign duration
-    simnet.mineEmptyBlocks(4321);
+    const now = getNow();
+    const endAt = now + 10_000n;
+    const { campaignId } = createCampaign(100000, endAt);
+    mineUntilTimeAtLeast(endAt);
 
     const response = simnet.callPublicFn(
       "fundraising",
@@ -164,7 +202,9 @@ describe("fundraising campaign", () => {
   });
 
   it("prevents withdrawal before campaign ends", () => {
-    const { campaignId } = createCampaign(10000);
+    const now = getNow();
+    const endAt = now + 10_000n;
+    const { campaignId } = createCampaign(10000, endAt);
 
     // make a donation to meet goal
     simnet.callPublicFn(
@@ -184,7 +224,9 @@ describe("fundraising campaign", () => {
   });
 
   it("allows withdrawal when campaign ended", () => {
-    const { campaignId } = createCampaign(10000);
+    const now = getNow();
+    const endAt = now + 10_000n;
+    const { campaignId } = createCampaign(10000, endAt);
 
     const originalDeployerBalance = getCurrentStxBalance(deployer);
     const donationAmount = BigInt(5000000000);
@@ -197,8 +239,7 @@ describe("fundraising campaign", () => {
       donor1
     );
 
-    // move past campaign duration
-    simnet.mineEmptyBlocks(4321);
+    mineUntilTimeAtLeast(endAt);
 
     const response = simnet.callPublicFn(
       "fundraising",
@@ -215,7 +256,9 @@ describe("fundraising campaign", () => {
   });
 
   it("prevents withdrawal when campaign is cancelled", () => {
-    const { campaignId } = createCampaign(100000);
+    const now = getNow();
+    const endAt = now + 10_000n;
+    const { campaignId } = createCampaign(100000, endAt);
 
     // make a small donation that won't meet goal
     simnet.callPublicFn(
@@ -225,8 +268,7 @@ describe("fundraising campaign", () => {
       donor1
     );
 
-    // move past campaign duration
-    simnet.mineEmptyBlocks(4321);
+    mineUntilTimeAtLeast(endAt);
 
     const cancelResponse = simnet.callPublicFn(
       "fundraising",
@@ -300,7 +342,9 @@ describe("fundraising campaign", () => {
   });
 
   it("prevents refund when campaign is not cancelled", () => {
-    const { campaignId } = createCampaign(10000);
+    const now = getNow();
+    const endAt = now + 10_000n;
+    const { campaignId } = createCampaign(10000, endAt);
 
     // make a donation
     simnet.callPublicFn(
@@ -310,8 +354,7 @@ describe("fundraising campaign", () => {
       donor1
     );
 
-    // move past campaign duration
-    simnet.mineEmptyBlocks(4321);
+    mineUntilTimeAtLeast(endAt);
 
     const response = simnet.callPublicFn(
       "fundraising",
@@ -325,6 +368,14 @@ describe("fundraising campaign", () => {
   it("returns campaign info correctly", () => {
     const { block, campaignId } = createCampaign(100000);
 
+    const createdAtResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-campaign-created-at",
+      [Cl.uint(campaignId)],
+      deployer
+    );
+    const createdAt = parseOkUint(createdAtResponse.result);
+
     const response = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
@@ -337,8 +388,11 @@ describe("fundraising campaign", () => {
         id: Cl.uint(campaignId),
         owner: Cl.principal(deployer),
         beneficiary: Cl.principal(deployer),
-        start: Cl.uint(block),
-        end: Cl.uint(block + 4320),
+        startBlock: Cl.uint(block),
+        start: Cl.uint(createdAt),
+        end: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
+        createdAt: Cl.uint(createdAt),
+        endAt: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
         goal: Cl.uint(100000),
         totalStx: Cl.uint(0),
         totalSbtc: Cl.uint(0),
@@ -370,8 +424,11 @@ describe("fundraising campaign", () => {
         id: Cl.uint(campaignId),
         owner: Cl.principal(deployer),
         beneficiary: Cl.principal(deployer),
-        start: Cl.uint(block),
-        end: Cl.uint(block + 4320),
+        startBlock: Cl.uint(block),
+        start: Cl.uint(createdAt),
+        end: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
+        createdAt: Cl.uint(createdAt),
+        endAt: Cl.uint(createdAt + DEFAULT_DURATION_SECS),
         goal: Cl.uint(100000),
         totalStx: Cl.uint(donationAmount),
         totalSbtc: Cl.uint(0),
@@ -382,26 +439,50 @@ describe("fundraising campaign", () => {
       })
     );
 
-    // move past campaign duration
-    simnet.mineEmptyBlocks(4321);
+    // Create a short-lived campaign so we can assert expiry.
+    const now = getNow();
+    const shortEndAt = now + 10_000n;
+    const shortCampaign = createCampaign(100000, shortEndAt);
 
-    // Verify campaign shows expired
+    const shortCreatedAtResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-campaign-created-at",
+      [Cl.uint(shortCampaign.campaignId)],
+      deployer
+    );
+    const shortCreatedAt = parseOkUint(shortCreatedAtResponse.result);
+
+    // Make a donation to the short campaign
+    const donationAmountShort = BigInt(5000000000);
+    simnet.callPublicFn(
+      "fundraising",
+      "donate-stx",
+      [Cl.uint(shortCampaign.campaignId), Cl.uint(donationAmountShort)],
+      donor1
+    );
+
+    mineUntilTimeAtLeast(shortEndAt);
+
+    // Verify short campaign shows expired
     const response3 = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
-      [Cl.uint(campaignId)],
+      [Cl.uint(shortCampaign.campaignId)],
       deployer
     );
 
     expect(response3.result).toBeOk(
       Cl.tuple({
-        id: Cl.uint(campaignId),
+        id: Cl.uint(shortCampaign.campaignId),
         owner: Cl.principal(deployer),
         beneficiary: Cl.principal(deployer),
-        start: Cl.uint(block),
-        end: Cl.uint(block + 4320),
+        startBlock: Cl.uint(shortCampaign.block),
+        start: Cl.uint(shortCreatedAt),
+        end: Cl.uint(shortEndAt),
+        createdAt: Cl.uint(shortCreatedAt),
+        endAt: Cl.uint(shortEndAt),
         goal: Cl.uint(100000),
-        totalStx: Cl.uint(donationAmount),
+        totalStx: Cl.uint(donationAmountShort),
         totalSbtc: Cl.uint(0),
         donationCount: Cl.uint(1),
         isExpired: Cl.bool(true),
@@ -409,5 +490,36 @@ describe("fundraising campaign", () => {
         isCancelled: Cl.bool(false),
       })
     );
+  });
+
+  it("exposes stacks-block-time and campaign createdAt", () => {
+    const { campaignId } = createCampaign(100000);
+
+    const nowResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-current-stacks-block-time",
+      [],
+      deployer
+    );
+
+    const createdAtResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-campaign-created-at",
+      [Cl.uint(campaignId)],
+      deployer
+    );
+    // In simnet, this should match the current stacks block time at tip.
+    expect(createdAtResponse.result).toEqual(nowResponse.result);
+  });
+
+  it("converts principals to ascii", () => {
+    const response = simnet.callReadOnlyFn(
+      "fundraising",
+      "principal-to-ascii",
+      [Cl.principal(deployer)],
+      deployer
+    );
+    // (to-ascii? ...) returns a response(string-ascii, uint)
+    expect(response.result).toBeOk(Cl.stringAscii(deployer));
   });
 });
