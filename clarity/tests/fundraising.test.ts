@@ -14,30 +14,31 @@ function getCurrentStxBalance(address: string) {
 }
 
 describe("fundraising campaign", () => {
-  // helper to set up a basic campaign
-  const initCampaign = (goal: number) => {
+  // helper to create a basic campaign
+  const createCampaign = (goal: number) => {
     const response = simnet.callPublicFn(
       "fundraising",
-      "initialize-campaign",
-      [Cl.uint(goal), Cl.uint(0)],
+      "create-campaign",
+      [Cl.uint(goal), Cl.uint(0), Cl.principal(deployer)],
       deployer,
     );
     const block = simnet.burnBlockHeight;
+    const campaignId = 1;
 
-    return { response, block };
+    return { response, block, campaignId };
   };
 
   it("initializes with a goal", () => {
-    const { response } = initCampaign(100000);
-    expect(response.result).toBeOk(Cl.bool(true));
+    const { response } = createCampaign(100000);
+    expect(response.result).toBeOk(Cl.uint(1));
   });
 
   it("accepts STX donations during campaign", () => {
-    initCampaign(100000);
+    const { campaignId } = createCampaign(100000);
     const response = simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(5000)],
+      [Cl.uint(campaignId), Cl.uint(5000)],
       donor1,
     );
     expect(response.result).toBeOk(Cl.bool(true));
@@ -46,7 +47,7 @@ describe("fundraising campaign", () => {
     const getDonationResponse = simnet.callReadOnlyFn(
       "fundraising",
       "get-stx-donation",
-      [Cl.principal(donor1)],
+      [Cl.uint(campaignId), Cl.principal(donor1)],
       donor1,
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(5000));
@@ -85,36 +86,70 @@ describe("fundraising campaign", () => {
   //   expect(getDonationResponse.result).toBeOk(Cl.uint(700));
   // });
 
-  it("prevents non-owner from initializing campaign", () => {
+  it("allows anyone to create a campaign", () => {
     const response = simnet.callPublicFn(
       "fundraising",
-      "initialize-campaign",
-      [Cl.uint(100000), Cl.uint(0)],
+      "create-campaign",
+      [Cl.uint(100000), Cl.uint(0), Cl.principal(donor1)],
       donor1,
     );
-    expect(response.result).toBeErr(Cl.uint(100)); // err-not-authorized
+    expect(response.result).toBeOk(Cl.uint(1));
+
+    const infoResponse = simnet.callReadOnlyFn(
+      "fundraising",
+      "get-campaign-info",
+      [Cl.uint(1)],
+      donor1,
+    );
+
+    expect(infoResponse.result).toBeOk(
+      Cl.tuple({
+        id: Cl.uint(1),
+        owner: Cl.principal(donor1),
+        beneficiary: Cl.principal(donor1),
+        start: Cl.uint(simnet.burnBlockHeight),
+        end: Cl.uint(simnet.burnBlockHeight + 4320),
+        goal: Cl.uint(100000),
+        totalStx: Cl.uint(0),
+        totalSbtc: Cl.uint(0),
+        donationCount: Cl.uint(0),
+        isExpired: Cl.bool(false),
+        isWithdrawn: Cl.bool(false),
+        isCancelled: Cl.bool(false),
+      }),
+    );
   });
 
   it("allows multiple donations from same donor", () => {
-    initCampaign(100000);
+    const { campaignId } = createCampaign(100000);
 
     // first donation
-    simnet.callPublicFn("fundraising", "donate-stx", [Cl.uint(5000)], donor1);
+    simnet.callPublicFn(
+      "fundraising",
+      "donate-stx",
+      [Cl.uint(campaignId), Cl.uint(5000)],
+      donor1,
+    );
 
     // second donation
-    simnet.callPublicFn("fundraising", "donate-stx", [Cl.uint(3000)], donor1);
+    simnet.callPublicFn(
+      "fundraising",
+      "donate-stx",
+      [Cl.uint(campaignId), Cl.uint(3000)],
+      donor1,
+    );
 
     const getDonationResponse = simnet.callReadOnlyFn(
       "fundraising",
       "get-stx-donation",
-      [Cl.principal(donor1)],
+      [Cl.uint(campaignId), Cl.principal(donor1)],
       donor1,
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(8000));
   });
 
   it("prevents donations after campaign ends", () => {
-    initCampaign(100000);
+    const { campaignId } = createCampaign(100000);
 
     // move past campaign duration
     simnet.mineEmptyBlocks(4321);
@@ -122,29 +157,34 @@ describe("fundraising campaign", () => {
     const response = simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(5000)],
+      [Cl.uint(campaignId), Cl.uint(5000)],
       donor1,
     );
     expect(response.result).toBeErr(Cl.uint(101)); // err-campaign-ended
   });
 
   it("prevents withdrawal before campaign ends", () => {
-    initCampaign(10000);
+    const { campaignId } = createCampaign(10000);
 
     // make a donation to meet goal
-    simnet.callPublicFn("fundraising", "donate-stx", [Cl.uint(15000)], donor1);
+    simnet.callPublicFn(
+      "fundraising",
+      "donate-stx",
+      [Cl.uint(campaignId), Cl.uint(15000)],
+      donor1,
+    );
 
     const response = simnet.callPublicFn(
       "fundraising",
       "withdraw",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
     expect(response.result).toBeErr(Cl.uint(104)); // err-campaign-not-ended
   });
 
   it("allows withdrawal when campaign ended", () => {
-    initCampaign(10000);
+    const { campaignId } = createCampaign(10000);
 
     const originalDeployerBalance = getCurrentStxBalance(deployer);
     const donationAmount = BigInt(5000000000);
@@ -153,7 +193,7 @@ describe("fundraising campaign", () => {
     simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(donationAmount)],
+      [Cl.uint(campaignId), Cl.uint(donationAmount)],
       donor1,
     );
 
@@ -163,7 +203,7 @@ describe("fundraising campaign", () => {
     const response = simnet.callPublicFn(
       "fundraising",
       "withdraw",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
 
@@ -175,10 +215,15 @@ describe("fundraising campaign", () => {
   });
 
   it("prevents withdrawal when campaign is cancelled", () => {
-    initCampaign(100000);
+    const { campaignId } = createCampaign(100000);
 
     // make a small donation that won't meet goal
-    simnet.callPublicFn("fundraising", "donate-stx", [Cl.uint(5000)], donor1);
+    simnet.callPublicFn(
+      "fundraising",
+      "donate-stx",
+      [Cl.uint(campaignId), Cl.uint(5000)],
+      donor1,
+    );
 
     // move past campaign duration
     simnet.mineEmptyBlocks(4321);
@@ -186,7 +231,7 @@ describe("fundraising campaign", () => {
     const cancelResponse = simnet.callPublicFn(
       "fundraising",
       "cancel-campaign",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
     expect(cancelResponse.result).toBeOk(Cl.bool(true));
@@ -194,14 +239,14 @@ describe("fundraising campaign", () => {
     const response = simnet.callPublicFn(
       "fundraising",
       "withdraw",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
     expect(response.result).toBeErr(Cl.uint(105)); // err-campaign-cancelled
   });
 
   it("allows one refund when campaign is cancelled", () => {
-    initCampaign(100000);
+    const { campaignId } = createCampaign(100000);
 
     const originalDonorBalance = getCurrentStxBalance(donor1);
     const donationAmount = BigInt(5000000000); // Donation in microstacks = 5,000 stx
@@ -210,7 +255,7 @@ describe("fundraising campaign", () => {
     simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(donationAmount)],
+      [Cl.uint(campaignId), Cl.uint(donationAmount)],
       donor1,
     );
 
@@ -223,13 +268,18 @@ describe("fundraising campaign", () => {
     const cancelResponse = simnet.callPublicFn(
       "fundraising",
       "cancel-campaign",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
     expect(cancelResponse.result).toBeOk(Cl.bool(true));
 
     // Request refund
-    const response = simnet.callPublicFn("fundraising", "refund", [], donor1);
+    const response = simnet.callPublicFn(
+      "fundraising",
+      "refund",
+      [Cl.uint(campaignId)],
+      donor1,
+    );
     expect(response.result).toBeOk(Cl.bool(true));
 
     // verify funds were restored
@@ -239,46 +289,59 @@ describe("fundraising campaign", () => {
     const getDonationResponse = simnet.callReadOnlyFn(
       "fundraising",
       "get-stx-donation",
-      [Cl.principal(donor1)],
+      [Cl.uint(campaignId), Cl.principal(donor1)],
       donor1,
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(0));
 
     // request another refund, verify that donor's balance stays the same
-    simnet.callPublicFn("fundraising", "refund", [], donor1);
+    simnet.callPublicFn(
+      "fundraising",
+      "refund",
+      [Cl.uint(campaignId)],
+      donor1,
+    );
     expect(getCurrentStxBalance(donor1)).toEqual(originalDonorBalance);
   });
 
   it("prevents refund when campaign is not cancelled", () => {
-    initCampaign(10000);
+    const { campaignId } = createCampaign(10000);
 
     // make a donation
     simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(15000000000)], // donation in microstacks
+      [Cl.uint(campaignId), Cl.uint(15000000000)], // donation in microstacks
       donor1,
     );
 
     // move past campaign duration
     simnet.mineEmptyBlocks(4321);
 
-    const response = simnet.callPublicFn("fundraising", "refund", [], donor1);
+    const response = simnet.callPublicFn(
+      "fundraising",
+      "refund",
+      [Cl.uint(campaignId)],
+      donor1,
+    );
     expect(response.result).toBeErr(Cl.uint(103)); // err-not-cancelled
   });
 
   it("returns campaign info correctly", () => {
-    const { block } = initCampaign(100000);
+    const { block, campaignId } = createCampaign(100000);
 
     const response = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
 
     expect(response.result).toBeOk(
       Cl.tuple({
+        id: Cl.uint(campaignId),
+        owner: Cl.principal(deployer),
+        beneficiary: Cl.principal(deployer),
         start: Cl.uint(block),
         end: Cl.uint(block + 4320),
         goal: Cl.uint(100000),
@@ -296,19 +359,22 @@ describe("fundraising campaign", () => {
     simnet.callPublicFn(
       "fundraising",
       "donate-stx",
-      [Cl.uint(donationAmount)],
+      [Cl.uint(campaignId), Cl.uint(donationAmount)],
       donor1,
     );
 
     const response2 = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
 
     expect(response2.result).toBeOk(
       Cl.tuple({
+        id: Cl.uint(campaignId),
+        owner: Cl.principal(deployer),
+        beneficiary: Cl.principal(deployer),
         start: Cl.uint(block),
         end: Cl.uint(block + 4320),
         goal: Cl.uint(100000),
@@ -328,12 +394,15 @@ describe("fundraising campaign", () => {
     const response3 = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
-      [],
+      [Cl.uint(campaignId)],
       deployer,
     );
 
     expect(response3.result).toBeOk(
       Cl.tuple({
+        id: Cl.uint(campaignId),
+        owner: Cl.principal(deployer),
+        beneficiary: Cl.principal(deployer),
         start: Cl.uint(block),
         end: Cl.uint(block + 4320),
         goal: Cl.uint(100000),
