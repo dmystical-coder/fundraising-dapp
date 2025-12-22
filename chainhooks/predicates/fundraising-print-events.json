@@ -1,0 +1,23 @@
+{
+  "chain": "stacks",
+  "uuid": "fundraising-print-events",
+  "name": "Fundraising contract print events",
+  "version": 1,
+  "networks": {
+    "mainnet": {
+      "if_this": {
+        "scope": "print_event",
+        "contract_identifier": "SPXXXXXXXXXXXXXXX.fundraising",
+        "matches_regex": "campaign-created|campaign-cancelled|donated-stx|donated-sbtc|campaign-withdrawn|refunded"
+      },
+      "then_that": {
+        "http_post": {
+          "url": "https://YOUR_DOMAIN.com/chainhook",
+          "authorization_header": "Bearer REPLACE_ME"
+        }
+      },
+      "decode_clarity_values": true,
+      "start_block": 0
+    }
+  }
+}
