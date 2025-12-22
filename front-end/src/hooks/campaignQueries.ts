@@ -1,12 +1,24 @@
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import { getApi, getStacksUrl } from "@/lib/stacks-api";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
-import { cvToJSON, hexToCV, cvToHex, principalCV } from "@stacks/transactions";
+import {
+  cvToJSON,
+  hexToCV,
+  cvToHex,
+  principalCV,
+  uintCV,
+} from "@stacks/transactions";
 import { PriceData, satsToSbtc, ustxToStx } from "@/lib/currency-utils";
 
 interface CampaignInfo {
+  id: number;
+  owner: string;
+  beneficiary: string;
+  startBlock: number;
   start: number;
   end: number;
+  createdAt: number;
+  endAt: number;
   goal: number;
   totalStx: number;
   totalSbtc: number;
@@ -19,19 +31,44 @@ interface CampaignInfo {
 
 export const useCampaignInfo = (
   currentPrices: PriceData | undefined
-): UseQueryResult<CampaignInfo> => {
+): UseQueryResult<CampaignInfo | null> => {
   const api = getApi(getStacksUrl()).smartContractsApi;
 
-  return useQuery<CampaignInfo>({
+  return useQuery<CampaignInfo | null>({
     queryKey: ["campaignInfo"],
     queryFn: async () => {
+      const lastIdResponse = await api.callReadOnlyFunction({
+        contractAddress: FUNDRAISING_CONTRACT.address || "",
+        contractName: FUNDRAISING_CONTRACT.name,
+        functionName: "get-last-campaign-id",
+        readOnlyFunctionArgs: {
+          sender: FUNDRAISING_CONTRACT.address || "",
+          arguments: [],
+        },
+      });
+
+      if (!lastIdResponse?.okay || !lastIdResponse?.result) {
+        throw new Error(
+          lastIdResponse?.cause ||
+            "Error fetching last campaign id from blockchain"
+        );
+      }
+
+      const lastIdCv = cvToJSON(hexToCV(lastIdResponse.result));
+      if (!lastIdCv?.success) {
+        throw new Error("Error decoding last campaign id from blockchain");
+      }
+
+      const lastId = parseInt(lastIdCv?.value?.value, 10);
+      if (!lastId) return null;
+
       const response = await api.callReadOnlyFunction({
         contractAddress: FUNDRAISING_CONTRACT.address || "",
         contractName: FUNDRAISING_CONTRACT.name,
         functionName: "get-campaign-info",
         readOnlyFunctionArgs: {
           sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [],
+          arguments: [cvToHex(uintCV(lastId))],
         },
       });
       if (response?.okay && response?.result) {
@@ -43,10 +80,19 @@ export const useCampaignInfo = (
           );
           const totalStx = parseInt(result?.value?.value?.totalStx?.value, 10);
 
+          const owner = result?.value?.value?.owner?.value;
+          const beneficiary = result?.value?.value?.beneficiary?.value;
+
           return {
-            goal: parseInt(result?.value?.value?.goal?.value, 10),
+            id: parseInt(result?.value?.value?.id?.value, 10),
+            owner,
+            beneficiary,
+            startBlock: parseInt(result?.value?.value?.startBlock?.value, 10),
             start: parseInt(result?.value?.value?.start?.value, 10),
             end: parseInt(result?.value?.value?.end?.value, 10),
+            createdAt: parseInt(result?.value?.value?.createdAt?.value, 10),
+            endAt: parseInt(result?.value?.value?.endAt?.value, 10),
+            goal: parseInt(result?.value?.value?.goal?.value, 10),
             totalSbtc,
             totalStx,
             usdValue:
@@ -81,13 +127,15 @@ interface CampaignDonation {
 }
 
 export const useExistingDonation = (
-  address?: string | null | undefined
+  address: string | null | undefined,
+  campaignId: number | null | undefined
 ): UseQueryResult<CampaignDonation> => {
   const api = getApi(getStacksUrl()).smartContractsApi;
   return useQuery<CampaignDonation>({
-    queryKey: ["campaignDonations", address],
+    queryKey: ["campaignDonations", campaignId, address],
     queryFn: async () => {
       if (!address) throw new Error("Address is required");
+      if (!campaignId) throw new Error("Campaign id is required");
 
       const stxResponse = await api.callReadOnlyFunction({
         contractAddress: FUNDRAISING_CONTRACT.address || "",
@@ -95,7 +143,7 @@ export const useExistingDonation = (
         functionName: "get-stx-donation",
         readOnlyFunctionArgs: {
           sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [cvToHex(principalCV(address))],
+          arguments: [cvToHex(uintCV(campaignId)), cvToHex(principalCV(address))],
         },
       });
 
@@ -105,7 +153,7 @@ export const useExistingDonation = (
         functionName: "get-sbtc-donation",
         readOnlyFunctionArgs: {
           sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [cvToHex(principalCV(address))],
+          arguments: [cvToHex(uintCV(campaignId)), cvToHex(principalCV(address))],
         },
       });
 
@@ -129,7 +177,7 @@ export const useExistingDonation = (
         );
       }
     },
-    enabled: !!address,
+    enabled: !!address && !!campaignId,
     refetchInterval: 10000,
     retry: false,
   });

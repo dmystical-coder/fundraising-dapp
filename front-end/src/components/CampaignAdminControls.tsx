@@ -1,7 +1,7 @@
 import useTransactionExecuter from "@/hooks/useTransactionExecuter";
 import {
   getCancelTx,
-  getInitializeTx,
+  getCreateCampaignTx,
   getWithdrawTx,
 } from "@/lib/campaign-utils";
 import {
@@ -32,11 +32,13 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { getStacksNetworkString } from "@/lib/stacks-api";
 
 export default function CampaignAdminControls({
+  campaignId,
   campaignIsUninitialized,
   campaignIsCancelled,
   campaignIsExpired,
   campaignIsWithdrawn,
 }: {
+  campaignId: number | null;
   campaignIsUninitialized: boolean;
   campaignIsCancelled: boolean;
   campaignIsExpired: boolean;
@@ -61,10 +63,12 @@ export default function CampaignAdminControls({
   };
 
   const handleInitializeCampaign = async () => {
-    const txOptions = getInitializeTx(
+    const txOptions = getCreateCampaignTx(
       getStacksNetworkString(),
       currentWalletAddress || "",
-      Number(goal)
+      Number(goal),
+      0,
+      currentWalletAddress || ""
     );
     await executeTx(
       txOptions,
@@ -77,10 +81,12 @@ export default function CampaignAdminControls({
   };
 
   const handleCancel = async () => {
+    if (!campaignId) return;
     setIsCancelConfirmationModalOpen(false);
     const txOptions = getCancelTx(
       getStacksNetworkString(),
-      currentWalletAddress || ""
+      currentWalletAddress || "",
+      campaignId
     );
     await executeTx(
       txOptions,
@@ -91,9 +97,11 @@ export default function CampaignAdminControls({
   };
 
   const handleWithdraw = async () => {
+    if (!campaignId) return;
     const txOptions = getWithdrawTx(
       getStacksNetworkString(),
-      currentWalletAddress || ""
+      currentWalletAddress || "",
+      campaignId
     );
     await executeTx(
       txOptions,
@@ -120,8 +128,7 @@ export default function CampaignAdminControls({
                   <>
                     <Box mb="1">
                       Do you want to start it now? It will be open for
-                      contributions and will run for 4,320 BTC blocks, or about
-                      30 days.
+                      contributions and will run for about 30 days by default.
                     </Box>
                     <NumberInput
                       bg="white"

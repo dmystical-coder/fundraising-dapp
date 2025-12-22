@@ -6,11 +6,13 @@ import {
   FungiblePostCondition,
   Pc,
   PostConditionMode,
+  principalCV,
   uintCV,
 } from "@stacks/transactions";
 
 interface ContributeParams {
   address: string;
+  campaignId: number;
   amount: number;
 }
 
@@ -18,7 +20,7 @@ export const getContributeStxTx = (
   network: Network,
   params: ContributeParams // Send amount in microstacks
 ): ContractCallRegularOptions => {
-  const { address, amount } = params;
+  const { address, campaignId, amount } = params;
 
   return {
     anchorMode: AnchorMode.Any,
@@ -27,7 +29,7 @@ export const getContributeStxTx = (
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "donate-stx",
-    functionArgs: [uintCV(amount)],
+    functionArgs: [uintCV(campaignId), uintCV(amount)],
     postConditions: [Pc.principal(address).willSendEq(amount).ustx()],
   };
 };
@@ -36,7 +38,7 @@ export const getContributeSbtcTx = (
   network: Network,
   params: ContributeParams // Send amount in sats
 ): ContractCallRegularOptions => {
-  const { address, amount } = params;
+  const { address, campaignId, amount } = params;
 
   const postCondition: FungiblePostCondition = {
     type: "ft-postcondition",
@@ -53,15 +55,17 @@ export const getContributeSbtcTx = (
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "donate-sbtc",
-    functionArgs: [uintCV(amount)],
+    functionArgs: [uintCV(campaignId), uintCV(amount)],
     postConditions: [postCondition],
   };
 };
 
-export const getInitializeTx = (
+export const getCreateCampaignTx = (
   network: Network,
   address: string,
-  goalInUSD: number
+  goalInUSD: number,
+  endAt: number = 0,
+  beneficiary: string = address
 ): ContractCallRegularOptions => {
   return {
     anchorMode: AnchorMode.Any,
@@ -69,15 +73,16 @@ export const getInitializeTx = (
     contractAddress: FUNDRAISING_CONTRACT.address || "",
     contractName: FUNDRAISING_CONTRACT.name,
     network,
-    functionName: "initialize-campaign",
-    functionArgs: [uintCV(goalInUSD), uintCV(0)],
+    functionName: "create-campaign",
+    functionArgs: [uintCV(goalInUSD), uintCV(endAt), principalCV(beneficiary)],
     postConditions: [Pc.principal(address).willSendEq(0).ustx()],
   };
 };
 
 export const getCancelTx = (
   network: Network,
-  address: string
+  address: string,
+  campaignId: number
 ): ContractCallRegularOptions => {
   return {
     anchorMode: AnchorMode.Any,
@@ -86,14 +91,15 @@ export const getCancelTx = (
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "cancel-campaign",
-    functionArgs: [],
+    functionArgs: [uintCV(campaignId)],
     postConditions: [Pc.principal(address).willSendEq(0).ustx()],
   };
 };
 
 export const getRefundTx = (
   network: Network,
-  address: string
+  address: string,
+  campaignId: number
 ): ContractCallRegularOptions => {
   return {
     anchorMode: AnchorMode.Any,
@@ -102,14 +108,15 @@ export const getRefundTx = (
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "refund",
-    functionArgs: [],
+    functionArgs: [uintCV(campaignId)],
     postConditions: [Pc.principal(address).willSendEq(0).ustx()],
   };
 };
 
 export const getWithdrawTx = (
   network: Network,
-  address: string
+  address: string,
+  campaignId: number
 ): ContractCallRegularOptions => {
   return {
     anchorMode: AnchorMode.Any,
@@ -118,7 +125,7 @@ export const getWithdrawTx = (
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "withdraw",
-    functionArgs: [],
+    functionArgs: [uintCV(campaignId)],
     postConditions: [Pc.principal(address).willSendEq(0).ustx()],
   };
 };

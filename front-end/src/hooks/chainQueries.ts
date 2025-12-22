@@ -1,5 +1,7 @@
 import { getApi, getStacksUrl } from "@/lib/stacks-api";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
+import { cvToJSON, hexToCV } from "@stacks/transactions";
 
 export const useCurrentBtcBlock = (): UseQueryResult<number> => {
   const api = getApi(getStacksUrl()).blocksApi;
@@ -16,5 +18,38 @@ export const useCurrentBtcBlock = (): UseQueryResult<number> => {
       }
     },
     refetchInterval: 10000,
+  });
+};
+
+export const useCurrentStacksBlockTime = (): UseQueryResult<number> => {
+  const api = getApi(getStacksUrl()).smartContractsApi;
+  return useQuery<number>({
+    queryKey: ["currentStacksBlockTime"],
+    queryFn: async () => {
+      const response = await api.callReadOnlyFunction({
+        contractAddress: FUNDRAISING_CONTRACT.address || "",
+        contractName: FUNDRAISING_CONTRACT.name,
+        functionName: "get-current-stacks-block-time",
+        readOnlyFunctionArgs: {
+          sender: FUNDRAISING_CONTRACT.address || "",
+          arguments: [],
+        },
+      });
+
+      if (!response?.okay || !response?.result) {
+        throw new Error(
+          response?.cause || "Error fetching stacks-block-time from blockchain"
+        );
+      }
+
+      const cv = cvToJSON(hexToCV(response.result));
+      if (!cv?.success) {
+        throw new Error("Error decoding stacks-block-time from blockchain");
+      }
+
+      return parseInt(cv?.value?.value, 10);
+    },
+    refetchInterval: 10000,
+    retry: false,
   });
 };

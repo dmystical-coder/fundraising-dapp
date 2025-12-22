@@ -26,7 +26,7 @@ import { useContext, useEffect, useState } from "react";
 import { CAMPAIGN_SUBTITLE, CAMPAIGN_TITLE } from "@/constants/campaign";
 import StyledMarkdown from "./StyledMarkdown";
 import { useCampaignInfo, useExistingDonation } from "@/hooks/campaignQueries";
-import { useCurrentBtcBlock } from "@/hooks/chainQueries";
+import { useCurrentStacksBlockTime } from "@/hooks/chainQueries";
 import { format } from "timeago.js";
 import DonationModal from "./DonationModal";
 import HiroWalletContext from "./HiroWalletProvider";
@@ -36,7 +36,6 @@ import {
   isTestnetEnvironment,
 } from "@/lib/contract-utils";
 import { satsToSbtc, useCurrentPrices, ustxToStx } from "@/lib/currency-utils";
-import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
 import { getRefundTx } from "@/lib/campaign-utils";
 import { getStacksNetworkString } from "@/lib/stacks-api";
 import useTransactionExecuter from "@/hooks/useTransactionExecuter";
@@ -65,12 +64,18 @@ export default function CampaignDetails({
   const { data: currentPrices } = useCurrentPrices();
   const { data: campaignInfo, error: campaignFetchError } =
     useCampaignInfo(currentPrices);
-  const { data: currentBlock } = useCurrentBtcBlock();
+  const { data: currentStacksTime } = useCurrentStacksBlockTime();
 
-  const campaignIsUninitialized = campaignInfo?.start === 0;
-  const campaignIsExpired = !campaignIsUninitialized && campaignInfo?.isExpired;
-  const campaignIsCancelled =
-    !campaignIsUninitialized && campaignInfo?.isCancelled;
+  const campaignIsUninitialized = campaignInfo === null;
+  const campaignIsExpired = !!campaignInfo?.isExpired;
+  const campaignIsCancelled = !!campaignInfo?.isCancelled;
+  const campaignId = campaignInfo?.id ?? null;
+  const isCampaignOwner =
+    !!campaignInfo?.owner && !!currentWalletAddress
+      ? campaignInfo.owner === currentWalletAddress
+      : false;
+  const showAdminControls = (!!currentWalletAddress && campaignIsUninitialized) ||
+    (!!currentWalletAddress && !!campaignInfo && isCampaignOwner);
 
   const nextSlide = () => {
     setCurrentIndex((prevIndex) =>
@@ -93,11 +98,16 @@ export default function CampaignDetails({
     ? (campaignInfo.usdValue / campaignInfo.goal) * 100
     : 0;
 
-  const blocksLeft = campaignInfo ? campaignInfo?.end - (currentBlock || 0) : 0;
-  const secondsLeft = blocksLeft * 600; // estimate each block is 10 minutes
-  const secondsLeftTimestamp = new Date(Date.now() - secondsLeft * 1000);
+  const secondsLeft =
+    campaignInfo && currentStacksTime
+      ? Math.max(0, campaignInfo.endAt - currentStacksTime)
+      : 0;
+  const endDate = campaignInfo ? new Date(campaignInfo.endAt * 1000) : null;
 
-  const { data: previousDonation } = useExistingDonation(currentWalletAddress);
+  const { data: previousDonation } = useExistingDonation(
+    currentWalletAddress,
+    campaignId
+  );
 
   const hasMadePreviousDonation =
     previousDonation &&
@@ -106,9 +116,11 @@ export default function CampaignDetails({
   const executeTx = useTransactionExecuter();
 
   const handleRefund = async () => {
+    if (!campaignId) return;
     const txOptions = getRefundTx(
       getStacksNetworkString(),
-      currentWalletAddress || ""
+      currentWalletAddress || "",
+      campaignId
     );
     await executeTx(
       txOptions,
@@ -177,9 +189,9 @@ export default function CampaignDetails({
 
           {/* Right column: Campaign stats & donation */}
           <Box>
-            {campaignInfo &&
-            currentWalletAddress === FUNDRAISING_CONTRACT.address ? (
+            {showAdminControls ? (
               <CampaignAdminControls
+                campaignId={campaignId}
                 campaignIsUninitialized={campaignIsUninitialized}
                 campaignIsExpired={!!campaignIsExpired}
                 campaignIsCancelled={!!campaignIsCancelled}
@@ -221,9 +233,13 @@ export default function CampaignDetails({
                                 label={
                                   <Flex direction="column" gap="1">
                                     <Box>
-                                      Expired at: Block #{campaignInfo?.end}
+                                      Expired at: {endDate?.toLocaleString()}
                                     </Box>
-                                    <Box>Current: Block #{currentBlock}</Box>
+                                    {currentStacksTime ? (
+                                      <Box>
+                                        Current time: {new Date(currentStacksTime * 1000).toLocaleString()}
+                                      </Box>
+                                    ) : null}
                                   </Flex>
                                 }
                               >
@@ -234,29 +250,26 @@ export default function CampaignDetails({
                         ) : (
                           <Flex direction="column">
                             <Box>
-                              {blocksLeft.toLocaleString()} BTC blocks left
+                              Ends {endDate ? format(endDate) : ""}
                               <Tooltip
                                 label={
                                   <Flex direction="column" gap="1">
                                     <Box>
-                                      Started: Block #{campaignInfo?.start}
+                                      Started: {new Date(campaignInfo.start * 1000).toLocaleString()}
                                     </Box>
-                                    <Box>Ends: Block #{campaignInfo?.end}</Box>
-                                    <Box>Current: Block #{currentBlock}</Box>
+                                    <Box>Ends: {endDate?.toLocaleString()}</Box>
+                                    {currentStacksTime ? (
+                                      <Box>
+                                        Current time: {new Date(currentStacksTime * 1000).toLocaleString()}
+                                      </Box>
+                                    ) : null}
                                   </Flex>
                                 }
                               >
                                 <InfoIcon ml="1.5" mt="-3px" />
                               </Tooltip>
                             </Box>
-                            <Box>
-                              (About{" "}
-                              {format(secondsLeftTimestamp)?.replace(
-                                " ago",
-                                ""
-                              )}
-                              )
-                            </Box>
+                            <Box>{secondsLeft ? `~${Math.ceil(secondsLeft / 3600)} hours left` : null}</Box>
                           </Flex>
                         )}
                       </StatHelpText>
@@ -371,6 +384,7 @@ export default function CampaignDetails({
       </Flex>
       <DonationModal
         isOpen={isDonationModalOpen}
+        campaignId={campaignId}
         onClose={() => {
           setIsDonationModalOpen(false);
         }}

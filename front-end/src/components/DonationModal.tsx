@@ -48,9 +48,11 @@ import {
 
 export default function DonationModal({
   isOpen,
+  campaignId,
   onClose,
 }: {
   isOpen: boolean;
+  campaignId: number | null;
   onClose: () => undefined;
 }) {
   const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
@@ -65,7 +67,10 @@ export default function DonationModal({
     ? testnetAddress
     : mainnetAddress;
 
-  const { data: previousDonation } = useExistingDonation(currentWalletAddress);
+  const { data: previousDonation } = useExistingDonation(
+    currentWalletAddress,
+    campaignId
+  );
   const { data: prices } = useCurrentPrices();
 
   const hasMadePreviousDonation =
@@ -93,6 +98,18 @@ export default function DonationModal({
   const handleSubmit = async () => {
     setIsLoading(true);
 
+    if (!campaignId) {
+      toast({
+        title: "No active campaign",
+        description: "There is no active campaign to contribute to yet.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const amount = selectedAmount || Number(customAmount);
 
     if (!amount || amount <= 0) {
@@ -112,12 +129,14 @@ export default function DonationModal({
         paymentMethod === "sbtc"
           ? getContributeSbtcTx(getStacksNetworkString(), {
               address: currentWalletAddress || "",
+              campaignId,
               amount: Math.round(
                 btcToSats(usdToSbtc(amount, prices?.sbtc || 0))
               ),
             })
           : getContributeStxTx(getStacksNetworkString(), {
               address: currentWalletAddress || "",
+              campaignId,
               amount: Math.round(
                 Number(stxToUstx(usdToStx(amount, prices?.stx || 0)))
               ),
