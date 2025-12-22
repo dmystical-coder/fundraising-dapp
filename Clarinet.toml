@@ -1,0 +1,14 @@
+[project]
+name = 'fundraising-dapp'
+description = 'Fundraising dApp contracts'
+authors = []
+telemetry = false
+cache_dir = './.cache'
+
+[contracts.fundraising]
+path = 'clarity/contracts/fundraising.clar'
+clarity_version = 4
+epoch = '3.3'
+
+[repl.analysis]
+passes = []
