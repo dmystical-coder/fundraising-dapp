@@ -53,3 +53,49 @@ export const useCurrentStacksBlockTime = (): UseQueryResult<number> => {
     retry: false,
   });
 };
+
+export const useSbtcTokenContract = (): UseQueryResult<string> => {
+  const api = getApi(getStacksUrl()).smartContractsApi;
+  return useQuery<string>({
+    queryKey: ["sbtcTokenContract"],
+    queryFn: async () => {
+      const response = await api.callReadOnlyFunction({
+        contractAddress: FUNDRAISING_CONTRACT.address || "",
+        contractName: FUNDRAISING_CONTRACT.name,
+        functionName: "get-sbtc-token-contract",
+        readOnlyFunctionArgs: {
+          sender: FUNDRAISING_CONTRACT.address || "",
+          arguments: [],
+        },
+      });
+
+      if (!response?.okay || !response?.result) {
+        throw new Error(
+          response?.cause ||
+            "Error fetching sBTC token contract from fundraising contract"
+        );
+      }
+
+      const cv = cvToJSON(hexToCV(response.result));
+      if (!cv?.success) {
+        throw new Error("Error decoding sBTC token contract from blockchain");
+      }
+
+      // Expected decoded shape:
+      // { type: 'response', success: true, value: { type: 'principal', value: 'SM...' } }
+      // Be defensive in case the API changes.
+      const principal =
+        cv?.value?.type === "principal"
+          ? cv?.value?.value
+          : cv?.value?.value?.value;
+
+      if (typeof principal !== "string" || !principal.length) {
+        throw new Error("Invalid sBTC token contract principal received");
+      }
+
+      return principal;
+    },
+    refetchInterval: 60_000,
+    retry: false,
+  });
+};

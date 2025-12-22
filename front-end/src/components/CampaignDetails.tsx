@@ -25,7 +25,10 @@ import { useContext, useEffect, useState } from "react";
 import { CAMPAIGN_SUBTITLE, CAMPAIGN_TITLE } from "@/constants/campaign";
 import StyledMarkdown from "./StyledMarkdown";
 import { useCampaignInfo, useExistingDonation } from "@/hooks/campaignQueries";
-import { useCurrentStacksBlockTime } from "@/hooks/chainQueries";
+import {
+  useCurrentStacksBlockTime,
+  useSbtcTokenContract,
+} from "@/hooks/chainQueries";
 import { format } from "timeago.js";
 import DonationModal from "./DonationModal";
 import HiroWalletContext from "./HiroWalletProvider";
@@ -39,6 +42,7 @@ import { getRefundTx } from "@/lib/campaign-utils";
 import { getStacksNetworkString } from "@/lib/stacks-api";
 import useTransactionExecuter from "@/hooks/useTransactionExecuter";
 import CampaignAdminControls from "./CampaignAdminControls";
+import { SBTC_CONTRACT } from "@/constants/contracts";
 
 export default function CampaignDetails({
   images,
@@ -64,6 +68,7 @@ export default function CampaignDetails({
   const { data: campaignInfo, error: campaignFetchError } =
     useCampaignInfo(currentPrices);
   const { data: currentStacksTime } = useCurrentStacksBlockTime();
+  const { data: sbtcTokenPrincipal } = useSbtcTokenContract();
 
   const campaignIsUninitialized = campaignInfo === null;
   const campaignIsExpired = !!campaignInfo?.isExpired;
@@ -135,6 +140,28 @@ export default function CampaignDetails({
         <Flex direction="column" gap="1">
           <Heading>{CAMPAIGN_TITLE}</Heading>
           <Text>{CAMPAIGN_SUBTITLE}</Text>
+          {sbtcTokenPrincipal ? (
+            <Flex direction="column" gap="2" mt="2">
+              <Tooltip
+                label="The fundraising contract returns this principal via get-sbtc-token-contract."
+              >
+                <Text fontSize="sm">
+                  sBTC token contract: {sbtcTokenPrincipal}
+                </Text>
+              </Tooltip>
+              {getStacksNetworkString() === "mainnet" &&
+              sbtcTokenPrincipal !==
+                `${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}` ? (
+                <Alert status="warning" borderRadius="md">
+                  <AlertTitle>Token mismatch</AlertTitle>
+                  <AlertDescription>
+                    Frontend expects {SBTC_CONTRACT.address}.{SBTC_CONTRACT.name}
+                    , but contract reports {sbtcTokenPrincipal}.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </Flex>
+          ) : null}
         </Flex>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} alignItems="start">
