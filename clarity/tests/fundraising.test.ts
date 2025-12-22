@@ -20,7 +20,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "create-campaign",
       [Cl.uint(goal), Cl.uint(0), Cl.principal(deployer)],
-      deployer,
+      deployer
     );
     const block = simnet.burnBlockHeight;
     const campaignId = 1;
@@ -39,7 +39,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(5000)],
-      donor1,
+      donor1
     );
     expect(response.result).toBeOk(Cl.bool(true));
 
@@ -48,7 +48,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "get-stx-donation",
       [Cl.uint(campaignId), Cl.principal(donor1)],
-      donor1,
+      donor1
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(5000));
   });
@@ -91,7 +91,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "create-campaign",
       [Cl.uint(100000), Cl.uint(0), Cl.principal(donor1)],
-      donor1,
+      donor1
     );
     expect(response.result).toBeOk(Cl.uint(1));
 
@@ -99,7 +99,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "get-campaign-info",
       [Cl.uint(1)],
-      donor1,
+      donor1
     );
 
     expect(infoResponse.result).toBeOk(
@@ -116,7 +116,7 @@ describe("fundraising campaign", () => {
         isExpired: Cl.bool(false),
         isWithdrawn: Cl.bool(false),
         isCancelled: Cl.bool(false),
-      }),
+      })
     );
   });
 
@@ -128,7 +128,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(5000)],
-      donor1,
+      donor1
     );
 
     // second donation
@@ -136,14 +136,14 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(3000)],
-      donor1,
+      donor1
     );
 
     const getDonationResponse = simnet.callReadOnlyFn(
       "fundraising",
       "get-stx-donation",
       [Cl.uint(campaignId), Cl.principal(donor1)],
-      donor1,
+      donor1
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(8000));
   });
@@ -158,7 +158,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(5000)],
-      donor1,
+      donor1
     );
     expect(response.result).toBeErr(Cl.uint(101)); // err-campaign-ended
   });
@@ -171,14 +171,14 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(15000)],
-      donor1,
+      donor1
     );
 
     const response = simnet.callPublicFn(
       "fundraising",
       "withdraw",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
     expect(response.result).toBeErr(Cl.uint(104)); // err-campaign-not-ended
   });
@@ -194,7 +194,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(donationAmount)],
-      donor1,
+      donor1
     );
 
     // move past campaign duration
@@ -204,13 +204,13 @@ describe("fundraising campaign", () => {
       "fundraising",
       "withdraw",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
 
     expect(response.result).toBeOk(Cl.bool(true));
 
     expect(getCurrentStxBalance(deployer)).toEqual(
-      originalDeployerBalance + donationAmount,
+      originalDeployerBalance + donationAmount
     );
   });
 
@@ -222,7 +222,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(5000)],
-      donor1,
+      donor1
     );
 
     // move past campaign duration
@@ -232,7 +232,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "cancel-campaign",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
     expect(cancelResponse.result).toBeOk(Cl.bool(true));
 
@@ -240,7 +240,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "withdraw",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
     expect(response.result).toBeErr(Cl.uint(105)); // err-campaign-cancelled
   });
@@ -256,12 +256,12 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(donationAmount)],
-      donor1,
+      donor1
     );
 
     // verify that funds have been transferred out of the donor's account
     expect(getCurrentStxBalance(donor1)).toEqual(
-      originalDonorBalance - donationAmount,
+      originalDonorBalance - donationAmount
     );
 
     // Cancel campaign
@@ -269,7 +269,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "cancel-campaign",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
     expect(cancelResponse.result).toBeOk(Cl.bool(true));
 
@@ -278,7 +278,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "refund",
       [Cl.uint(campaignId)],
-      donor1,
+      donor1
     );
     expect(response.result).toBeOk(Cl.bool(true));
 
@@ -290,17 +290,12 @@ describe("fundraising campaign", () => {
       "fundraising",
       "get-stx-donation",
       [Cl.uint(campaignId), Cl.principal(donor1)],
-      donor1,
+      donor1
     );
     expect(getDonationResponse.result).toBeOk(Cl.uint(0));
 
     // request another refund, verify that donor's balance stays the same
-    simnet.callPublicFn(
-      "fundraising",
-      "refund",
-      [Cl.uint(campaignId)],
-      donor1,
-    );
+    simnet.callPublicFn("fundraising", "refund", [Cl.uint(campaignId)], donor1);
     expect(getCurrentStxBalance(donor1)).toEqual(originalDonorBalance);
   });
 
@@ -312,7 +307,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(15000000000)], // donation in microstacks
-      donor1,
+      donor1
     );
 
     // move past campaign duration
@@ -322,7 +317,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "refund",
       [Cl.uint(campaignId)],
-      donor1,
+      donor1
     );
     expect(response.result).toBeErr(Cl.uint(103)); // err-not-cancelled
   });
@@ -334,7 +329,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "get-campaign-info",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
 
     expect(response.result).toBeOk(
@@ -351,7 +346,7 @@ describe("fundraising campaign", () => {
         isExpired: Cl.bool(false),
         isWithdrawn: Cl.bool(false),
         isCancelled: Cl.bool(false),
-      }),
+      })
     );
 
     // check again after a donation
@@ -360,14 +355,14 @@ describe("fundraising campaign", () => {
       "fundraising",
       "donate-stx",
       [Cl.uint(campaignId), Cl.uint(donationAmount)],
-      donor1,
+      donor1
     );
 
     const response2 = simnet.callReadOnlyFn(
       "fundraising",
       "get-campaign-info",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
 
     expect(response2.result).toBeOk(
@@ -384,7 +379,7 @@ describe("fundraising campaign", () => {
         isExpired: Cl.bool(false),
         isWithdrawn: Cl.bool(false),
         isCancelled: Cl.bool(false),
-      }),
+      })
     );
 
     // move past campaign duration
@@ -395,7 +390,7 @@ describe("fundraising campaign", () => {
       "fundraising",
       "get-campaign-info",
       [Cl.uint(campaignId)],
-      deployer,
+      deployer
     );
 
     expect(response3.result).toBeOk(
@@ -412,7 +407,7 @@ describe("fundraising campaign", () => {
         isExpired: Cl.bool(true),
         isWithdrawn: Cl.bool(false),
         isCancelled: Cl.bool(false),
-      }),
+      })
     );
   });
 });
