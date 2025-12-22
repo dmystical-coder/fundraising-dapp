@@ -2,12 +2,15 @@ import { devnetWallets } from "@/lib/devnet-wallet-context";
 
 const CONTRACT_NAME = "fundraising";
 
+const DEFAULT_MAINNET_DEPLOYER_ADDRESS = "SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH";
+
 const DEPLOYER_ADDRESS =
   process.env.NEXT_PUBLIC_STACKS_NETWORK === "devnet"
     ? devnetWallets[0].stxAddress
     : process.env.NEXT_PUBLIC_STACKS_NETWORK === "testnet"
     ? process.env.NEXT_PUBLIC_CONTRACT_DEPLOYER_TESTNET_ADDRESS
-    : process.env.NEXT_PUBLIC_CONTRACT_DEPLOYER_MAINNET_ADDRESS;
+    : process.env.NEXT_PUBLIC_CONTRACT_DEPLOYER_MAINNET_ADDRESS ??
+      DEFAULT_MAINNET_DEPLOYER_ADDRESS;
 
 export const FUNDRAISING_CONTRACT = {
   address: DEPLOYER_ADDRESS,

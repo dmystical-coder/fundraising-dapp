@@ -7,7 +7,7 @@
     "mainnet": {
       "if_this": {
         "scope": "print_event",
-        "contract_identifier": "SPXXXXXXXXXXXXXXX.fundraising",
+        "contract_identifier": "SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH.fundraising",
         "matches_regex": "campaign-created|campaign-cancelled|donated-stx|donated-sbtc|campaign-withdrawn|refunded"
       },
       "then_that": {

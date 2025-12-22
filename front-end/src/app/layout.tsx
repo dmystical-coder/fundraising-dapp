@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/ui/Providers";
 import { Navbar } from "@/components/Navbar";
+import { Box } from "@chakra-ui/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,10 +30,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
-          <>
+          <Box minH="100vh" bg="gray.50">
             <Navbar />
-            {children}
-          </>
+            <Box as="main" py={{ base: 6, md: 10 }}>
+              {children}
+            </Box>
+          </Box>
         </Providers>
       </body>
     </html>

@@ -1,0 +1,13 @@
+[network]
+name = "mainnet"
+# Fee rate (microSTX per byte). Increase if your txs get stuck.
+deployment_fee_rate = 10
+
+# IMPORTANT:
+# - Do NOT commit your real Mainnet mnemonic.
+# - Copy this file to `Mainnet.toml` (same folder) and fill in the mnemonic locally.
+# - `clarity/.gitignore` already ignores `settings/Mainnet.toml`.
+
+[accounts.deployer]
+# Replace with your *real* 24-word mainnet mnemonic (kept local, never committed)
+mnemonic = "REPLACE_WITH_YOUR_MAINNET_MNEMONIC"

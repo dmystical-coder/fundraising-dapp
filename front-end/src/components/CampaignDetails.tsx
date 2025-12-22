@@ -94,9 +94,13 @@ export default function CampaignDetails({
   };
 
   useEffect(() => {
-    const timer = setInterval(nextSlide, 5000);
+    const timer = setInterval(() => {
+      setCurrentIndex((prevIndex) =>
+        prevIndex === images.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [images.length]);
 
   const progress = campaignInfo
     ? (campaignInfo.usdValue / campaignInfo.goal) * 100
@@ -135,17 +139,21 @@ export default function CampaignDetails({
   };
 
   return (
-    <Container maxW="container.xl" py="8">
-      <Flex direction="column" gap="6">
-        <Flex direction="column" gap="1">
-          <Heading>{CAMPAIGN_TITLE}</Heading>
-          <Text>{CAMPAIGN_SUBTITLE}</Text>
+    <Container maxW="container.xl">
+      <Flex direction="column" gap={{ base: 6, md: 8 }}>
+        <Flex direction="column" gap="2">
+          <Heading size="xl" letterSpacing="tight">
+            {CAMPAIGN_TITLE}
+          </Heading>
+          <Text color="gray.600" fontSize={{ base: "md", md: "lg" }}>
+            {CAMPAIGN_SUBTITLE}
+          </Text>
           {sbtcTokenPrincipal ? (
             <Flex direction="column" gap="2" mt="2">
               <Tooltip
                 label="The fundraising contract returns this principal via get-sbtc-token-contract."
               >
-                <Text fontSize="sm">
+                <Text fontSize="sm" color="gray.600">
                   sBTC token contract: {sbtcTokenPrincipal}
                 </Text>
               </Tooltip>
@@ -164,17 +172,26 @@ export default function CampaignDetails({
           ) : null}
         </Flex>
 
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} alignItems="start">
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 6, md: 8 }} alignItems="start">
           {/* Left column: Image carousel */}
-          <Box position="relative" width="full" overflow="hidden">
-            <Flex width={slideSize} mx="auto" position="relative">
+          <Box
+            position="relative"
+            width="full"
+            overflow="hidden"
+            borderRadius="2xl"
+            bg="white"
+            borderWidth="1px"
+            borderColor="gray.200"
+            boxShadow="sm"
+          >
+            <Flex width={slideSize} mx="auto" position="relative" overflow="hidden">
               <Box
                 as="img"
                 src={images[currentIndex]}
                 alt={`Campaign image ${currentIndex + 1}`}
                 objectFit="cover"
                 width="full"
-                height="auto"
+                height={{ base: "260px", md: "360px" }}
                 display="block"
               />
               <IconButton
@@ -226,7 +243,7 @@ export default function CampaignDetails({
                 campaignIsWithdrawn={!!campaignInfo?.isWithdrawn}
               />
             ) : null}
-            <Box p={6} borderRadius="lg" borderWidth="1px">
+            <Box p={{ base: 5, md: 6 }} borderRadius="2xl" borderWidth="1px" borderColor="gray.200" bg="white" boxShadow="sm">
               {campaignIsUninitialized ? (
                 <Flex direction="column" gap="4">
                   This campaign hasn&apos;t started yet!
@@ -370,7 +387,7 @@ export default function CampaignDetails({
                       >
                         Contribute Now
                       </Button>
-                      <Box fontSize="xs">
+                      <Box fontSize="sm" color="gray.600">
                         <Box mb="2">
                           <strong>Flexible funding</strong>: Creator keeps
                           whatever money they raise, even if they don&apos;t hit
@@ -408,7 +425,16 @@ export default function CampaignDetails({
         </SimpleGrid>
 
         {/* Markdown content */}
-        <StyledMarkdown>{markdownContent}</StyledMarkdown>
+        <Box
+          bg="white"
+          borderWidth="1px"
+          borderColor="gray.200"
+          borderRadius="2xl"
+          boxShadow="sm"
+          p={{ base: 5, md: 8 }}
+        >
+          <StyledMarkdown>{markdownContent}</StyledMarkdown>
+        </Box>
       </Flex>
       <DonationModal
         isOpen={isDonationModalOpen}

@@ -10,7 +10,7 @@ export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
 
   return (
-    <Box as="nav" bg="white" boxShadow="sm">
+    <Box as="nav" bg="white" borderBottomWidth="1px" borderColor="gray.200">
       <Container maxW="container.xl">
         <Flex justify="space-between" h={16} align="center">
           <Flex align="center">

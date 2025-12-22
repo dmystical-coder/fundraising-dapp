@@ -7,7 +7,7 @@ Chainhook can watch those print events and POST matching payloads to a webhook.
 
 Once deployed, you’ll have a contract identifier like:
 
-- `SP....../fundraising`
+- `SPXXXXXXXXXXXXXXX.fundraising`
 
 Update these placeholders:
 
