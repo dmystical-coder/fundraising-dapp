@@ -1,5 +1,6 @@
 import "dotenv/config";
-import express from "express";
+import { createRequire } from "node:module";
+import type { Request, Response } from "express";
 import { loadEnv } from "./env.js";
 import { createDbPool } from "./db.js";
 import {
@@ -8,13 +9,18 @@ import {
   extractTopLevelMeta,
 } from "./chainhook.js";
 
+const require = createRequire(import.meta.url);
+// Express is CommonJS (`export =` in types). createRequire keeps TS happy in ESM.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const express = require("express") as typeof import("express");
+
 const env = loadEnv();
 const db = createDbPool(env.DATABASE_URL);
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
-app.get("/health", async (_req, res) => {
+app.get("/health", async (_req: Request, res: Response) => {
   try {
     await db.query("select 1 as ok");
     res.json({ ok: true });
@@ -23,7 +29,7 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.post("/chainhook", async (req, res) => {
+app.post("/chainhook", async (req: Request, res: Response) => {
   if (env.CHAINHOOK_AUTH_TOKEN) {
     const auth = req.header("authorization");
     const expected = `Bearer ${env.CHAINHOOK_AUTH_TOKEN}`;
