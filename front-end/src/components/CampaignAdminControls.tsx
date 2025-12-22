@@ -15,6 +15,7 @@ import {
   Box,
   Button,
   Flex,
+  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -58,16 +59,21 @@ export default function CampaignAdminControls({
 
   const executeTx = useTransactionExecuter();
   const [goal, setGoal] = useState("");
+  const [endDateTimeLocal, setEndDateTimeLocal] = useState("");
   const handleGoalChange = (value: string) => {
     setGoal(value);
   };
 
   const handleInitializeCampaign = async () => {
+    const endAt = endDateTimeLocal
+      ? Math.floor(new Date(endDateTimeLocal).getTime() / 1000)
+      : 0;
+
     const txOptions = getCreateCampaignTx(
       getStacksNetworkString(),
       currentWalletAddress || "",
       Number(goal),
-      0,
+      endAt,
       currentWalletAddress || ""
     );
     await executeTx(
@@ -77,6 +83,7 @@ export default function CampaignAdminControls({
       "Campaign was not initialized"
     );
     setGoal("");
+    setEndDateTimeLocal("");
     setIsInitializingCampaign(true);
   };
 
@@ -142,6 +149,13 @@ export default function CampaignAdminControls({
                         fontSize="lg"
                       />
                     </NumberInput>
+
+                    <Input
+                      bg="white"
+                      type="datetime-local"
+                      value={endDateTimeLocal}
+                      onChange={(e) => setEndDateTimeLocal(e.target.value)}
+                    />
                     <Button
                       colorScheme="green"
                       onClick={handleInitializeCampaign}
