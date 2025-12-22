@@ -3,7 +3,6 @@ import {
   Container,
   Box,
   IconButton,
-  Image,
   Text,
   Flex,
   useBreakpointValue,
@@ -142,12 +141,14 @@ export default function CampaignDetails({
           {/* Left column: Image carousel */}
           <Box position="relative" width="full" overflow="hidden">
             <Flex width={slideSize} mx="auto" position="relative">
-              <Image
+              <Box
+                as="img"
                 src={images[currentIndex]}
                 alt={`Campaign image ${currentIndex + 1}`}
                 objectFit="cover"
                 width="full"
                 height="auto"
+                display="block"
               />
               <IconButton
                 aria-label="Previous image"
