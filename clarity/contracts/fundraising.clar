@@ -30,7 +30,7 @@
 ;; Maps
 (define-map campaigns
   uint
-    {
+  {
     owner: principal,
     beneficiary: principal,
     goal: uint,
@@ -47,7 +47,7 @@
 )
 
 (define-map stx-donations
-    {
+  {
     campaignId: uint,
     donor: principal,
   }
@@ -56,7 +56,7 @@
 ;; (campaignId, donor) -> amount
 
 (define-map sbtc-donations
-    {
+  {
     campaignId: uint,
     donor: principal,
   }
@@ -224,19 +224,21 @@
       (asserts! (not (get isWithdrawn campaign)) err-already-withdrawn)
       (asserts! (is-eq tx-sender beneficiary) err-not-authorized)
       (asserts! (>= stacks-block-time end) err-campaign-not-ended)
-      (try! (as-contract? ((with-stx total-stx-amount) (with-ft sbtc-token "*" total-sbtc-amount))
+      (try! (as-contract?
+        ((with-stx total-stx-amount) (with-ft sbtc-token "*" total-sbtc-amount))
         (begin
           (if (> total-stx-amount u0)
             (try! (stx-transfer? total-stx-amount tx-sender beneficiary))
             true
           )
           (if (> total-sbtc-amount u0)
-            (try! (contract-call? sbtc-token transfer total-sbtc-amount tx-sender beneficiary none))
+            (try! (contract-call? sbtc-token transfer total-sbtc-amount tx-sender
+              beneficiary none
+            ))
             true
           )
           true
-        )
-      ))
+        )))
       (map-set campaigns campaignId
         (merge campaign {
           isWithdrawn: true,
@@ -272,17 +274,17 @@
           (begin
             (try! (stx-transfer? stx-amount tx-sender contributor))
             true
-          )
-        ))
+          )))
         true
       )
       (if (> sbtc-amount u0)
         (try! (as-contract? ((with-ft sbtc-token "*" sbtc-amount))
           (begin
-            (try! (contract-call? sbtc-token transfer sbtc-amount tx-sender contributor none))
+            (try! (contract-call? sbtc-token transfer sbtc-amount tx-sender contributor
+              none
+            ))
             true
-          )
-        ))
+          )))
         true
       )
       (map-delete stx-donations donationKey)
