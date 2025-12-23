@@ -82,7 +82,12 @@ export function ReownAppKitProvider({
         defaultAccountTypes: { stacks: "eoa", bip122: "stx" },
         universalProviderConfigOverride: {
           methods: {
-            stacks: ["stx_getAddresses", "stx_callContract", "stx_signMessage", "stx_signTransaction"],
+            stacks: [
+              "stx_getAddresses",
+              "stx_callContract",
+              "stx_signMessage",
+              "stx_signTransaction",
+            ],
           },
           chains: {
             stacks: [

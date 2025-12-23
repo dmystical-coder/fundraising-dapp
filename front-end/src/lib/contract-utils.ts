@@ -69,7 +69,6 @@ export const executeContractCall = async (
   return { txid: response.txid };
 };
 
-
 function resolveStacksNetwork(options: ContractCallRegularOptions): Network {
   // Stacks Connect accepts `StacksNetwork` objects; WC Stacks RPC expects an implicit chain.
   // Keep our existing heuristic for now.
@@ -130,11 +129,11 @@ async function tryWalletConnectStacksCallContract(params: {
     const chainId = stacksChainIdFromNetwork(params.network);
 
     // Ensure the session actually includes stacks accounts for this chain.
-    const sessionNamespaces =
-      universalProvider.session.namespaces as unknown as Record<
-        string,
-        { accounts?: string[] } | undefined
-      >;
+    const sessionNamespaces = universalProvider.session
+      .namespaces as unknown as Record<
+      string,
+      { accounts?: string[] } | undefined
+    >;
     const stacksNs = sessionNamespaces?.stacks;
     const accounts: string[] = stacksNs?.accounts || [];
     const hasChainAccount = accounts.some((a) => a.startsWith(`${chainId}:`));
@@ -155,11 +154,13 @@ async function tryWalletConnectStacksCallContract(params: {
     return result as { txid: string; transaction?: string };
   } catch (err) {
     // If WC is present but the request fails, fall back to SIP-030.
-    console.warn("WalletConnect Stacks stx_callContract failed; falling back", err);
+    console.warn(
+      "WalletConnect Stacks stx_callContract failed; falling back",
+      err
+    );
     return null;
   }
 }
-
 
 export const openContractCall = async (options: ContractCallRegularOptions) => {
   try {
@@ -194,7 +195,10 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
       functionArgs: options.functionArgs,
       network: resolvedNetwork,
       postConditions: options.postConditions,
-      postConditionMode: options.postConditionMode === PostConditionMode.Allow ? 'allow' : 'deny',
+      postConditionMode:
+        options.postConditionMode === PostConditionMode.Allow
+          ? "allow"
+          : "deny",
       sponsored: options.sponsored,
     };
 
@@ -206,7 +210,7 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
         forceWalletSelect: !provider,
         persistWalletSelect: true,
       },
-      'stx_callContract',
+      "stx_callContract",
       params
     );
 
@@ -216,7 +220,7 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
 
     return result;
   } catch (error: unknown) {
-    console.error('Failed to execute contract call:', error);
+    console.error("Failed to execute contract call:", error);
     if (error instanceof Error) {
       const msg = error.message || "";
       const looksLikeNoWallet =
@@ -228,7 +232,11 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
         );
       }
     }
-    if (error instanceof Error && error.message?.includes('cancelled') && options.onCancel) {
+    if (
+      error instanceof Error &&
+      error.message?.includes("cancelled") &&
+      options.onCancel
+    ) {
       options.onCancel();
     }
     throw error;

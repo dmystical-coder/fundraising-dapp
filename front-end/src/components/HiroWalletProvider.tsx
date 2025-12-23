@@ -96,8 +96,10 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
     const anyStx = stxAddresses[0]?.address ?? null;
 
     // Prefer explicit mainnet/testnet prefixes if present.
-    const main = stxAddresses.find((a) => a.address?.startsWith("SP"))?.address ?? null;
-    const test = stxAddresses.find((a) => a.address?.startsWith("ST"))?.address ?? null;
+    const main =
+      stxAddresses.find((a) => a.address?.startsWith("SP"))?.address ?? null;
+    const test =
+      stxAddresses.find((a) => a.address?.startsWith("ST"))?.address ?? null;
 
     const resolvedMain = main || (anyStx?.startsWith("SP") ? anyStx : null);
     const resolvedTest = test || (anyStx?.startsWith("ST") ? anyStx : null);
@@ -139,8 +141,14 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
 export const HiroWalletProvider: FC<ProviderProps> = ({ children }) => {
   // Only render the configured provider in the browser.
   if (typeof window === "undefined") {
-    return <HiroWalletProviderUnconfigured>{children}</HiroWalletProviderUnconfigured>;
+    return (
+      <HiroWalletProviderUnconfigured>
+        {children}
+      </HiroWalletProviderUnconfigured>
+    );
   }
 
-  return <HiroWalletProviderConfigured>{children}</HiroWalletProviderConfigured>;
+  return (
+    <HiroWalletProviderConfigured>{children}</HiroWalletProviderConfigured>
+  );
 };

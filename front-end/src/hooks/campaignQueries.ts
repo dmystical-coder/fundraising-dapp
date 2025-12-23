@@ -143,7 +143,10 @@ export const useExistingDonation = (
         functionName: "get-stx-donation",
         readOnlyFunctionArgs: {
           sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [cvToHex(uintCV(campaignId)), cvToHex(principalCV(address))],
+          arguments: [
+            cvToHex(uintCV(campaignId)),
+            cvToHex(principalCV(address)),
+          ],
         },
       });
 
@@ -153,7 +156,10 @@ export const useExistingDonation = (
         functionName: "get-sbtc-donation",
         readOnlyFunctionArgs: {
           sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [cvToHex(uintCV(campaignId)), cvToHex(principalCV(address))],
+          arguments: [
+            cvToHex(uintCV(campaignId)),
+            cvToHex(principalCV(address)),
+          ],
         },
       });
 
