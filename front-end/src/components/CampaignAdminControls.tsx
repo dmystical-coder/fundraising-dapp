@@ -31,6 +31,9 @@ import { useContext, useState } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { getStacksNetworkString } from "@/lib/stacks-api";
+import { getApi, getStacksUrl } from "@/lib/stacks-api";
+import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
+import { cvToHex, cvToJSON, hexToCV, uintCV } from "@stacks/transactions";
 
 export default function CampaignAdminControls({
   campaignId,
@@ -38,13 +41,45 @@ export default function CampaignAdminControls({
   campaignIsCancelled,
   campaignIsExpired,
   campaignIsWithdrawn,
+  totalStx,
+  totalSbtc,
 }: {
   campaignId: number | null;
   campaignIsUninitialized: boolean;
   campaignIsCancelled: boolean;
   campaignIsExpired: boolean;
   campaignIsWithdrawn: boolean;
+  totalStx?: number;
+  totalSbtc?: number;
 }) {
+  const fetchLatestCampaignTotals = async (id: number) => {
+    const api = getApi(getStacksUrl()).smartContractsApi;
+
+    const response = await api.callReadOnlyFunction({
+      contractAddress: FUNDRAISING_CONTRACT.address || "",
+      contractName: FUNDRAISING_CONTRACT.name,
+      functionName: "get-campaign-info",
+      readOnlyFunctionArgs: {
+        sender: FUNDRAISING_CONTRACT.address || "",
+        arguments: [cvToHex(uintCV(id))],
+      },
+    });
+
+    if (!response?.okay || !response?.result) {
+      throw new Error(response?.cause || "Error fetching campaign totals");
+    }
+
+    const result = cvToJSON(hexToCV(response.result));
+    if (!result?.success) {
+      throw new Error("Error decoding campaign totals");
+    }
+
+    const totalStxUstx = BigInt(result?.value?.value?.totalStx?.value ?? "0");
+    const totalSbtcSats = BigInt(result?.value?.value?.totalSbtc?.value ?? "0");
+
+    return { totalStxUstx, totalSbtcSats };
+  };
+
   const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
   const { currentWallet: devnetWallet } = useDevnetWallet();
   const currentWalletAddress = isDevnetEnvironment()
@@ -105,10 +140,27 @@ export default function CampaignAdminControls({
 
   const handleWithdraw = async () => {
     if (!campaignId) return;
+
+    let totalsToUse: {
+      totalStxUstx: bigint | number;
+      totalSbtcSats: bigint | number;
+    };
+    try {
+      totalsToUse = await fetchLatestCampaignTotals(campaignId);
+    } catch (error) {
+      // Fall back to last-known totals if chain read fails.
+      console.error(error);
+      totalsToUse = {
+        totalStxUstx: totalStx ?? 0,
+        totalSbtcSats: totalSbtc ?? 0,
+      };
+    }
+
     const txOptions = getWithdrawTx(
       getStacksNetworkString(),
       currentWalletAddress || "",
-      campaignId
+      campaignId,
+      totalsToUse
     );
     await executeTx(
       txOptions,

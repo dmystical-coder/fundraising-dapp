@@ -5,6 +5,7 @@ import {
   AnchorMode,
   FungiblePostCondition,
   Pc,
+  PostCondition,
   PostConditionMode,
   principalCV,
   uintCV,
@@ -116,8 +117,43 @@ export const getRefundTx = (
 export const getWithdrawTx = (
   network: Network,
   address: string,
-  campaignId: number
+  campaignId: number,
+  totals?: {
+    totalStxUstx?: bigint | number;
+    totalSbtcSats?: bigint | number;
+  }
 ): ContractCallRegularOptions => {
+  const fundraisingContractId =
+    `${FUNDRAISING_CONTRACT.address}.${FUNDRAISING_CONTRACT.name}` as `${string}.${string}`;
+  const sbtcContractId =
+    `${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}` as `${string}.${string}`;
+
+  const totalStxUstx = totals?.totalStxUstx ?? 0;
+  const totalSbtcSats = totals?.totalSbtcSats ?? 0;
+
+  const postConditions: PostCondition[] = [
+    // Caller should not send any STX out as part of withdrawing.
+    Pc.principal(address).willSendEq(0).ustx(),
+  ];
+
+  if (
+    typeof FUNDRAISING_CONTRACT.address === "string" &&
+    FUNDRAISING_CONTRACT.address
+  ) {
+    if (BigInt(totalStxUstx) > BigInt(0)) {
+      postConditions.push(
+        Pc.principal(fundraisingContractId).willSendEq(totalStxUstx).ustx()
+      );
+    }
+    if (BigInt(totalSbtcSats) > BigInt(0)) {
+      postConditions.push(
+        Pc.principal(fundraisingContractId)
+          .willSendEq(totalSbtcSats)
+          .ft(sbtcContractId, "sbtc-token")
+      );
+    }
+  }
+
   return {
     anchorMode: AnchorMode.Any,
     postConditionMode: PostConditionMode.Deny,
@@ -126,6 +162,6 @@ export const getWithdrawTx = (
     network,
     functionName: "withdraw",
     functionArgs: [uintCV(campaignId)],
-    postConditions: [Pc.principal(address).willSendEq(0).ustx()],
+    postConditions,
   };
 };

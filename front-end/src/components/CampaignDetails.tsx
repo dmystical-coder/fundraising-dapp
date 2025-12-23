@@ -78,7 +78,8 @@ export default function CampaignDetails({
     !!campaignInfo?.owner && !!currentWalletAddress
       ? campaignInfo.owner === currentWalletAddress
       : false;
-  const showAdminControls = (!!currentWalletAddress && campaignIsUninitialized) ||
+  const showAdminControls =
+    (!!currentWalletAddress && campaignIsUninitialized) ||
     (!!currentWalletAddress && !!campaignInfo && isCampaignOwner);
 
   const nextSlide = () => {
@@ -150,9 +151,7 @@ export default function CampaignDetails({
           </Text>
           {sbtcTokenPrincipal ? (
             <Flex direction="column" gap="2" mt="2">
-              <Tooltip
-                label="The fundraising contract returns this principal via get-sbtc-token-contract."
-              >
+              <Tooltip label="The fundraising contract returns this principal via get-sbtc-token-contract.">
                 <Text fontSize="sm" color="gray.600">
                   sBTC token contract: {sbtcTokenPrincipal}
                 </Text>
@@ -163,8 +162,9 @@ export default function CampaignDetails({
                 <Alert status="warning" borderRadius="md">
                   <AlertTitle>Token mismatch</AlertTitle>
                   <AlertDescription>
-                    Frontend expects {SBTC_CONTRACT.address}.{SBTC_CONTRACT.name}
-                    , but contract reports {sbtcTokenPrincipal}.
+                    Frontend expects {SBTC_CONTRACT.address}.
+                    {SBTC_CONTRACT.name}, but contract reports{" "}
+                    {sbtcTokenPrincipal}.
                   </AlertDescription>
                 </Alert>
               ) : null}
@@ -172,7 +172,11 @@ export default function CampaignDetails({
           ) : null}
         </Flex>
 
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 6, md: 8 }} alignItems="start">
+        <SimpleGrid
+          columns={{ base: 1, lg: 2 }}
+          spacing={{ base: 6, md: 8 }}
+          alignItems="start"
+        >
           {/* Left column: Image carousel */}
           <Box
             position="relative"
@@ -184,7 +188,12 @@ export default function CampaignDetails({
             borderColor="gray.200"
             boxShadow="sm"
           >
-            <Flex width={slideSize} mx="auto" position="relative" overflow="hidden">
+            <Flex
+              width={slideSize}
+              mx="auto"
+              position="relative"
+              overflow="hidden"
+            >
               <Box
                 as="img"
                 src={images[currentIndex]}
@@ -241,9 +250,18 @@ export default function CampaignDetails({
                 campaignIsExpired={!!campaignIsExpired}
                 campaignIsCancelled={!!campaignIsCancelled}
                 campaignIsWithdrawn={!!campaignInfo?.isWithdrawn}
+                totalStx={campaignInfo?.totalStx}
+                totalSbtc={campaignInfo?.totalSbtc}
               />
             ) : null}
-            <Box p={{ base: 5, md: 6 }} borderRadius="2xl" borderWidth="1px" borderColor="gray.200" bg="white" boxShadow="sm">
+            <Box
+              p={{ base: 5, md: 6 }}
+              borderRadius="2xl"
+              borderWidth="1px"
+              borderColor="gray.200"
+              bg="white"
+              boxShadow="sm"
+            >
               {campaignIsUninitialized ? (
                 <Flex direction="column" gap="4">
                   This campaign hasn&apos;t started yet!
@@ -282,7 +300,10 @@ export default function CampaignDetails({
                                     </Box>
                                     {currentStacksTime ? (
                                       <Box>
-                                        Current time: {new Date(currentStacksTime * 1000).toLocaleString()}
+                                        Current time:{" "}
+                                        {new Date(
+                                          currentStacksTime * 1000
+                                        ).toLocaleString()}
                                       </Box>
                                     ) : null}
                                   </Flex>
@@ -300,12 +321,18 @@ export default function CampaignDetails({
                                 label={
                                   <Flex direction="column" gap="1">
                                     <Box>
-                                      Started: {new Date(campaignInfo.start * 1000).toLocaleString()}
+                                      Started:{" "}
+                                      {new Date(
+                                        campaignInfo.start * 1000
+                                      ).toLocaleString()}
                                     </Box>
                                     <Box>Ends: {endDate?.toLocaleString()}</Box>
                                     {currentStacksTime ? (
                                       <Box>
-                                        Current time: {new Date(currentStacksTime * 1000).toLocaleString()}
+                                        Current time:{" "}
+                                        {new Date(
+                                          currentStacksTime * 1000
+                                        ).toLocaleString()}
                                       </Box>
                                     ) : null}
                                   </Flex>
@@ -314,7 +341,11 @@ export default function CampaignDetails({
                                 <InfoIcon ml="1.5" mt="-3px" />
                               </Tooltip>
                             </Box>
-                            <Box>{secondsLeft ? `~${Math.ceil(secondsLeft / 3600)} hours left` : null}</Box>
+                            <Box>
+                              {secondsLeft
+                                ? `~${Math.ceil(secondsLeft / 3600)} hours left`
+                                : null}
+                            </Box>
                           </Flex>
                         )}
                       </StatHelpText>
