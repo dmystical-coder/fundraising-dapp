@@ -21,18 +21,19 @@ To run this app with a Stacks Devnet (private development blockchain environment
 2. **Configure Local Environment**
 
 Install dependencies:
+
 ```bash
 npm install
 ```
 
-
 Create an `.env` file using the existing `.env.example` file:
+
 ```bash
 cp front-end/.env.example front-end/.env
 ```
 
-
 Add your Hiro Platform API key to the renamed `front-end/.env` file:
+
 ```bash
 NEXT_PUBLIC_PLATFORM_HIRO_API_KEY=your-api-key-here
 ```
@@ -40,13 +41,68 @@ NEXT_PUBLIC_PLATFORM_HIRO_API_KEY=your-api-key-here
 3. **Start the Frontend Application**
 
 Start the Next.js application from the front-end directory.
+
 ```bash
 cd front-end
 npm run dev
 ```
 
+Visit `[http://localhost:3000](http://localhost:3000)` in your browser to view and interact with the fundraising app. If Devnet is running, your test wallets will already be funded and connected for testing.
 
-Visit `[http://localhost:3000](http://localhost:3000)` in your browser to view and interact with the marketplace. If Devnet is running, your test wallets will already be funded and connected for testing.
+## Mainnet/Testnet Indexing (Chainhooks → Indexer Webhook)
+
+This repo includes a webhook indexer (Node + Postgres) that receives fundraising contract `print` logs via Hiro-hosted Chainhooks.
+
+High-level flow:
+
+- Deploy the contract to mainnet/testnet
+- Run the indexer webhook server + database
+- Register a chainhook that posts matching `contract_log` events to your webhook
+
+### 1) Run Postgres + migrations
+
+```bash
+cd indexer
+cp .env.example .env
+npm install
+npm run build
+npm run db:migrate
+```
+
+### 2) Run the indexer server
+
+```bash
+cd indexer
+npm run dev
+```
+
+It exposes:
+
+- `GET /health`
+- `POST /chainhook`
+
+### 3) Register a Hiro-hosted chainhook (recommended)
+
+Set these in `indexer/.env`:
+
+- `CHAINHOOKS_NETWORK` (`mainnet` or `testnet`)
+- `CHAINHOOKS_API_KEY` (or `CHAINHOOKS_JWT`)
+- `EXPECTED_CONTRACT_IDENTIFIER` (example: `SP...fundraising`)
+- `CHAINHOOKS_WEBHOOK_URL` (a publicly reachable URL to your indexer `/chainhook`)
+
+Then register:
+
+```bash
+cd indexer
+npm run chainhooks:register
+```
+
+Important:
+
+- `CHAINHOOKS_WEBHOOK_URL` must be publicly reachable (Hiro must be able to POST to it).
+- Hiro-hosted chainhooks do **not** support custom headers on `http_post`. If your indexer requires `Authorization` via `CHAINHOOK_AUTH_TOKEN`, leave it unset for the hosted flow.
+
+More details are in `chainhooks/README.md`.
 
 ## Customization
 
@@ -113,10 +169,10 @@ Once you've thoroughly tested your dApp in Devnet and are confident in its funct
 ### Moving to Testnet
 
 1. Use the [Stacks Testnet Faucet](https://explorer.hiro.so/sandbox/faucet?chain=testnet) to get test STX tokens
-3. Update the environment variables in your `.env` file to add values for `NEXT_PUBLIC_CONTRACT_DEPLOYER_TESTNET_ADDRESS` and `NEXT_PUBLIC_CONTRACT_DEPLOYER_MAINNET_ADDRESS`. Add the STX wallet address you plan to deploy the contract with.
-4. Deploy your contracts to the Testnet using the Platform dashboard and your deployment plan
-5. Test your application with real network conditions and transaction times
-6. Verify your contract interactions in the [Testnet Explorer](https://explorer.hiro.so/?chain=testnet)
+2. Update the environment variables in your `.env` file to add values for `NEXT_PUBLIC_CONTRACT_DEPLOYER_TESTNET_ADDRESS` and `NEXT_PUBLIC_CONTRACT_DEPLOYER_MAINNET_ADDRESS`. Add the STX wallet address you plan to deploy the contract with.
+3. Deploy your contracts to the Testnet using the Platform dashboard and your deployment plan
+4. Test your application with real network conditions and transaction times
+5. Verify your contract interactions in the [Testnet Explorer](https://explorer.hiro.so/?chain=testnet)
 
 ### Launching on Mainnet
 
