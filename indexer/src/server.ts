@@ -93,7 +93,11 @@ app.post("/chainhook", async (req: Request, res: Response) => {
       );
     }
 
-    res.json({ ok: true, deliveriesInserted: 1, extractedEvents: extracted.length });
+    res.json({
+      ok: true,
+      deliveriesInserted: 1,
+      extractedEvents: extracted.length,
+    });
   } catch (err) {
     res.status(500).json({ ok: false });
   }
