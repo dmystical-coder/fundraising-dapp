@@ -8,12 +8,15 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "db:migrate": "node dist/scripts/migrate.js"
+    "db:migrate": "node dist/scripts/migrate.js",
+    "chainhooks:register": "tsx src/scripts/register-chainhook.ts"
   },
   "dependencies": {
+    "@hirosystems/chainhooks-client": "^1.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "pg": "^8.13.1",
+    "undici": "^7.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

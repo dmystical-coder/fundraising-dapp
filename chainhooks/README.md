@@ -42,7 +42,31 @@ If `CHAINHOOK_AUTH_TOKEN` is set, the indexer requires:
 
 - `Authorization: Bearer <CHAINHOOK_AUTH_TOKEN>`
 
-## 4) Run Chainhook service (mainnet)
+## 4) Register a Hiro-hosted chainhook (recommended)
+
+This repo now supports registering a mainnet/testnet chainhook using the Hiro Chainhooks API via `@hirosystems/chainhooks-client`.
+
+Important constraints:
+
+- Your webhook URL must be publicly reachable (Hiro will POST to it). For local testing, use a tunnel (ngrok/cloudflared).
+- The hosted Chainhooks API schema does **not** support custom headers for `http_post`, so you cannot send `Authorization`.
+  If you require auth headers, use the Rust chainhook service method below.
+
+Steps:
+
+- `cd indexer`
+- `cp .env.example .env`
+- Set:
+  - `CHAINHOOKS_API_KEY` (or `CHAINHOOKS_JWT`)
+  - `CHAINHOOKS_NETWORK` (`mainnet` or `testnet`)
+  - `CHAINHOOKS_WEBHOOK_URL` (public URL to your indexer `/chainhook` endpoint)
+  - `EXPECTED_CONTRACT_IDENTIFIER` (your deployed `SP...fundraising`)
+- Register:
+  - `npm run chainhooks:register`
+
+Once registered, Hiro will start POSTing matching Stacks `contract_log` events to your webhook.
+
+## 5) (Alternative) Run Rust Chainhook service (mainnet)
 
 Install Chainhook (see HiroSystems/chainhook). Then:
 

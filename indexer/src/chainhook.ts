@@ -55,6 +55,55 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+function extractFromClarityRepr(repr: string): {
+  eventName?: string;
+  campaignId?: bigint;
+  donor?: string;
+  owner?: string;
+  beneficiary?: string;
+  token?: string;
+  amount?: bigint;
+  ts?: bigint;
+} {
+  // Example: (tuple (event "donated-stx") (campaignId u1) (amount u1000) (donor 'SP...))
+  const pickString = (key: string) => {
+    const m = repr.match(new RegExp(`\\(${key}\\s+\"([^\"]+)\"\\)`));
+    return m?.[1];
+  };
+  const pickUint = (key: string) => {
+    const m = repr.match(new RegExp(`\\(${key}\\s+u(\\d+)\\)`));
+    return m?.[1] ? BigInt(m[1]) : undefined;
+  };
+  const pickPrincipal = (key: string) => {
+    const m = repr.match(new RegExp(`\\(${key}\\s+'([^\\s\\)]+)\\)`));
+    return m?.[1];
+  };
+
+  const eventName = pickString("event");
+  const campaignId = pickUint("campaignId") ?? pickUint("campaign_id");
+
+  // amount is sometimes emitted under alternative keys.
+  const amount =
+    pickUint("amount") ??
+    pickUint("amountUstx") ??
+    pickUint("amount_ustx") ??
+    pickUint("amountSats") ??
+    pickUint("amount_sats");
+
+  const ts = pickUint("ts") ?? pickUint("timestamp");
+
+  return {
+    eventName,
+    campaignId,
+    donor: pickPrincipal("donor"),
+    owner: pickPrincipal("owner"),
+    beneficiary: pickPrincipal("beneficiary"),
+    token: pickString("token"),
+    amount,
+    ts,
+  };
+}
+
 /**
  * Best-effort extraction of Clarity print logs produced by your contract.
  *
@@ -86,13 +135,18 @@ export function extractFundraisingEvents(
     if (!isRecord(node)) return;
 
     const maybeTxid = typeof node.txid === "string" ? node.txid : undefined;
-    const maybeBlockHeight = toBigIntSafe(node.block_height ?? node.blockHeight);
+    const maybeBlockHeight = toBigIntSafe(
+      node.block_height ?? node.blockHeight
+    );
     const maybeContractIdentifier =
       typeof node.contract_identifier === "string"
         ? node.contract_identifier
         : typeof node.contractIdentifier === "string"
-          ? node.contractIdentifier
-          : undefined;
+        ? node.contractIdentifier
+        : isRecord(node.metadata) &&
+          typeof node.metadata.contract_identifier === "string"
+        ? (node.metadata.contract_identifier as string)
+        : undefined;
 
     const nextContext = {
       ...context,
@@ -108,14 +162,18 @@ export function extractFundraisingEvents(
       typeof node.type === "string"
         ? node.type
         : typeof node.event_type === "string"
-          ? node.event_type
-          : undefined;
+        ? node.event_type
+        : undefined;
 
     const looksLikePrint =
-      eventType === "smart_contract_log" || eventType === "print" || eventType === "print_event";
+      eventType === "smart_contract_log" ||
+      eventType === "contract_log" ||
+      eventType === "print" ||
+      eventType === "print_event";
 
     if (looksLikePrint) {
-      const contractIdentifier = maybeContractIdentifier ?? context.contractIdentifier;
+      const contractIdentifier =
+        maybeContractIdentifier ?? context.contractIdentifier;
       if (
         options?.expectedContractIdentifier &&
         contractIdentifier &&
@@ -125,7 +183,13 @@ export function extractFundraisingEvents(
       } else {
         // Try to find decoded clarity value if present.
         // Common field names: `value`, `decoded_clarity_value`, `decoded_value`.
-        const rawValue = node.value ?? node.decoded_clarity_value ?? node.decoded_value ?? node;
+        // Hiro Chainhooks API contract_log operations put the log value at `metadata.value`.
+        const rawValue =
+          node.value ??
+          node.decoded_clarity_value ??
+          node.decoded_value ??
+          (isRecord(node.metadata) ? node.metadata.value : undefined) ??
+          node;
 
         let eventName: string | undefined;
         let campaignId: bigint | undefined;
@@ -136,22 +200,55 @@ export function extractFundraisingEvents(
         let amount: bigint | undefined;
         let ts: bigint | undefined;
 
-        if (isRecord(rawValue)) {
+        if (typeof rawValue === "string") {
+          const parsed = extractFromClarityRepr(rawValue);
+          eventName = parsed.eventName;
+          campaignId = parsed.campaignId;
+          donor = parsed.donor;
+          owner = parsed.owner;
+          beneficiary = parsed.beneficiary;
+          token = parsed.token;
+          amount = parsed.amount;
+          ts = parsed.ts;
+        } else if (isRecord(rawValue)) {
+          // Hiro Chainhooks API may represent the log value as { hex, repr }.
+          if (typeof rawValue.repr === "string") {
+            const parsed = extractFromClarityRepr(rawValue.repr);
+            eventName = parsed.eventName;
+            campaignId = parsed.campaignId;
+            donor = parsed.donor;
+            owner = parsed.owner;
+            beneficiary = parsed.beneficiary;
+            token = parsed.token;
+            amount = parsed.amount;
+            ts = parsed.ts;
+          }
+
           const ev = rawValue.event;
           if (typeof ev === "string") eventName = ev;
           if (typeof rawValue.donor === "string") donor = rawValue.donor;
           if (typeof rawValue.owner === "string") owner = rawValue.owner;
-          if (typeof rawValue.beneficiary === "string") beneficiary = rawValue.beneficiary;
+          if (typeof rawValue.beneficiary === "string")
+            beneficiary = rawValue.beneficiary;
           if (typeof rawValue.token === "string") token = rawValue.token;
 
-          campaignId = toBigIntSafe(rawValue.campaignId ?? rawValue.campaign_id);
-          amount = toBigIntSafe(rawValue.amount ?? rawValue.amountUstx ?? rawValue.amountSats);
+          campaignId = toBigIntSafe(
+            rawValue.campaignId ?? rawValue.campaign_id
+          );
+          amount = toBigIntSafe(
+            rawValue.amount ?? rawValue.amountUstx ?? rawValue.amountSats
+          );
           ts = toBigIntSafe(rawValue.ts ?? rawValue.timestamp);
         }
 
         // Only treat it as a fundraising event if it has our expected fields.
         // This keeps the table clean even if other prints slip through.
-        if (eventName && (eventName.includes("campaign-") || eventName.includes("donated-") || eventName.includes("refunded"))) {
+        if (
+          eventName &&
+          (eventName.includes("campaign-") ||
+            eventName.includes("donated-") ||
+            eventName.includes("refunded"))
+        ) {
           const eventUid = computeEventUid({ ctx: nextContext, node });
           results.push({
             eventUid,
@@ -193,7 +290,12 @@ export function extractTopLevelMeta(payload: unknown): {
   const p = payload as Record<string, unknown>;
 
   return {
-    hookUuid: typeof p.uuid === "string" ? p.uuid : typeof p.hook_uuid === "string" ? (p.hook_uuid as string) : undefined,
+    hookUuid:
+      typeof p.uuid === "string"
+        ? p.uuid
+        : typeof p.hook_uuid === "string"
+        ? (p.hook_uuid as string)
+        : undefined,
     chain: typeof p.chain === "string" ? p.chain : undefined,
     network: typeof p.network === "string" ? p.network : undefined,
     action: typeof p.action === "string" ? p.action : undefined,
@@ -203,7 +305,7 @@ export function extractTopLevelMeta(payload: unknown): {
       typeof p.contract_identifier === "string"
         ? (p.contract_identifier as string)
         : typeof p.contractIdentifier === "string"
-          ? (p.contractIdentifier as string)
-          : undefined,
+        ? (p.contractIdentifier as string)
+        : undefined,
   };
 }
