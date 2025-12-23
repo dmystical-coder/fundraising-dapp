@@ -3,7 +3,12 @@ import {
   Button,
   ButtonProps,
   Flex,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Tag,
+  useClipboard,
 } from "@chakra-ui/react";
 import { useContext } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
@@ -19,9 +24,13 @@ interface ConnectWalletButtonProps extends ButtonProps {
 
 export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
   const { children } = buttonProps;
-  const { authenticate } = useContext(HiroWalletContext);
-  const { isWalletConnected, mainnetAddress, testnetAddress } =
-    useContext(HiroWalletContext);
+  const {
+    authenticate,
+    disconnect,
+    isWalletConnected,
+    mainnetAddress,
+    testnetAddress,
+  } = useContext(HiroWalletContext);
 
   const currentAddress = isTestnetEnvironment()
     ? testnetAddress
@@ -35,6 +44,37 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
     ? "mainnet"
     : undefined;
 
+  const { onCopy } = useClipboard(currentAddress || "");
+
+  if (isWalletConnected && currentAddress) {
+    const restButtonProps = { ...buttonProps };
+    delete (restButtonProps as { onClick?: unknown }).onClick;
+
+    return (
+      <Menu placement="bottom-end">
+        <MenuButton
+          as={Button}
+          size="sm"
+          data-testid="wallet-connect-button"
+          {...restButtonProps}
+        >
+          <Flex gap="2" align="center">
+            {formatStxAddress(currentAddress)}
+            {networkLabel ? (
+              <Tag size="sm" colorScheme="gray" borderRadius="full">
+                {networkLabel}
+              </Tag>
+            ) : null}
+          </Flex>
+        </MenuButton>
+        <MenuList>
+          <MenuItem onClick={onCopy}>Copy address</MenuItem>
+          <MenuItem onClick={disconnect}>Disconnect</MenuItem>
+        </MenuList>
+      </Menu>
+    );
+  }
+
   return (
     <Button
       size="sm"
@@ -43,18 +83,7 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
       {...buttonProps}
     >
       <Flex gap="2" align="center">
-        {isWalletConnected && currentAddress ? (
-          <>
-            {formatStxAddress(currentAddress)}
-            {networkLabel ? (
-              <Tag size="sm" colorScheme="gray" borderRadius="full">
-                {networkLabel}
-              </Tag>
-            ) : null}
-          </>
-        ) : (
-          children || "Connect Wallet"
-        )}
+        {children || "Connect Wallet"}
       </Flex>
     </Button>
   );
