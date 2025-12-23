@@ -1,7 +1,11 @@
-import { executeContractCall, isDevnetEnvironment } from "@/lib/contract-utils";
+import {
+  executeContractCall,
+  isDevnetEnvironment,
+  openContractCall,
+} from "@/lib/contract-utils";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
 import { Box, Flex, useToast } from "@chakra-ui/react";
-import { ContractCallRegularOptions, request } from "@stacks/connect";
+import { ContractCallRegularOptions } from "@stacks/connect";
 
 // Execute a stx transaction on-chain from the client.
 // For devnet, it directly calls the transaction.
@@ -37,50 +41,20 @@ export default function useTransactionExecuter() {
         const { txid } = await executeContractCall(txOptions, devnetWallet);
         doSuccessToast(txid);
       } else {
-        try {
-          const contract = `${txOptions.contractAddress}.${txOptions.contractName}`;
-          
-          // Create params for the request function
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const params: any = {
-            contract: contract,
-            functionName: txOptions.functionName,
-            functionArgs: txOptions.functionArgs,
-            network: typeof txOptions.network === 'string' ? 
-              txOptions.network : 
-              (txOptions.network && 'chainId' in txOptions.network ? 
-                (txOptions.network.chainId === 1 ? 'mainnet' : 'testnet') : 
-                'testnet'),
-            postConditions: txOptions.postConditions,
-            postConditionMode: txOptions.postConditionMode === 1 ? 'allow' : 'deny',
-            sponsored: txOptions.sponsored,
-          };
-          
-          console.log('params', params);
-          const result = await request({}, 'stx_callContract', params);
-          if (result && result.txid) {
-            doSuccessToast(result.txid);
-          } else {
-            toast({
-              title: "Transaction submitted",
-              description: "Your transaction was submitted successfully",
-              status: "success",
-              isClosable: true,
-              duration: 5000,
-            });
-          }
-        } catch (error) {
-          if (error instanceof Error && error.message?.includes('cancelled')) {
+        await openContractCall({
+          ...txOptions,
+          onFinish: (data) => {
+            doSuccessToast(data.txId);
+          },
+          onCancel: () => {
             toast({
               title: "Transaction not submitted",
               description: "Transaction was cancelled",
               status: "info",
               duration: 3000,
             });
-          } else {
-            throw error;
-          }
-        }
+          },
+        });
       }
     } catch (e) {
       console.error(e);

@@ -11,6 +11,8 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.5",
+    "@reown/appkit": "^1.8.15",
+    "@reown/appkit-adapter-bitcoin": "^1.8.15",
     "@stacks/blockchain-api-client": "^7.2.2",
     "@stacks/connect": "^8.1.9",
     "@stacks/network": "^7.0.2",

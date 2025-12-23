@@ -10,7 +10,13 @@ import {
   useState,
 } from "react";
 
-import { connect, disconnect, isConnected, getLocalStorage } from "@stacks/connect";
+import {
+  connect as stacksConnect,
+  disconnect as stacksDisconnect,
+  getLocalStorage,
+  isConnected as stacksIsConnected,
+  type StorageData,
+} from "@stacks/connect";
 
 interface HiroWallet {
   isWalletOpen: boolean;
@@ -34,64 +40,90 @@ export default HiroWalletContext;
 interface ProviderProps {
   children: ReactNode | ReactNode[];
 }
-export const HiroWalletProvider: FC<ProviderProps> = ({ children }) => {
-  const [mounted, setMounted] = useState(false);
+
+const HiroWalletProviderUnconfigured: FC<ProviderProps> = ({ children }) => {
+  const hiroWalletContext: HiroWallet = useMemo(
+    () => ({
+      authenticate: () => {
+        // no-op when not configured
+      },
+      disconnect: () => {
+        // no-op when not configured
+      },
+      isWalletOpen: false,
+      isWalletConnected: false,
+      testnetAddress: null,
+      mainnetAddress: null,
+    }),
+    []
+  );
+
+  return (
+    <HiroWalletContext.Provider value={hiroWalletContext}>
+      {children}
+    </HiroWalletContext.Provider>
+  );
+};
+
+const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
+  const [storage, setStorage] = useState<StorageData | null>(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
+
   useEffect(() => {
-    setMounted(true);
-    setIsWalletConnected(isConnected());
-  }, [mounted]);
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
+    // Hydrate initial state from localStorage.
+    setStorage(getLocalStorage());
+    setIsWalletConnected(stacksIsConnected());
+  }, []);
+
+  const refreshFromStorage = useCallback(() => {
+    setStorage(getLocalStorage());
+    setIsWalletConnected(stacksIsConnected());
+  }, []);
 
   const authenticate = useCallback(async () => {
-    try {
-      setIsWalletOpen(true);
-      await connect();
-      setIsWalletOpen(false);
-      setIsWalletConnected(isConnected());
-    } catch (error) {
-      console.error('Connection failed:', error);
-      setIsWalletOpen(false);
-    }
-  }, []);
+    // Opens Stacks Connect modal (wallet extension selection) and stores addresses.
+    await stacksConnect({});
+    refreshFromStorage();
+  }, [refreshFromStorage]);
 
   const handleDisconnect = useCallback(() => {
-    disconnect();
-    setIsWalletConnected(false);
-  }, []);
+    stacksDisconnect();
+    refreshFromStorage();
+  }, [refreshFromStorage]);
 
-  const { testnetAddress, mainnetAddress } = useMemo(() => {
-    if (!isWalletConnected) return { testnetAddress: null, mainnetAddress: null };
-    
-    const data = getLocalStorage();
-    const stxAddresses = data?.addresses?.stx || [];
-    
-    // On connect there is only 1 address, which is the current address
-    const address = stxAddresses.length > 0 ? stxAddresses[0].address : null;
-    
-    const isTestnet = address?.startsWith('ST');
-    const isMainnet = address?.startsWith('SP');
-    
+  const { testnetAddress, mainnetAddress, hasStxAddress } = useMemo(() => {
+    const stxAddresses = storage?.addresses?.stx ?? [];
+    const anyStx = stxAddresses[0]?.address ?? null;
+
+    // Prefer explicit mainnet/testnet prefixes if present.
+    const main = stxAddresses.find((a) => a.address?.startsWith("SP"))?.address ?? null;
+    const test = stxAddresses.find((a) => a.address?.startsWith("ST"))?.address ?? null;
+
+    const resolvedMain = main || (anyStx?.startsWith("SP") ? anyStx : null);
+    const resolvedTest = test || (anyStx?.startsWith("ST") ? anyStx : null);
+
     return {
-      testnetAddress: isTestnet ? address : null,
-      mainnetAddress: isMainnet ? address : null,
+      testnetAddress: resolvedTest,
+      mainnetAddress: resolvedMain,
+      hasStxAddress: Boolean(resolvedMain || resolvedTest),
     };
-  }, [isWalletConnected]);
+  }, [storage]);
+
+  const isStacksWalletConnected = Boolean(isWalletConnected && hasStxAddress);
 
   const hiroWalletContext = useMemo(
     () => ({
       authenticate,
       disconnect: handleDisconnect,
-      isWalletOpen,
-      isWalletConnected,
+      isWalletOpen: false,
+      isWalletConnected: isStacksWalletConnected,
       testnetAddress,
       mainnetAddress,
     }),
     [
       authenticate,
       handleDisconnect,
-      isWalletOpen,
-      isWalletConnected,
+      isStacksWalletConnected,
       mainnetAddress,
       testnetAddress,
     ]
@@ -102,4 +134,13 @@ export const HiroWalletProvider: FC<ProviderProps> = ({ children }) => {
       {children}
     </HiroWalletContext.Provider>
   );
+};
+
+export const HiroWalletProvider: FC<ProviderProps> = ({ children }) => {
+  // Only render the configured provider in the browser.
+  if (typeof window === "undefined") {
+    return <HiroWalletProviderUnconfigured>{children}</HiroWalletProviderUnconfigured>;
+  }
+
+  return <HiroWalletProviderConfigured>{children}</HiroWalletProviderConfigured>;
 };
