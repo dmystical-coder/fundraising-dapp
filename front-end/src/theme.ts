@@ -71,8 +71,8 @@ const colors = {
   warm: {
     bg: "#FFFBF5", // Warm off-white page background
     surface: "#FFFFFF", // Card/panel surface
-    border: "#F3E8DC", // Warm border color
-    muted: "#F5F0EB", // Muted warm background
+    border: "#E5D9CC", // Darker warm border for better visibility
+    muted: "#F0E8DF", // Slightly darker muted background
   },
   // Brand alias (for compatibility)
   brand: {
@@ -191,7 +191,7 @@ const components = {
       container: {
         bg: "warm.surface",
         borderRadius: "xl",
-        boxShadow: "0 4px 6px -1px rgba(180, 83, 9, 0.05), 0 2px 4px -1px rgba(180, 83, 9, 0.03)",
+        boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04)",
         border: "1px solid",
         borderColor: "warm.border",
       },

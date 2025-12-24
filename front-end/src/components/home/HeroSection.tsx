@@ -55,25 +55,6 @@ export function HeroSection() {
 
       <Container maxW="container.lg" position="relative" zIndex={1}>
         <VStack spacing={6} textAlign="center">
-          {/* Badge */}
-          <Box
-            px={4}
-            py={1}
-            bg="primary.100"
-            borderRadius="full"
-            borderWidth="1px"
-            borderColor="primary.200"
-          >
-            <Text
-              fontSize="sm"
-              fontWeight="600"
-              color="primary.700"
-              letterSpacing="0.05em"
-            >
-              🚀 Powered by Stacks & Bitcoin
-            </Text>
-          </Box>
-
           {/* Headline */}
           <Heading
             as="h1"
@@ -83,7 +64,7 @@ export function HeroSection() {
             lineHeight="1.2"
             maxW="700px"
           >
-            Fund Dreams with{" "}
+            Raise funds with{" "}
             <Text as="span" color="primary.500">
               STX
             </Text>{" "}
@@ -97,12 +78,11 @@ export function HeroSection() {
           <Text
             fontSize={{ base: "lg", md: "xl" }}
             color="gray.600"
-            maxW="600px"
+            maxW="500px"
             lineHeight="1.7"
           >
-            Launch your fundraising campaign on the Stacks blockchain. 
-            Accept donations in STX and sBTC with full transparency 
-            and trustless fund management.
+            Create campaigns, accept crypto donations, 
+            and manage funds directly on the Stacks blockchain.
           </Text>
 
           {/* CTAs */}
@@ -129,7 +109,7 @@ export function HeroSection() {
               href="#campaigns"
               size={buttonSize}
               variant="outline"
-              borderColor="gray.300"
+              borderColor="gray.400"
               color="gray.700"
               _hover={{
                 bg: "white",
@@ -138,29 +118,6 @@ export function HeroSection() {
             >
               Explore Campaigns
             </Button>
-          </HStack>
-
-          {/* Trust indicators */}
-          <HStack
-            spacing={8}
-            pt={8}
-            flexWrap="wrap"
-            justify="center"
-            color="gray.500"
-            fontSize="sm"
-          >
-            <HStack>
-              <Text fontSize="lg">🔒</Text>
-              <Text>Trustless</Text>
-            </HStack>
-            <HStack>
-              <Text fontSize="lg">⚡</Text>
-              <Text>Fast Settlements</Text>
-            </HStack>
-            <HStack>
-              <Text fontSize="lg">📊</Text>
-              <Text>Full Transparency</Text>
-            </HStack>
           </HStack>
         </VStack>
       </Container>
