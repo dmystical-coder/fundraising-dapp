@@ -1,43 +1,82 @@
 "use client";
 
-import { Box, Container, Flex, Link } from "@chakra-ui/react";
+import { Box, Container, Flex, Link, HStack, Button } from "@chakra-ui/react";
+import { AddIcon } from "@chakra-ui/icons";
+import NextLink from "next/link";
 import { isDevnetEnvironment } from "@/lib/contract-utils";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { DevnetWalletButton } from "./DevnetWalletButton";
-import { ConnectWalletButton } from "./ConnectWallet";
+import { ConnectWalletButton, useAddress } from "./ConnectWallet";
 
 export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
+  const address = useAddress();
 
   return (
-    <Box as="nav" bg="white" borderBottomWidth="1px" borderColor="gray.200">
+    <Box as="nav" bg="warm.surface" borderBottomWidth="1px" borderColor="warm.border">
       <Container maxW="container.xl">
         <Flex justify="space-between" h={16} align="center">
-          <Flex align="center">
-            <Flex
-              bg="white"
-              borderRadius="md"
-              border="2px"
-              borderColor="gray.700"
-              letterSpacing="-.05em"
-              fontSize="xl"
-              fontWeight="bold"
-              w="52px"
-              h="52px"
-              justify="center"
-              align="center"
-              color="gray.900"
-              shrink="0"
-            >
-              /-/
-            </Flex>
-            <Link href="/" textDecoration="none">
-              <Box fontSize="lg" fontWeight="bold" color="gray.900" ml={4}>
-                Fundraising
-              </Box>
+          {/* Logo */}
+          <HStack spacing={6}>
+            <Link as={NextLink} href="/" _hover={{ textDecoration: "none" }}>
+              <HStack spacing={3}>
+                <Flex
+                  bg="primary.500"
+                  borderRadius="lg"
+                  fontSize="lg"
+                  fontWeight="bold"
+                  w="44px"
+                  h="44px"
+                  justify="center"
+                  align="center"
+                  color="white"
+                  shrink={0}
+                >
+                  FS
+                </Flex>
+                <Box fontSize="lg" fontWeight="bold" color="gray.800">
+                  FundStacks
+                </Box>
+              </HStack>
             </Link>
-          </Flex>
-          <Flex align="center" gap={4}>
+
+            {/* Navigation Links */}
+            <HStack spacing={4} display={{ base: "none", md: "flex" }}>
+              <Link
+                as={NextLink}
+                href="/"
+                color="gray.600"
+                fontWeight="500"
+                _hover={{ color: "primary.600" }}
+              >
+                Campaigns
+              </Link>
+              {address && (
+                <Link
+                  as={NextLink}
+                  href="/dashboard"
+                  color="gray.600"
+                  fontWeight="500"
+                  _hover={{ color: "primary.600" }}
+                >
+                  Dashboard
+                </Link>
+              )}
+            </HStack>
+          </HStack>
+
+          {/* Right side */}
+          <HStack spacing={3}>
+            <Button
+              as={NextLink}
+              href="/campaigns/new"
+              size="sm"
+              leftIcon={<AddIcon />}
+              colorScheme="primary"
+              display={{ base: "none", sm: "flex" }}
+            >
+              Create
+            </Button>
             {isDevnetEnvironment() ? (
               <DevnetWalletButton
                 currentWallet={currentWallet}
@@ -47,9 +86,10 @@ export const Navbar = () => {
             ) : (
               <ConnectWalletButton />
             )}
-          </Flex>
+          </HStack>
         </Flex>
       </Container>
     </Box>
   );
 };
+
