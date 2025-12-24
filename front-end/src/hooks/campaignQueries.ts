@@ -10,7 +10,7 @@ import {
 } from "@stacks/transactions";
 import { PriceData, satsToSbtc, ustxToStx } from "@/lib/currency-utils";
 
-interface CampaignInfo {
+export interface CampaignInfo {
   id: number;
   owner: string;
   beneficiary: string;
@@ -29,6 +29,70 @@ interface CampaignInfo {
   isCancelled: boolean;
 }
 
+/**
+ * Fetch campaign info from blockchain by ID.
+ */
+async function fetchCampaignFromChain(
+  campaignId: number,
+  currentPrices: PriceData | undefined
+): Promise<CampaignInfo> {
+  const api = getApi(getStacksUrl()).smartContractsApi;
+
+  const response = await api.callReadOnlyFunction({
+    contractAddress: FUNDRAISING_CONTRACT.address || "",
+    contractName: FUNDRAISING_CONTRACT.name,
+    functionName: "get-campaign-info",
+    readOnlyFunctionArgs: {
+      sender: FUNDRAISING_CONTRACT.address || "",
+      arguments: [cvToHex(uintCV(campaignId))],
+    },
+  });
+
+  if (response?.okay && response?.result) {
+    const result = cvToJSON(hexToCV(response?.result || ""));
+    if (result?.success) {
+      const totalSbtc = parseInt(result?.value?.value?.totalSbtc?.value, 10);
+      const totalStx = parseInt(result?.value?.value?.totalStx?.value, 10);
+
+      const owner = result?.value?.value?.owner?.value;
+      const beneficiary = result?.value?.value?.beneficiary?.value;
+
+      return {
+        id: parseInt(result?.value?.value?.id?.value, 10),
+        owner,
+        beneficiary,
+        startBlock: parseInt(result?.value?.value?.startBlock?.value, 10),
+        start: parseInt(result?.value?.value?.start?.value, 10),
+        end: parseInt(result?.value?.value?.end?.value, 10),
+        createdAt: parseInt(result?.value?.value?.createdAt?.value, 10),
+        endAt: parseInt(result?.value?.value?.endAt?.value, 10),
+        goal: parseInt(result?.value?.value?.goal?.value, 10),
+        totalSbtc,
+        totalStx,
+        usdValue:
+          Number(ustxToStx(totalStx)) * (currentPrices?.stx || 0) +
+          satsToSbtc(totalSbtc) * (currentPrices?.sbtc || 0),
+        donationCount: parseInt(
+          result?.value?.value?.donationCount?.value,
+          10
+        ),
+        isExpired: result?.value?.value?.isExpired?.value,
+        isWithdrawn: result?.value?.value?.isWithdrawn?.value,
+        isCancelled: result?.value?.value?.isCancelled?.value,
+      };
+    } else {
+      throw new Error("Error decoding campaign info from blockchain");
+    }
+  } else {
+    throw new Error(
+      response?.cause || "Error fetching campaign info from blockchain"
+    );
+  }
+}
+
+/**
+ * Fetch the latest campaign (legacy hook for backwards compatibility).
+ */
 export const useCampaignInfo = (
   currentPrices: PriceData | undefined
 ): UseQueryResult<CampaignInfo | null> => {
@@ -62,58 +126,7 @@ export const useCampaignInfo = (
       const lastId = parseInt(lastIdCv?.value?.value, 10);
       if (!lastId) return null;
 
-      const response = await api.callReadOnlyFunction({
-        contractAddress: FUNDRAISING_CONTRACT.address || "",
-        contractName: FUNDRAISING_CONTRACT.name,
-        functionName: "get-campaign-info",
-        readOnlyFunctionArgs: {
-          sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [cvToHex(uintCV(lastId))],
-        },
-      });
-      if (response?.okay && response?.result) {
-        const result = cvToJSON(hexToCV(response?.result || ""));
-        if (result?.success) {
-          const totalSbtc = parseInt(
-            result?.value?.value?.totalSbtc?.value,
-            10
-          );
-          const totalStx = parseInt(result?.value?.value?.totalStx?.value, 10);
-
-          const owner = result?.value?.value?.owner?.value;
-          const beneficiary = result?.value?.value?.beneficiary?.value;
-
-          return {
-            id: parseInt(result?.value?.value?.id?.value, 10),
-            owner,
-            beneficiary,
-            startBlock: parseInt(result?.value?.value?.startBlock?.value, 10),
-            start: parseInt(result?.value?.value?.start?.value, 10),
-            end: parseInt(result?.value?.value?.end?.value, 10),
-            createdAt: parseInt(result?.value?.value?.createdAt?.value, 10),
-            endAt: parseInt(result?.value?.value?.endAt?.value, 10),
-            goal: parseInt(result?.value?.value?.goal?.value, 10),
-            totalSbtc,
-            totalStx,
-            usdValue:
-              Number(ustxToStx(totalStx)) * (currentPrices?.stx || 0) +
-              satsToSbtc(totalSbtc) * (currentPrices?.sbtc || 0),
-            donationCount: parseInt(
-              result?.value?.value?.donationCount?.value,
-              10
-            ),
-            isExpired: result?.value?.value?.isExpired?.value,
-            isWithdrawn: result?.value?.value?.isWithdrawn?.value,
-            isCancelled: result?.value?.value?.isCancelled?.value,
-          };
-        } else {
-          throw new Error("Error fetching campaign info from blockchain");
-        }
-      } else {
-        throw new Error(
-          response?.cause || "Error fetching campaign info from blockchain"
-        );
-      }
+      return fetchCampaignFromChain(lastId, currentPrices);
     },
     refetchInterval: 10000,
     retry: false,
@@ -121,7 +134,63 @@ export const useCampaignInfo = (
   });
 };
 
-interface CampaignDonation {
+/**
+ * Fetch a specific campaign by ID.
+ */
+export const useCampaignById = (
+  campaignId: number | null | undefined,
+  currentPrices: PriceData | undefined
+): UseQueryResult<CampaignInfo | null> => {
+  return useQuery<CampaignInfo | null>({
+    queryKey: ["campaignInfo", campaignId],
+    queryFn: async () => {
+      if (!campaignId) return null;
+      return fetchCampaignFromChain(campaignId, currentPrices);
+    },
+    refetchInterval: 10000,
+    retry: false,
+    enabled: !!campaignId,
+  });
+};
+
+/**
+ * Fetch the last campaign ID.
+ */
+export const useLastCampaignId = (): UseQueryResult<number | null> => {
+  const api = getApi(getStacksUrl()).smartContractsApi;
+
+  return useQuery<number | null>({
+    queryKey: ["lastCampaignId"],
+    queryFn: async () => {
+      const response = await api.callReadOnlyFunction({
+        contractAddress: FUNDRAISING_CONTRACT.address || "",
+        contractName: FUNDRAISING_CONTRACT.name,
+        functionName: "get-last-campaign-id",
+        readOnlyFunctionArgs: {
+          sender: FUNDRAISING_CONTRACT.address || "",
+          arguments: [],
+        },
+      });
+
+      if (!response?.okay || !response?.result) {
+        throw new Error(
+          response?.cause || "Error fetching last campaign id"
+        );
+      }
+
+      const cv = cvToJSON(hexToCV(response.result));
+      if (!cv?.success) {
+        throw new Error("Error decoding last campaign id");
+      }
+
+      return parseInt(cv?.value?.value, 10) || null;
+    },
+    refetchInterval: 30000,
+    retry: false,
+  });
+};
+
+export interface CampaignDonation {
   stxAmount: number;
   sbtcAmount: number;
 }
@@ -188,3 +257,4 @@ export const useExistingDonation = (
     retry: false,
   });
 };
+
