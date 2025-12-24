@@ -133,8 +133,8 @@ app.get("/api/campaigns", async (_req: Request, res: Response) => {
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
-        MAX(CASE WHEN event_name = 'campaign-cancelled' THEN true ELSE false END) as is_cancelled,
-        MAX(CASE WHEN event_name = 'campaign-withdrawn' THEN true ELSE false END) as is_withdrawn,
+        BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
+        BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
         MIN(inserted_at) as created_at
       FROM fundraising_events
       WHERE campaign_id IS NOT NULL
@@ -169,8 +169,8 @@ app.get("/api/campaigns/:id", async (req: Request, res: Response) => {
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
-        MAX(CASE WHEN event_name = 'campaign-cancelled' THEN true ELSE false END) as is_cancelled,
-        MAX(CASE WHEN event_name = 'campaign-withdrawn' THEN true ELSE false END) as is_withdrawn,
+        BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
+        BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
         MIN(inserted_at) as created_at
       FROM fundraising_events
       WHERE campaign_id = $1
@@ -362,8 +362,8 @@ app.get(
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
-        MAX(CASE WHEN event_name = 'campaign-cancelled' THEN true ELSE false END) as is_cancelled,
-        MAX(CASE WHEN event_name = 'campaign-withdrawn' THEN true ELSE false END) as is_withdrawn,
+        BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
+        BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
         MIN(inserted_at) as created_at
       FROM fundraising_events
       WHERE campaign_id IN (
