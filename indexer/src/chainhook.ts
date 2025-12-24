@@ -230,15 +230,14 @@ export function extractFundraisingEvents(
           if (typeof rawValue.owner === "string") owner = rawValue.owner;
           if (typeof rawValue.beneficiary === "string")
             beneficiary = rawValue.beneficiary;
-          if (typeof rawValue.token === "string") token = rawValue.token;
-
-          campaignId = toBigIntSafe(
+          // Only use object properties as FALLBACK if not already parsed from repr
+          campaignId = campaignId ?? toBigIntSafe(
             rawValue.campaignId ?? rawValue.campaign_id
           );
-          amount = toBigIntSafe(
+          amount = amount ?? toBigIntSafe(
             rawValue.amount ?? rawValue.amountUstx ?? rawValue.amountSats
           );
-          ts = toBigIntSafe(rawValue.ts ?? rawValue.timestamp);
+          ts = ts ?? toBigIntSafe(rawValue.ts ?? rawValue.timestamp);
         }
 
         // Only treat it as a fundraising event if it has our expected fields.
