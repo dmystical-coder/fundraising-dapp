@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Container,
@@ -22,7 +23,7 @@ import {
   AlertTitle,
   AlertDescription,
   Divider,
-  Icon,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -44,6 +45,7 @@ import CampaignAdminControls from "@/components/CampaignAdminControls";
 export default function CampaignDetailPage() {
   const params = useParams();
   const campaignId = params?.id ? parseInt(params.id as string, 10) : null;
+  const { isOpen: isDonateOpen, onOpen: onDonateOpen, onClose: onDonateClose } = useDisclosure();
 
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
@@ -231,11 +233,10 @@ export default function CampaignDetailPage() {
             {/* Admin controls */}
             <CampaignAdminControls
               campaignId={campaign.id}
-              owner={campaign.owner}
-              beneficiary={campaign.beneficiary}
-              isExpired={campaign.isExpired}
-              isCancelled={campaign.isCancelled}
-              isWithdrawn={campaign.isWithdrawn}
+              campaignIsUninitialized={false}
+              campaignIsCancelled={campaign.isCancelled}
+              campaignIsExpired={campaign.isExpired}
+              campaignIsWithdrawn={campaign.isWithdrawn}
               totalStx={campaign.totalStx}
               totalSbtc={campaign.totalSbtc}
             />
@@ -268,7 +269,19 @@ export default function CampaignDetailPage() {
                   <Heading size="md" color="gray.700">Support This Campaign</Heading>
                 </CardHeader>
                 <CardBody pt={0}>
-                  <DonationModal campaignId={campaign.id} />
+                  <Button
+                    colorScheme="primary"
+                    size="lg"
+                    width="100%"
+                    onClick={onDonateOpen}
+                  >
+                    Donate Now
+                  </Button>
+                  <DonationModal
+                    isOpen={isDonateOpen}
+                    campaignId={campaign.id}
+                    onClose={onDonateClose}
+                  />
                 </CardBody>
               </Card>
             )}
