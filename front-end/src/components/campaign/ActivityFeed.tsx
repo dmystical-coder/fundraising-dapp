@@ -5,11 +5,9 @@ import {
   VStack,
   HStack,
   Text,
-  Avatar,
   Skeleton,
   SkeletonCircle,
   Link,
-  Badge,
 } from "@chakra-ui/react";
 import { format } from "timeago.js";
 import { SimpleAddress } from "../common/AddressDisplay";

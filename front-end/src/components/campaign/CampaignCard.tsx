@@ -9,17 +9,15 @@ import {
   Progress,
   HStack,
   VStack,
-  Icon,
 } from "@chakra-ui/react";
 import Link from "next/link";
-import { StatusBadge, getCampaignStatus, CampaignStatus } from "../common/StatusBadge";
+import { StatusBadge, getCampaignStatus } from "../common/StatusBadge";
 import { CombinedAmountDisplay } from "../common/AmountDisplay";
 import { TimeRemainingDisplay } from "../common/CountdownTimer";
 import { SimpleAddress } from "../common/AddressDisplay";
 
 interface CampaignCardProps {
   campaignId: number;
-  owner: string | null;
   beneficiary: string | null;
   totalStx: number | string;
   totalSbtc: number | string;
@@ -61,7 +59,6 @@ function calculateProgress(
  */
 export function CampaignCard({
   campaignId,
-  owner,
   beneficiary,
   totalStx,
   totalSbtc,

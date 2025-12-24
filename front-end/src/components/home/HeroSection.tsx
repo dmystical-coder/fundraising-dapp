@@ -8,20 +8,15 @@ import {
   Button,
   VStack,
   HStack,
-  Icon,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
-interface HeroSectionProps {
-  isWalletConnected?: boolean;
-}
-
 /**
  * Hero section for the homepage with value proposition and CTA.
  */
-export function HeroSection({ isWalletConnected = false }: HeroSectionProps) {
+export function HeroSection() {
   const headingSize = useBreakpointValue({ base: "2xl", md: "3xl", lg: "4xl" });
   const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HStack, Text, TextProps, Box, Icon } from "@chakra-ui/react";
+import { HStack, Text, TextProps, Icon } from "@chakra-ui/react";
 import { TimeIcon } from "@chakra-ui/icons";
 
 interface CountdownTimerProps extends Omit<TextProps, "children"> {

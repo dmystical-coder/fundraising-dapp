@@ -10,7 +10,6 @@ import {
   StatHelpText,
   Skeleton,
   HStack,
-  Icon,
 } from "@chakra-ui/react";
 import { usePlatformStats } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";

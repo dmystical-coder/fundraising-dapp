@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Container,
@@ -109,7 +108,7 @@ export default function CampaignDetailPage() {
             Campaign Not Found
           </AlertTitle>
           <AlertDescription maxWidth="sm">
-            The campaign you're looking for doesn't exist or couldn't be loaded.
+            The campaign you&apos;re looking for doesn&apos;t exist or couldn&apos;t be loaded.
           </AlertDescription>
         </Alert>
       </Container>

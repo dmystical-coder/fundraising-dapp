@@ -15,7 +15,7 @@ import {
 import { useState, useMemo } from "react";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
-import { useCurrentPrices } from "@/hooks/chainQueries";
+import { useCurrentPrices } from "@/lib/currency-utils";
 
 type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
 
@@ -84,21 +84,25 @@ export function CampaignGrid({
     useIndexerCampaigns();
   const { data: prices } = useCurrentPrices();
 
-  const campaigns = propCampaigns || indexerCampaigns || [];
   const isLoading = propIsLoading !== undefined ? propIsLoading : indexerLoading;
 
   // Transform and sort campaigns
   const displayCampaigns = useMemo(() => {
+    const baseCampaigns = propCampaigns || indexerCampaigns || [];
     // Add isExpired flag based on current time and endAt
     const now = Math.floor(Date.now() / 1000);
-    const enriched: CampaignWithOnChain[] = campaigns.map((c) => ({
+    const enriched: CampaignWithOnChain[] = baseCampaigns.map((c) => ({
       ...c,
-      isExpired: c.endAt ? c.endAt <= now : false,
+      endAt: (c as CampaignWithOnChain).endAt,
+      goal: (c as CampaignWithOnChain).goal,
+      isExpired: (c as CampaignWithOnChain).endAt 
+        ? ((c as CampaignWithOnChain).endAt as number) <= now 
+        : false,
     }));
 
     const sorted = sortCampaigns(enriched, sortBy);
     return limit ? sorted.slice(0, limit) : sorted;
-  }, [campaigns, sortBy, limit]);
+  }, [propCampaigns, indexerCampaigns, sortBy, limit]);
 
   if (isLoading) {
     return (
@@ -176,7 +180,6 @@ export function CampaignGrid({
             <CampaignCard
               key={campaign.campaign_id}
               campaignId={campaign.campaign_id}
-              owner={campaign.owner}
               beneficiary={campaign.beneficiary}
               totalStx={campaign.total_stx}
               totalSbtc={campaign.total_sbtc}

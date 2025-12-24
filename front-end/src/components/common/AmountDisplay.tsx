@@ -89,7 +89,7 @@ export function AmountDisplay({
 
   // Convert raw amount to display value
   const rawAmount = typeof amount === "string" ? parseInt(amount, 10) : amount;
-  const displayAmount = config.convert(rawAmount);
+  const displayAmount = Number(config.convert(rawAmount));
   const formattedAmount = formatAmount(displayAmount);
 
   // Calculate USD value if price is provided
@@ -154,8 +154,8 @@ export function CombinedAmountDisplay({
   const stxRaw = typeof stxAmount === "string" ? parseInt(stxAmount, 10) : stxAmount;
   const sbtcRaw = typeof sbtcAmount === "string" ? parseInt(sbtcAmount, 10) : sbtcAmount;
 
-  const stxDisplay = ustxToStx(stxRaw);
-  const sbtcDisplay = satsToSbtc(sbtcRaw);
+  const stxDisplay = Number(ustxToStx(stxRaw));
+  const sbtcDisplay = Number(satsToSbtc(sbtcRaw));
 
   const stxUsd = stxPrice ? stxDisplay * stxPrice : 0;
   const sbtcUsd = sbtcPrice ? sbtcDisplay * sbtcPrice : 0;

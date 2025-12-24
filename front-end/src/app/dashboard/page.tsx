@@ -14,14 +14,10 @@ import {
   TabPanels,
   Card,
   CardBody,
-  CardHeader,
   SimpleGrid,
   Button,
   Badge,
   Skeleton,
-  Alert,
-  AlertIcon,
-  Icon,
   Divider,
   Link as ChakraLink,
 } from "@chakra-ui/react";
@@ -123,7 +119,7 @@ export default function DashboardPage() {
                       No Campaigns Yet
                     </Heading>
                     <Text color="gray.500" maxW="300px">
-                      You haven't created any campaigns. Start your first fundraising campaign today!
+                      You haven&apos;t created any campaigns. Start your first fundraising campaign today!
                     </Text>
                     <Button
                       as={Link}
@@ -219,7 +215,7 @@ export default function DashboardPage() {
                       No Donations Yet
                     </Heading>
                     <Text color="gray.500" maxW="300px">
-                      You haven't made any donations. Browse campaigns and support a cause you believe in!
+                      You haven&apos;t made any donations. Browse campaigns and support a cause you believe in!
                     </Text>
                     <Button as={Link} href="/" colorScheme="primary">
                       Browse Campaigns

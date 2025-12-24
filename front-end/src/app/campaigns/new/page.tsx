@@ -10,7 +10,6 @@ import {
   HStack,
   Card,
   CardBody,
-  CardHeader,
   Button,
   FormControl,
   FormLabel,
@@ -192,7 +191,7 @@ export default function CreateCampaignPage() {
           principalCV(beneficiaryAddress), // beneficiary
         ],
         network: getStacksNetwork(),
-        onFinish: (data) => {
+        onFinish: () => {
           toast({
             title: "Campaign Created!",
             description: "Your campaign has been submitted. It will appear once confirmed.",
