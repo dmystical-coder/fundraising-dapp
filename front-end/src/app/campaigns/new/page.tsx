@@ -472,7 +472,9 @@ export default function CreateCampaignPage() {
           {activeStep < steps.length - 1 ? (
             <Button
               rightIcon={<ArrowForwardIcon />}
-              colorScheme="primary"
+              bg="primary.500"
+              color="white"
+              _hover={{ bg: "primary.600", color: "white" }}
               onClick={handleNext}
             >
               Next
@@ -480,7 +482,9 @@ export default function CreateCampaignPage() {
           ) : (
             <Button
               leftIcon={isSubmitting ? <Spinner size="sm" /> : <CheckIcon />}
-              colorScheme="primary"
+              bg="primary.500"
+              color="white"
+              _hover={{ bg: "primary.600", color: "white" }}
               onClick={handleSubmit}
               isLoading={isSubmitting}
               loadingText="Creating..."

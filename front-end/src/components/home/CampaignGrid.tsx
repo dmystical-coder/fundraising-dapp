@@ -138,7 +138,9 @@ export function CampaignGrid({
             <Button
               as="a"
               href="/campaigns/new"
-              colorScheme="primary"
+              bg="primary.500"
+              color="white"
+              _hover={{ bg: "primary.600", color: "white" }}
               size="lg"
             >
               Create First Campaign

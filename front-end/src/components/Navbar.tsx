@@ -72,7 +72,10 @@ export const Navbar = () => {
               href="/campaigns/new"
               size="sm"
               leftIcon={<AddIcon />}
-              colorScheme="primary"
+              bg="primary.500"
+              color="white"
+              _hover={{ bg: "primary.600", color: "white" }}
+              _active={{ bg: "primary.700" }}
               display={{ base: "none", sm: "flex" }}
             >
               Create

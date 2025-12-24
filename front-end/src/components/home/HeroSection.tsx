@@ -111,12 +111,12 @@ export function HeroSection() {
               as={Link}
               href="/campaigns/new"
               size={buttonSize}
-              colorScheme="primary"
               bg="primary.500"
               color="white"
               leftIcon={<AddIcon />}
               _hover={{
                 bg: "primary.600",
+                color: "white",
                 transform: "translateY(-2px)",
                 boxShadow: "lg",
               }}

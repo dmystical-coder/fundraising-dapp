@@ -74,7 +74,9 @@ export default function DashboardPage() {
           as={Link}
           href="/campaigns/new"
           leftIcon={<AddIcon />}
-          colorScheme="primary"
+          bg="primary.500"
+          color="white"
+          _hover={{ bg: "primary.600", color: "white" }}
         >
           Create Campaign
         </Button>
@@ -124,7 +126,9 @@ export default function DashboardPage() {
                     <Button
                       as={Link}
                       href="/campaigns/new"
-                      colorScheme="primary"
+                      bg="primary.500"
+                      color="white"
+                      _hover={{ bg: "primary.600", color: "white" }}
                       leftIcon={<AddIcon />}
                     >
                       Create Campaign
@@ -217,7 +221,7 @@ export default function DashboardPage() {
                     <Text color="gray.500" maxW="300px">
                       You haven&apos;t made any donations. Browse campaigns and support a cause you believe in!
                     </Text>
-                    <Button as={Link} href="/" colorScheme="primary">
+                    <Button as={Link} href="/" bg="primary.500" color="white" _hover={{ bg: "primary.600", color: "white" }}>
                       Browse Campaigns
                     </Button>
                   </VStack>

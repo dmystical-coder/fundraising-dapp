@@ -121,42 +121,69 @@ const components = {
       borderRadius: "lg",
     },
     variants: {
-      solid: {
-        bg: "primary.500",
-        color: "white",
-        _hover: {
-          bg: "primary.600",
-          _disabled: {
-            bg: "primary.500",
+      // Function-based solid variant to properly set text color based on colorScheme
+      solid: (props: { colorScheme: string }) => {
+        const { colorScheme: c } = props;
+        // For primary, secondary, warning, success, error - use white text
+        if (["primary", "secondary", "warning", "success", "error", "brand"].includes(c)) {
+          return {
+            bg: `${c}.500`,
+            color: "white",
+            _hover: {
+              bg: `${c}.600`,
+              color: "white",
+              _disabled: {
+                bg: `${c}.500`,
+              },
+            },
+            _active: {
+              bg: `${c}.700`,
+              color: "white",
+            },
+          };
+        }
+        // Default for other colorSchemes
+        return {
+          bg: `${c}.500`,
+          color: "white",
+          _hover: {
+            bg: `${c}.600`,
           },
-        },
-        _active: {
-          bg: "primary.700",
-        },
+          _active: {
+            bg: `${c}.700`,
+          },
+        };
       },
-      outline: {
-        borderColor: "primary.500",
-        color: "primary.600",
-        _hover: {
-          bg: "primary.50",
-        },
+      outline: (props: { colorScheme: string }) => {
+        const { colorScheme: c } = props;
+        return {
+          borderColor: `${c}.500`,
+          color: `${c}.700`,
+          _hover: {
+            bg: `${c}.50`,
+            color: `${c}.800`,
+            borderColor: `${c}.600`,
+          },
+          _active: {
+            bg: `${c}.100`,
+            color: `${c}.900`,
+          },
+        };
       },
       ghost: {
-        color: "gray.600",
+        color: "gray.700",
         _hover: {
           bg: "warm.muted",
+          color: "gray.900",
         },
-      },
-      secondary: {
-        bg: "secondary.500",
-        color: "white",
-        _hover: {
-          bg: "secondary.600",
+        _active: {
+          bg: "warm.border",
         },
       },
     },
     defaultProps: {
       colorScheme: "primary",
+      variant: "solid",
     },
   },
   Card: {

@@ -269,7 +269,9 @@ export default function CampaignDetailPage() {
                 </CardHeader>
                 <CardBody pt={0}>
                   <Button
-                    colorScheme="primary"
+                    bg="primary.500"
+                    color="white"
+                    _hover={{ bg: "primary.600", color: "white" }}
                     size="lg"
                     width="100%"
                     onClick={onDonateOpen}
