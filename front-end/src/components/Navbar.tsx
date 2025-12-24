@@ -34,7 +34,12 @@ export const Navbar = () => {
                 >
                   FS
                 </Flex>
-                <Box fontSize="lg" fontWeight="bold" color="gray.800">
+                <Box 
+                  fontSize="lg" 
+                  fontWeight="bold" 
+                  color="gray.800"
+                  fontFamily="var(--font-dm-sans), 'DM Sans', sans-serif"
+                >
                   FundStacks
                 </Box>
               </HStack>
