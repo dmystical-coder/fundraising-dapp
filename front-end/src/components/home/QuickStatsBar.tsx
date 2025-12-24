@@ -13,7 +13,7 @@ import {
   Icon,
 } from "@chakra-ui/react";
 import { usePlatformStats } from "@/hooks/indexerQueries";
-import { useCurrentPrices } from "@/hooks/chainQueries";
+import { useCurrentPrices } from "@/lib/currency-utils";
 
 /**
  * Format large numbers for display.
