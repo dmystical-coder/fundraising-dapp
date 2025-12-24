@@ -1,24 +1,24 @@
-import CampaignDetails from "@/components/CampaignDetails";
-import { promises as fs } from "fs";
-import path from "path";
+"use client";
 
-async function getData() {
-  const campaignDir = path.join(process.cwd(), "public/campaign");
-  const imageFiles = await fs.readdir(campaignDir);
+import { Container } from "@chakra-ui/react";
+import { HeroSection, QuickStatsBar, CampaignGrid } from "@/components/home";
 
-  const images = imageFiles
-    .filter((file) => /\.(png|jpe?g|webp|svg)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b))
-    .map((file) => `/campaign/${file}`);
+/**
+ * Homepage component with campaign discovery.
+ */
+export default function HomePage() {
+  return (
+    <>
+      {/* Hero Section */}
+      <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
+        <HeroSection />
+      </Container>
 
-  const markdownPath = path.join(process.cwd(), "public/campaign-details.md");
-  const markdownContent = await fs.readFile(markdownPath, "utf8");
+      {/* Platform Stats */}
+      <QuickStatsBar />
 
-  return { images, markdownContent };
-}
-
-export default async function Home() {
-  const { images, markdownContent } = await getData();
-
-  return <CampaignDetails images={images} markdownContent={markdownContent} />;
+      {/* Campaign Grid */}
+      <CampaignGrid title="Explore Campaigns" showSort />
+    </>
+  );
 }
