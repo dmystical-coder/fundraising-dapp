@@ -13,10 +13,35 @@ import {
 import { useContext } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
 import {
+  isDevnetEnvironment,
   isMainnetEnvironment,
   isTestnetEnvironment,
 } from "@/lib/contract-utils";
 import { formatStxAddress } from "@/lib/address-utils";
+import { useDevnetWallet } from "@/lib/devnet-wallet-context";
+
+/**
+ * Hook to get the current connected wallet address.
+ * Works for both devnet (manual wallet selection) and mainnet/testnet (Hiro wallet).
+ */
+export const useAddress = (): string | null => {
+  const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
+  const { currentWallet } = useDevnetWallet();
+
+  if (isDevnetEnvironment()) {
+    return currentWallet?.stxAddress || null;
+  }
+
+  if (isTestnetEnvironment()) {
+    return testnetAddress || null;
+  }
+
+  if (isMainnetEnvironment()) {
+    return mainnetAddress || null;
+  }
+
+  return null;
+};
 
 interface ConnectWalletButtonProps extends ButtonProps {
   children?: React.ReactNode;
@@ -88,3 +113,7 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
     </Button>
   );
 };
+
+// Alias for convenience
+export const ConnectWallet = ConnectWalletButton;
+
