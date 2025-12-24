@@ -39,6 +39,7 @@ export const Navbar = () => {
                   fontWeight="bold" 
                   color="gray.800"
                   fontFamily="var(--font-dm-sans), 'DM Sans', sans-serif"
+                  display={{ base: "none", sm: "block" }}
                 >
                   FundStacks
                 </Box>

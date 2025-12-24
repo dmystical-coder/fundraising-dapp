@@ -7,7 +7,7 @@ import {
   Text,
   Button,
   VStack,
-  HStack,
+  Stack,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
@@ -17,44 +17,19 @@ import Link from "next/link";
  * Hero section for the homepage with value proposition and CTA.
  */
 export function HeroSection() {
-  const headingSize = useBreakpointValue({ base: "2xl", md: "3xl", lg: "4xl" });
+  const headingSize = useBreakpointValue({ base: "xl", sm: "2xl", md: "3xl", lg: "4xl" });
   const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
 
   return (
     <Box
       position="relative"
       overflow="hidden"
-      bg="linear-gradient(135deg, #FFFBF5 0%, #FEF3C7 50%, #FFEDD5 100%)"
-      py={{ base: 12, md: 20 }}
-      borderRadius={{ base: "none", md: "2xl" }}
-      mb={8}
+      bg="linear-gradient(180deg, #FFF7ED 0%, #FFEDD5 100%)"
+      py={{ base: 10, md: 16, lg: 20 }}
+      px={{ base: 4, md: 0 }}
     >
-      {/* Decorative elements */}
-      <Box
-        position="absolute"
-        top="-50%"
-        right="-10%"
-        w="400px"
-        h="400px"
-        bg="primary.200"
-        borderRadius="full"
-        opacity={0.3}
-        filter="blur(60px)"
-      />
-      <Box
-        position="absolute"
-        bottom="-30%"
-        left="-5%"
-        w="300px"
-        h="300px"
-        bg="secondary.200"
-        borderRadius="full"
-        opacity={0.3}
-        filter="blur(60px)"
-      />
-
       <Container maxW="container.lg" position="relative" zIndex={1}>
-        <VStack spacing={6} textAlign="center">
+        <VStack spacing={{ base: 4, md: 6 }} textAlign="center">
           {/* Headline */}
           <Heading
             as="h1"
@@ -62,31 +37,38 @@ export function HeroSection() {
             color="gray.800"
             fontWeight="800"
             lineHeight="1.2"
-            maxW="700px"
+            maxW="600px"
+            px={{ base: 2, md: 0 }}
           >
             Raise funds with{" "}
-            <Text as="span" color="primary.500">
+            <Text as="span" color="primary.600">
               STX
             </Text>{" "}
             &{" "}
-            <Text as="span" color="warning.500">
+            <Text as="span" color="warning.600">
               sBTC
             </Text>
           </Heading>
 
           {/* Subheadline */}
           <Text
-            fontSize={{ base: "lg", md: "xl" }}
+            fontSize={{ base: "md", md: "lg", lg: "xl" }}
             color="gray.600"
-            maxW="500px"
-            lineHeight="1.7"
+            maxW="450px"
+            lineHeight="1.6"
+            px={{ base: 2, md: 0 }}
           >
             Create campaigns, accept crypto donations, 
-            and manage funds directly on the Stacks blockchain.
+            and manage funds on the Stacks blockchain.
           </Text>
 
-          {/* CTAs */}
-          <HStack spacing={4} pt={4}>
+          {/* CTAs - Stack vertically on mobile */}
+          <Stack 
+            direction={{ base: "column", sm: "row" }} 
+            spacing={{ base: 3, sm: 4 }} 
+            pt={{ base: 2, md: 4 }}
+            w={{ base: "100%", sm: "auto" }}
+          >
             <Button
               as={Link}
               href="/campaigns/new"
@@ -101,6 +83,7 @@ export function HeroSection() {
                 boxShadow: "lg",
               }}
               transition="all 0.2s"
+              w={{ base: "100%", sm: "auto" }}
             >
               Create Campaign
             </Button>
@@ -111,14 +94,16 @@ export function HeroSection() {
               variant="outline"
               borderColor="gray.400"
               color="gray.700"
+              bg="white"
               _hover={{
-                bg: "white",
+                bg: "gray.50",
                 borderColor: "primary.500",
               }}
+              w={{ base: "100%", sm: "auto" }}
             >
               Explore Campaigns
             </Button>
-          </HStack>
+          </Stack>
         </VStack>
       </Container>
     </Box>
