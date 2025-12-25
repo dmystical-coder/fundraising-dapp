@@ -1,65 +1,115 @@
-# STX/sBTC Fundraising App
+<p align="center">
+  <img src="./screenshot.png" alt="FundStacks Banner" width="600" />
+</p>
 
-![Fundraising on Stacks](./screenshot.png)
+<h1 align="center">FundStacks</h1>
 
-This is a simple crypto fundraising web page built on Stacks. It lets people run a campaign to raise funds in STX and sBTC.
+<p align="center">
+  <strong>Decentralized crowdfunding on Stacks — powered by STX and sBTC</strong>
+</p>
 
-This example app is intended for educational purposes only. The provided smart contracts have not been audited.
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#for-developers">For Developers</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
-## Development
+---
 
-To run this app with a Stacks Devnet (private development blockchain environment), follow these steps:
+## 🚀 What is FundStacks?
 
-1. **Start Devnet in Hiro Platform**
+FundStacks is an open-source, decentralized crowdfunding platform built on the [Stacks](https://stacks.co) blockchain. Create campaigns, accept donations in **STX** or **sBTC**, and manage funds transparently — all secured by Bitcoin.
 
-   - Log into the [Hiro Platform](https://platform.hiro.so)
-   - Navigate to your project and start Devnet (do not opt to update the Devnet deployment plan, as it's pre-configured with some contract calls to initialize the project)
-   - Copy your API key from either:
-     - The Devnet Stacks API URL: `https://api.platform.hiro.so/v1/ext/<YOUR-API-KEY>/stacks-blockchain-api`
-     - Or from https://platform.hiro.so/settings/api-keys
+Whether you're raising funds for a community project, supporting a cause, or launching your next big idea, FundStacks makes it simple and trustless.
 
-2. **Configure Local Environment**
+## ✨ Features
 
-Install dependencies:
+- **Create Campaigns** — Set a funding goal and start accepting donations in minutes
+- **Dual Currency Support** — Accept both STX and sBTC donations
+- **Transparent & Trustless** — All transactions are recorded on-chain
+- **Real-time Updates** — See donations and progress as they happen
+- **Mobile Friendly** — Fully responsive design works on any device
+- **Wallet Integration** — Connect with Hiro Wallet, Xverse, or Leather
+
+## 🔄 How It Works
+
+1. **Connect Your Wallet** — Use any Stacks-compatible wallet
+2. **Create a Campaign** — Set your goal, add a description, and launch
+3. **Share & Collect Donations** — Donors contribute STX or sBTC directly to your campaign
+4. **Withdraw Funds** — Once funded, withdraw directly to your wallet
+
+All campaign logic is handled by smart contracts on the Stacks blockchain, ensuring transparency and security.
+
+## 🏁 Getting Started
+
+### For Campaign Creators
+
+1. Visit the live app at **[https://front-end-production-e422.up.railway.app/]**
+2. Connect your Stacks wallet
+3. Click "Create Campaign"
+4. Fill in your campaign details and funding goal
+5. Share your campaign and start collecting donations!
+
+### For Donors
+
+1. Browse campaigns on the homepage
+2. Click on a campaign to view details
+3. Connect your wallet and click "Donate"
+4. Choose your amount in STX or sBTC
+5. Confirm the transaction in your wallet
+
+## 👩‍💻 For Developers
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- A Stacks wallet (for testing)
+
+### Local Development
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-username/fundraising-dapp.git
+cd fundraising-dapp
+
+# Install dependencies
 npm install
-```
 
-Create an `.env` file using the existing `.env.example` file:
+# Set up environment variables
+cp front-end/.env.example front-end/.env.local
 
-```bash
-cp front-end/.env.example front-end/.env
-```
-
-Add your Hiro Platform API key to the renamed `front-end/.env` file:
-
-```bash
-NEXT_PUBLIC_PLATFORM_HIRO_API_KEY=your-api-key-here
-```
-
-3. **Start the Frontend Application**
-
-Start the Next.js application from the front-end directory.
-
-```bash
+# Start the development server
 cd front-end
 npm run dev
 ```
 
-Visit `[http://localhost:3000](http://localhost:3000)` in your browser to view and interact with the fundraising app. If Devnet is running, your test wallets will already be funded and connected for testing.
+Visit `http://localhost:3000` to see the app.
 
-## Mainnet/Testnet Indexing (Chainhooks → Indexer Webhook)
+### Project Structure
 
-This repo includes a webhook indexer (Node + Postgres) that receives fundraising contract `print` logs via Hiro-hosted Chainhooks.
+```
+fundraising-dapp/
+├── clarity/           # Smart contracts (Clarity)
+├── front-end/         # Next.js frontend
+├── indexer/           # Event indexer (Node + PostgreSQL)
+└── chainhooks/        # Chainhook configuration
+```
 
-High-level flow:
+### Smart Contracts
 
-- Deploy the contract to mainnet/testnet
-- Run the indexer webhook server + database
-- Register a chainhook that posts matching `contract_log` events to your webhook
+The fundraising logic is powered by Clarity smart contracts:
 
-### 1) Run Postgres + migrations
+- **Campaign Creation** — Initialize campaigns with funding goals
+- **Donations** — Accept and track contributions in STX/sBTC
+- **Withdrawals** — Campaign owners withdraw funds upon completion
+- **Refunds** — Donors can be refunded if campaign is cancelled
+
+### Indexer Setup
+
+For production deployments, the indexer tracks blockchain events:
 
 ```bash
 cd indexer
@@ -67,121 +117,33 @@ cp .env.example .env
 npm install
 npm run build
 npm run db:migrate
-```
-
-### 2) Run the indexer server
-
-```bash
-cd indexer
 npm run dev
 ```
 
-It exposes:
+See the [Indexer README](./indexer/README.md) for detailed configuration.
 
-- `GET /health`
-- `POST /chainhook`
+## 🤝 Contributing
 
-### 3) Register a Hiro-hosted chainhook (recommended)
+We welcome contributions! Here's how you can help:
 
-Set these in `indexer/.env`:
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
 
-- `CHAINHOOKS_NETWORK` (`mainnet` or `testnet`)
-- `CHAINHOOKS_API_KEY` (or `CHAINHOOKS_JWT`)
-- `EXPECTED_CONTRACT_IDENTIFIER` (example: `SP...fundraising`)
-- `CHAINHOOKS_WEBHOOK_URL` (a publicly reachable URL to your indexer `/chainhook`)
+Please read our contributing guidelines before submitting PRs.
 
-Then register:
+## 📜 License
 
-```bash
-cd indexer
-npm run chainhooks:register
-```
+This project is open source and available under the [MIT License](LICENSE).
 
-Important:
+## ⚠️ Disclaimer
 
-- `CHAINHOOKS_WEBHOOK_URL` must be publicly reachable (Hiro must be able to POST to it).
-- Hiro-hosted chainhooks do **not** support custom headers on `http_post`. If your indexer requires `Authorization` via `CHAINHOOK_AUTH_TOKEN`, leave it unset for the hosted flow.
+This software is provided for educational and demonstration purposes. The smart contracts have not been professionally audited. Use at your own risk when deploying to mainnet with real funds.
 
-More details are in `chainhooks/README.md`.
+---
 
-## Customization
-
-To customize this app for your fundraiser, edit the files `front-end/src/constants/campaign.ts` and `front-end/public/campaign-details.md`. Add images for the carousel to the `front-end/public/campaign` folder.
-
-The given Devnet deployment plan (found in `clarity/deployments/default.devnet-plan.yaml`) includes steps to initialize the campaign with a given funding goal. You can customize this plan as desired.
-
-When you're ready to deploy in Testnet or Mainnet, you can choose to add similar steps to your testnet/mainnet deployment plans, or you can initialize your campaign manually by calling the `fundraising.initialize-campaign` function on-chain.
-
-## About the Smart Contracts
-
-This app uses a Clarity smart contract which handles the collection of funds.
-
-### `fundraising.clar`
-
-- Allows the contract owner to initialize the campaign with a fundraising goal in USD
-- Accepts donations in STX or sBTC
-- Tracks individual contributions
-- Lets the beneficiary (contract owner) withdraw the raised funds if the goal is hit
-- Allows the beneficiary to cancel the campaign and refund the contributions to the donors at any point
-
-## Testing with Devnet
-
-The Hiro Platform's Devnet is a sandboxed, personal blockchain environment for testing your dApps before deploying them to the testnet or mainnet. Each time you start a new Devnet, it will reset the blockchain state and deploy your project contracts from scratch.
-
-This is useful because deployments to the blockchain are permanent and cannot be undone. Ensure you have tested your contracts thoroughly in your Devnet before promoting them to Testnet or Mainnet.
-
-If you make changes to your contract, you will need to push your changes and restart Devnet for the contract changes to appear in your Devnet.
-
-### 1. Start Devnet and Deploy Contracts
-
-1. Open your project in the Hiro Platform
-2. Click "Start Devnet" to initialize your testing environment (the contracts will be automatically deployed per your deployment plan)
-3. You should see your contracts deployed no later than block 45 in the Devnet dashboard
-
-### 2. Testing Smart Contract Functions
-
-Smart contract functions can be tested directly from your Platform dashboard.
-
-1. Select the Devnet tab to confirm that your contracts are deployed and Devnet is running
-2. Click "Interact with Devnet" and then "Call functions"
-3. Select your contract and the function you want to test from the dropdown menus
-4. Use one of the pre-funded devnet wallets as the caller and another as the recipient (if needed)
-5. Click "Call function" to execute the function, which will either succeed or fail based on the function's logic and the caller's permissions
-6. Once the function has been submitted, you can watch for the transaction to resolve on-chain in the Devnet dashboard and confirm that the function executed as expected
-
-Remember that any changes to the contracts will require restarting Devnet and redeploying the contracts.
-
-### 3. Integration Testing
-
-With Devnet running, you can test your front-end functionality and validate that it's working in the same way you just tested the fundraising functions.
-
-1. Confirm that your Devnet is running in the Platform dashboard and `npm run dev` is running in the front-end directory
-2. Navigate to [http://localhost:3000](http://localhost:3000) to view and interact with the fundraising app
-3. View your campaign and test the contribution, refunding, and withdrawal functionality using the pre-funded wallets. Use the wallet picker in the upper right corner to choose between different test wallets.
-4. Navigate to the Devnet dashboard in the Platform to view the transactions as they are submitted and resolved on-chain.
-
-You do not need to restart Devnet to test changes to your front-end.
-
-## Next Steps
-
-Once you've thoroughly tested your dApp in Devnet and are confident in its functionality, you can proceed to testing on the Stacks Testnet before launching on Mainnet.
-
-### Moving to Testnet
-
-1. Use the [Stacks Testnet Faucet](https://explorer.hiro.so/sandbox/faucet?chain=testnet) to get test STX tokens
-2. Update the environment variables in your `.env` file to add values for `NEXT_PUBLIC_CONTRACT_DEPLOYER_TESTNET_ADDRESS` and `NEXT_PUBLIC_CONTRACT_DEPLOYER_MAINNET_ADDRESS`. Add the STX wallet address you plan to deploy the contract with.
-3. Deploy your contracts to the Testnet using the Platform dashboard and your deployment plan
-4. Test your application with real network conditions and transaction times
-5. Verify your contract interactions in the [Testnet Explorer](https://explorer.hiro.so/?chain=testnet)
-
-### Launching on Mainnet
-
-When you're ready to launch your app:
-
-1. Ensure you have real STX tokens for deployment and transaction costs
-2. Update your deployment configuration to target Mainnet
-3. Deploy your contracts through the Platform dashboard
-4. Update your frontend environment variables to point to Mainnet
-5. Launch your application and begin processing real transactions!
-
-Remember: Mainnet deployments are permanent and involve real cryptocurrency transactions. Double-check all contract code and frontend integrations before deploying to Mainnet.
+<p align="center">
+  Built with ❤️ on <a href="https://stacks.co">Stacks</a>
+</p>
