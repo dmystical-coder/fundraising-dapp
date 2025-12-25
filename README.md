@@ -46,11 +46,11 @@ All campaign logic is handled by smart contracts on the Stacks blockchain, ensur
 
 ### For Campaign Creators
 
-1. Visit the live app at **[your-deployment-url.com]**
+1. Visit the live app at **[https://front-end-production-e422.up.railway.app/]**
 2. Connect your Stacks wallet
 3. Click "Create Campaign"
 4. Fill in your campaign details and funding goal
-5. Share your campaign link and start collecting donations!
+5. Share your campaign and start collecting donations!
 
 ### For Donors
 
