@@ -91,50 +91,6 @@ async function fetchCampaignFromChain(
 }
 
 /**
- * Fetch the latest campaign (legacy hook for backwards compatibility).
- */
-export const useCampaignInfo = (
-  currentPrices: PriceData | undefined
-): UseQueryResult<CampaignInfo | null> => {
-  const api = getApi(getStacksUrl()).smartContractsApi;
-
-  return useQuery<CampaignInfo | null>({
-    queryKey: ["campaignInfo"],
-    queryFn: async () => {
-      const lastIdResponse = await api.callReadOnlyFunction({
-        contractAddress: FUNDRAISING_CONTRACT.address || "",
-        contractName: FUNDRAISING_CONTRACT.name,
-        functionName: "get-last-campaign-id",
-        readOnlyFunctionArgs: {
-          sender: FUNDRAISING_CONTRACT.address || "",
-          arguments: [],
-        },
-      });
-
-      if (!lastIdResponse?.okay || !lastIdResponse?.result) {
-        throw new Error(
-          lastIdResponse?.cause ||
-            "Error fetching last campaign id from blockchain"
-        );
-      }
-
-      const lastIdCv = cvToJSON(hexToCV(lastIdResponse.result));
-      if (!lastIdCv?.success) {
-        throw new Error("Error decoding last campaign id from blockchain");
-      }
-
-      const lastId = parseInt(lastIdCv?.value?.value, 10);
-      if (!lastId) return null;
-
-      return fetchCampaignFromChain(lastId, currentPrices);
-    },
-    refetchInterval: 10000,
-    retry: false,
-    enabled: !!(currentPrices?.stx && currentPrices?.sbtc),
-  });
-};
-
-/**
  * Fetch a specific campaign by ID.
  */
 export const useCampaignById = (
