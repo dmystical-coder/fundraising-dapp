@@ -35,6 +35,7 @@ import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
 import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
+import { ShareCard } from "@/components/campaign/ShareCard";
 import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
@@ -318,6 +319,16 @@ export default function CampaignDetailPage() {
                   />
                 </CardBody>
               </Card>
+            )}
+
+
+
+            {/* Share Card - Visible to everyone */}
+            {campaign && (
+              <ShareCard 
+                title={campaign.title || `Campaign #${campaign.id}`} 
+                campaignId={campaign.id} 
+              />
             )}
 
             {/* Leaderboard */}
