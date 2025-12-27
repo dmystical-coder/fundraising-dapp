@@ -113,7 +113,7 @@ export function CampaignGrid({
               created_at: new Date(meta.createdAt).toISOString(),
               isExpired: false,
               // Add a special flag to identify pending campaigns
-              // @ts-expect-error
+              // @ts-expect-error - CampaignWithOnChain type mismatch expected
               isPending: true
             });
           }
