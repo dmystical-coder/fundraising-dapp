@@ -169,8 +169,13 @@ export default function CampaignDetailPage() {
                 )}
               </HStack>
               <Heading size="xl" color="gray.800" mb={2}>
-                Campaign #{campaign.id}
+                {indexedCampaign?.title || `Campaign #${campaign.id}`}
               </Heading>
+              {indexedCampaign?.description && (
+                <Text color="gray.600" mb={4} whiteSpace="pre-wrap">
+                  {indexedCampaign.description}
+                </Text>
+              )}
               <HStack spacing={4} flexWrap="wrap">
                 <HStack>
                   <Text color="gray.500" fontSize="sm">Owner:</Text>

@@ -15,6 +15,8 @@ export interface IndexedCampaign {
   is_cancelled: boolean;
   is_withdrawn: boolean;
   created_at: string;
+  title: string | null;
+  description: string | null;
 }
 
 export interface CampaignEvent {
@@ -76,6 +78,41 @@ async function fetchFromIndexer<T>(endpoint: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(`Indexer API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// ============================================================================
+// API Mutation Helpers
+// ============================================================================
+
+/**
+ * Save campaign metadata (title, description) to the indexer.
+ * This should be called after a campaign is created on-chain.
+ */
+export async function saveCampaignMetadata(params: {
+  campaignId: number;
+  owner: string;
+  title: string;
+  description: string;
+}): Promise<{ ok: boolean; campaignId: number }> {
+  const url = `${INDEXER_CONFIG.url}${INDEXER_CONFIG.endpoints.campaignMetadata(params.campaignId)}`;
+  
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      owner: params.owner,
+      title: params.title,
+      description: params.description,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save campaign metadata: ${response.status} ${response.statusText}`);
   }
 
   return response.json();
