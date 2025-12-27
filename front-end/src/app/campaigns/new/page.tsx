@@ -46,8 +46,6 @@ import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
 import { openContractCall } from "@/lib/contract-utils";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
 import { getStacksNetwork } from "@/lib/stacks-api";
-import { saveCampaignMetadata } from "@/hooks/indexerQueries";
-import { useLastCampaignId } from "@/hooks/campaignQueries";
 
 // Form steps configuration
 const steps = [

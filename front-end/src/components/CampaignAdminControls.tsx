@@ -244,16 +244,19 @@ export default function CampaignAdminControls({
                           )}
                         </>
                       ) : null}
-                      <Tooltip label="If you cancel the campaign, all contributions will be refunded to the donors, and this campaign will no longer accept new donations.">
-                        <Button
-                          colorScheme="yellow"
-                          onClick={() => {
-                            setIsCancelConfirmationModalOpen(true);
-                          }}
-                        >
-                          Cancel campaign
-                        </Button>
-                      </Tooltip>
+                      {/* Only show cancel button if campaign is still active (not expired or withdrawn) */}
+                      {!campaignIsExpired && !campaignIsWithdrawn && (
+                        <Tooltip label="If you cancel the campaign, all contributions will be refunded to the donors, and this campaign will no longer accept new donations.">
+                          <Button
+                            colorScheme="yellow"
+                            onClick={() => {
+                              setIsCancelConfirmationModalOpen(true);
+                            }}
+                          >
+                            Cancel campaign
+                          </Button>
+                        </Tooltip>
+                      )}
                     </Flex>
                   )}
                 </Flex>
