@@ -52,6 +52,14 @@ export function useSyncPendingMetadata() {
           continue;
         }
 
+        // Only apply if the campaign was created AFTER the pending metadata (or within a small window)
+        // Allow 5 minutes margin for clock skew
+        const campaignCreatedAt = new Date(campaign.created_at).getTime();
+        if (campaignCreatedAt < pending.createdAt - 5 * 60 * 1000) {
+           console.log(`Skipping old campaign ${campaign.campaign_id} for pending metadata`);
+           continue; 
+        }
+
         // Found a campaign without metadata - save it
         saveCampaignMetadata({
           campaignId: campaign.campaign_id,
