@@ -1,7 +1,5 @@
 import { DEVNET_NETWORK } from "@/constants/devnet";
 import {
-  ContractCallRegularOptions,
-  FinishedTxData,
   getStacksProvider,
   request,
 } from "@stacks/connect";
@@ -16,6 +14,24 @@ import {
 } from "@stacks/transactions";
 import { generateWallet } from "@stacks/wallet-sdk";
 import { DevnetWallet } from "./devnet-wallet-context";
+
+/**
+ * Contract call options interface.
+ * Compatible with @stacks/connect ContractCallRegularOptions.
+ */
+export interface ContractCallOptions {
+  contractAddress: string;
+  contractName: string;
+  functionName: string;
+  functionArgs: ClarityValue[] | unknown[];
+  network?: unknown;
+  anchorMode?: number; // AnchorMode from @stacks/transactions
+  postConditions?: PostCondition[];
+  postConditionMode?: PostConditionMode;
+  sponsored?: boolean;
+  onFinish?: (data: { txId: string }) => void;
+  onCancel?: () => void;
+}
 
 interface DirectCallResponse {
   txid: string;
@@ -33,7 +49,7 @@ export const isMainnetEnvironment = () =>
 export type Network = "mainnet" | "testnet" | "devnet";
 
 export const executeContractCall = async (
-  txOptions: ContractCallRegularOptions,
+  txOptions: ContractCallOptions,
   currentWallet: DevnetWallet | null
 ): Promise<DirectCallResponse> => {
   const mnemonic = currentWallet?.mnemonic;
@@ -69,9 +85,7 @@ export const executeContractCall = async (
   return { txid: response.txid };
 };
 
-function resolveStacksNetwork(options: ContractCallRegularOptions): Network {
-  // Stacks Connect accepts `StacksNetwork` objects; WC Stacks RPC expects an implicit chain.
-  // Keep our existing heuristic for now.
+function resolveStacksNetwork(options: ContractCallOptions): Network {
   const network = options.network as unknown;
   if (typeof network === "string") return network as Network;
 
@@ -103,7 +117,11 @@ function encodeFunctionArgsForStacksRpc(args: unknown): string[] {
   });
 }
 
-async function tryWalletConnectStacksCallContract(params: {
+/**
+ * Try to execute a contract call via WalletConnect.
+ * Returns null if no WalletConnect session is available.
+ */
+async function tryWalletConnectCallContract(params: {
   contract: string;
   functionName: string;
   functionArgs: unknown;
@@ -112,12 +130,6 @@ async function tryWalletConnectStacksCallContract(params: {
   if (typeof window === "undefined") return null;
   if (params.network === "devnet") return null;
 
-  // If the dapp uses post-conditions or sponsorship, keep the current SIP-030 flow.
-  // WalletConnect Stacks RPC `stx_callContract` docs only specify contract/function/args.
-  // (We can later upgrade to `stx_signTransaction` to support advanced options.)
-  //
-  // NOTE: We intentionally do not attempt to open/connect here; the connect UI should
-  // have already established a Stacks session.
   try {
     const reown = await import("@reown/appkit/react");
     const appKitModal = reown.modal;
@@ -153,28 +165,36 @@ async function tryWalletConnectStacksCallContract(params: {
 
     return result as { txid: string; transaction?: string };
   } catch (err) {
-    // If WC is present but the request fails, fall back to SIP-030.
+    // If WC is present but the request fails, fall back to @stacks/connect.
     console.warn(
-      "WalletConnect Stacks stx_callContract failed; falling back",
+      "WalletConnect Stacks stx_callContract failed; falling back to @stacks/connect",
       err
     );
     return null;
   }
 }
 
-export const openContractCall = async (options: ContractCallRegularOptions) => {
+/**
+ * Open a contract call for signing.
+ * Tries WalletConnect first, falls back to @stacks/connect browser extension.
+ */
+export const openContractCall = async (options: ContractCallOptions) => {
   try {
     if (typeof window === "undefined") {
       throw new Error("Stacks wallet signing is only available in the browser");
     }
 
     const contract = `${options.contractAddress}.${options.contractName}`;
-
     const resolvedNetwork = resolveStacksNetwork(options);
 
-    // Prefer WalletConnect-native Stacks JSON-RPC when an AppKit session is connected.
-    // This enables mobile wallets and non-injected connectors.
-    const wcResult = await tryWalletConnectStacksCallContract({
+    if (resolvedNetwork === "devnet") {
+      throw new Error(
+        "openContractCall is not supported for devnet. Use executeContractCall instead."
+      );
+    }
+
+    // Try WalletConnect first (for mobile wallets)
+    const wcResult = await tryWalletConnectCallContract({
       contract,
       functionName: options.functionName,
       functionArgs: options.functionArgs,
@@ -183,11 +203,12 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
 
     if (wcResult) {
       if (options.onFinish) {
-        options.onFinish({ txId: wcResult.txid } as unknown as FinishedTxData);
+        options.onFinish({ txId: wcResult.txid });
       }
       return wcResult;
     }
 
+    // Fallback to @stacks/connect (browser extension wallets)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any = {
       contract,
@@ -206,7 +227,7 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
     const result = await request(
       {
         provider,
-        // If we cannot resolve a provider (no extension installed), this forces a wallet selection modal.
+        // If we cannot resolve a provider (no extension installed), force wallet selection.
         forceWalletSelect: !provider,
         persistWalletSelect: true,
       },
@@ -214,13 +235,25 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
       params
     );
 
-    if (options.onFinish) {
-      options.onFinish({ txId: result.txid } as unknown as FinishedTxData);
+    if (options.onFinish && result.txid) {
+      options.onFinish({ txId: result.txid });
     }
 
     return result;
   } catch (error: unknown) {
     console.error("Failed to execute contract call:", error);
+
+    // Handle cancellation
+    if (
+      error instanceof Error &&
+      error.message?.toLowerCase().includes("cancel") &&
+      options.onCancel
+    ) {
+      options.onCancel();
+      return;
+    }
+
+    // Re-throw with more context if it's a wallet error
     if (error instanceof Error) {
       const msg = error.message || "";
       const looksLikeNoWallet =
@@ -232,13 +265,7 @@ export const openContractCall = async (options: ContractCallRegularOptions) => {
         );
       }
     }
-    if (
-      error instanceof Error &&
-      error.message?.includes("cancelled") &&
-      options.onCancel
-    ) {
-      options.onCancel();
-    }
+
     throw error;
   }
 };

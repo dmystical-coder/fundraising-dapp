@@ -1,6 +1,5 @@
 import { FUNDRAISING_CONTRACT, SBTC_CONTRACT } from "@/constants/contracts";
-import { ContractCallRegularOptions } from "@stacks/connect";
-import { Network } from "./contract-utils";
+import { ContractCallOptions, Network } from "./contract-utils";
 import {
   AnchorMode,
   FungiblePostCondition,
@@ -20,7 +19,7 @@ interface ContributeParams {
 export const getContributeStxTx = (
   network: Network,
   params: ContributeParams // Send amount in microstacks
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   const { address, campaignId, amount } = params;
 
   return {
@@ -38,7 +37,7 @@ export const getContributeStxTx = (
 export const getContributeSbtcTx = (
   network: Network,
   params: ContributeParams // Send amount in sats
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   const { address, campaignId, amount } = params;
 
   const postCondition: FungiblePostCondition = {
@@ -67,7 +66,7 @@ export const getCreateCampaignTx = (
   goalInUSD: number,
   endAt: number = 0,
   beneficiary: string = address
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   return {
     anchorMode: AnchorMode.Any,
     postConditionMode: PostConditionMode.Deny,
@@ -84,7 +83,7 @@ export const getCancelTx = (
   network: Network,
   address: string,
   campaignId: number
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   return {
     anchorMode: AnchorMode.Any,
     postConditionMode: PostConditionMode.Deny,
@@ -101,7 +100,7 @@ export const getRefundTx = (
   network: Network,
   address: string,
   campaignId: number
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   return {
     anchorMode: AnchorMode.Any,
     postConditionMode: PostConditionMode.Deny,
@@ -122,7 +121,7 @@ export const getWithdrawTx = (
     totalStxUstx?: bigint | number;
     totalSbtcSats?: bigint | number;
   }
-): ContractCallRegularOptions => {
+): ContractCallOptions => {
   const fundraisingContractId =
     `${FUNDRAISING_CONTRACT.address}.${FUNDRAISING_CONTRACT.name}` as `${string}.${string}`;
   const sbtcContractId =

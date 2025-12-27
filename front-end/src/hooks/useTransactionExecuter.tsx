@@ -1,11 +1,11 @@
 import {
+  ContractCallOptions,
   executeContractCall,
   isDevnetEnvironment,
   openContractCall,
 } from "@/lib/contract-utils";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
 import { Box, Flex, useToast } from "@chakra-ui/react";
-import { ContractCallRegularOptions } from "@stacks/connect";
 
 // Execute a stx transaction on-chain from the client.
 // For devnet, it directly calls the transaction.
@@ -14,7 +14,7 @@ export default function useTransactionExecuter() {
   const toast = useToast();
 
   return async (
-    txOptions: ContractCallRegularOptions,
+    txOptions: ContractCallOptions,
     devnetWallet: DevnetWallet | null,
     successMessage: string,
     errorMessage: string
