@@ -100,13 +100,13 @@ const fonts = {
 const styles = {
   global: {
     "html, body": {
-      bg: "warm.bg",
-      color: "gray.800",
+      bg: "chakra-body-bg",
+      color: "chakra-body-text",
     },
     a: {
-      color: "secondary.600",
+      color: "linkColor",
       _hover: {
-        color: "secondary.700",
+        color: "linkHoverColor",
         textDecoration: "underline",
       },
     },
@@ -171,13 +171,13 @@ const components = {
         };
       },
       ghost: {
-        color: "gray.700",
+        color: "chakra-body-text",
         _hover: {
-          bg: "warm.muted",
-          color: "gray.900",
+          bg: "mutedBg",
+          color: "chakra-body-text",
         },
         _active: {
-          bg: "warm.border",
+          bg: "chakra-border-color",
         },
       },
     },
@@ -189,11 +189,11 @@ const components = {
   Card: {
     baseStyle: {
       container: {
-        bg: "warm.surface",
+        bg: "surfaceBg",
         borderRadius: "xl",
         boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04)",
         border: "1px solid",
-        borderColor: "warm.border",
+        borderColor: "chakra-border-color",
       },
     },
   },
@@ -232,7 +232,7 @@ const components = {
   Progress: {
     baseStyle: {
       track: {
-        bg: "warm.muted",
+        bg: "mutedBg",
         borderRadius: "full",
       },
       filledTrack: {
@@ -250,7 +250,7 @@ const components = {
   },
   Heading: {
     baseStyle: {
-      color: "gray.800",
+      color: "chakra-body-text",
       fontWeight: "700",
     },
   },
@@ -269,11 +269,11 @@ const components = {
   Stat: {
     baseStyle: {
       container: {
-        bg: "warm.surface",
+        bg: "surfaceBg",
         p: 4,
         borderRadius: "lg",
         border: "1px solid",
-        borderColor: "warm.border",
+        borderColor: "chakra-border-color",
       },
       label: {
         color: "gray.500",
@@ -281,7 +281,7 @@ const components = {
         fontWeight: "500",
       },
       number: {
-        color: "gray.800",
+        color: "chakra-body-text",
         fontWeight: "700",
       },
     },
@@ -290,7 +290,8 @@ const components = {
     variants: {
       outline: {
         field: {
-          borderColor: "warm.border",
+          borderColor: "chakra-border-color",
+          bg: "surfaceBg",
           _hover: {
             borderColor: "primary.300",
           },
@@ -305,7 +306,7 @@ const components = {
   Modal: {
     baseStyle: {
       dialog: {
-        bg: "warm.surface",
+        bg: "surfaceBg",
         borderRadius: "xl",
       },
     },
@@ -323,7 +324,7 @@ const components = {
 
 // Theme configuration
 const config: ThemeConfig = {
-  initialColorMode: "light",
+  initialColorMode: "dark",
   useSystemColorMode: false,
 };
 
@@ -336,9 +337,13 @@ const theme = extendTheme({
   // Semantic tokens for easier theming
   semanticTokens: {
     colors: {
-      "chakra-body-bg": "warm.bg",
-      "chakra-body-text": "gray.800",
-      "chakra-border-color": "warm.border",
+      "chakra-body-bg": { _light: "warm.bg", _dark: "gray.900" },
+      "chakra-body-text": { _light: "gray.800", _dark: "gray.50" },
+      "chakra-border-color": { _light: "warm.border", _dark: "gray.700" },
+      surfaceBg: { _light: "warm.surface", _dark: "gray.800" },
+      mutedBg: { _light: "warm.muted", _dark: "gray.700" },
+      linkColor: { _light: "secondary.600", _dark: "secondary.300" },
+      linkHoverColor: { _light: "secondary.700", _dark: "secondary.200" },
     },
   },
 });
