@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Container,
   Box,
@@ -74,6 +75,7 @@ const initialFormData: FormData = {
 export default function CreateCampaignPage() {
   const router = useRouter();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const address = useAddress();
   const { activeStep, setActiveStep, goToNext, goToPrevious } = useSteps({
     index: 0,
@@ -194,6 +196,10 @@ export default function CreateCampaignPage() {
         ],
         network: getStacksNetwork(),
         onFinish: () => {
+          // Invalidate campaigns query to trigger immediate refresh
+          queryClient.invalidateQueries({ queryKey: ["indexer", "campaigns"] });
+          queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+          
           toast({
             title: "Campaign Created!",
             description: "Your campaign has been submitted. Metadata will be saved once confirmed.",
