@@ -113,7 +113,7 @@ export function CampaignGrid({
               created_at: new Date(meta.createdAt).toISOString(),
               isExpired: false,
               // Add a special flag to identify pending campaigns
-              // @ts-ignore
+              // @ts-expect-error
               isPending: true
             });
           }
@@ -257,7 +257,7 @@ export function CampaignGrid({
               stxPrice={prices?.stx}
               sbtcPrice={prices?.sbtc}
               title={campaign.title || undefined}
-              // @ts-ignore - Handle custom isPending flag
+              // @ts-expect-error - Handle custom isPending flag
               isPending={campaign.isPending}
             />
           ))}
