@@ -28,7 +28,7 @@ import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
 import { useCampaignById } from "@/hooks/campaignQueries";
-import { useCampaignActivity, useCampaignLeaderboard } from "@/hooks/indexerQueries";
+import { useCampaignActivity, useCampaignLeaderboard, useIndexerCampaign } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
@@ -49,6 +49,7 @@ export default function CampaignDetailPage() {
 
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
+  const { data: indexedCampaign } = useIndexerCampaign(campaignId);
   const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
   
@@ -127,9 +128,14 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  // Calculate progress with safety checks for NaN/undefined
-  const stxAmount = campaign.totalStx || 0;
-  const sbtcAmount = campaign.totalSbtc || 0;
+  // Calculate progress using historical totals from indexer (on-chain totals are 0 after withdrawal)
+  // Indexer stores totals as strings, so parse them
+  const stxAmount = indexedCampaign?.total_stx 
+    ? parseInt(indexedCampaign.total_stx, 10) 
+    : (campaign.totalStx || 0);
+  const sbtcAmount = indexedCampaign?.total_sbtc 
+    ? parseInt(indexedCampaign.total_sbtc, 10) 
+    : (campaign.totalSbtc || 0);
   const stxPrice = prices?.stx || 0;
   const sbtcPrice = prices?.sbtc || 0;
   const stxUsd = (stxAmount / 1_000_000) * stxPrice;
@@ -189,8 +195,8 @@ export default function CampaignDetailPage() {
                   </HStack>
                   
                   <CombinedAmountDisplay
-                    stxAmount={campaign.totalStx}
-                    sbtcAmount={campaign.totalSbtc}
+                    stxAmount={stxAmount}
+                    sbtcAmount={sbtcAmount}
                     stxPrice={prices?.stx}
                     sbtcPrice={prices?.sbtc}
                     size="lg"
