@@ -127,10 +127,14 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  // Calculate progress
-  const stxUsd = prices?.stx ? (campaign.totalStx / 1_000_000) * prices.stx : 0;
-  const sbtcUsd = prices?.sbtc ? (campaign.totalSbtc / 100_000_000) * prices.sbtc : 0;
-  const totalUsd = stxUsd + sbtcUsd;
+  // Calculate progress with safety checks for NaN/undefined
+  const stxAmount = campaign.totalStx || 0;
+  const sbtcAmount = campaign.totalSbtc || 0;
+  const stxPrice = prices?.stx || 0;
+  const sbtcPrice = prices?.sbtc || 0;
+  const stxUsd = (stxAmount / 1_000_000) * stxPrice;
+  const sbtcUsd = (sbtcAmount / 100_000_000) * sbtcPrice;
+  const totalUsd = isNaN(stxUsd + sbtcUsd) ? 0 : stxUsd + sbtcUsd;
   const progress = campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
 
   return (
