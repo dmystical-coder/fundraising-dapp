@@ -21,6 +21,7 @@ const EnvSchema = z
     PORT: z.string().min(1).optional(),
 
     CHAINHOOKS_REPLACE_EXISTING: z.enum(["0", "1", "true", "false"]).optional(),
+    CHAINHOOKS_START_BLOCK: z.string().regex(/^\d+$/).optional(),
   })
   .passthrough();
 
@@ -80,18 +81,21 @@ async function main() {
     jwt: env.CHAINHOOKS_JWT,
   });
 
-  const definition: ChainhookDefinition = {
+  const definition: any = {
     name,
     version: "1",
     chain: "stacks",
     network,
+    start_block: env.CHAINHOOKS_START_BLOCK
+      ? parseInt(env.CHAINHOOKS_START_BLOCK, 10)
+      : undefined,
     filters: {
       events: [
         {
           type: "contract_log",
-          ...(env.EXPECTED_CONTRACT_IDENTIFIER
-            ? { contract_identifier: env.EXPECTED_CONTRACT_IDENTIFIER }
-            : {}),
+          contract_identifier:
+            env.EXPECTED_CONTRACT_IDENTIFIER ||
+            "SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH.fundraising",
         },
       ],
     },

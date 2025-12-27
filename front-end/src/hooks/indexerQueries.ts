@@ -134,8 +134,8 @@ export function useIndexerCampaigns(): UseQueryResult<IndexedCampaign[]> {
       );
       return data.campaigns;
     },
-    staleTime: 30_000, // 30 seconds
-    refetchInterval: 60_000, // 1 minute
+    staleTime: 10_000, // 10 seconds
+    refetchInterval: 15_000, // 15 seconds - faster polling for new campaigns
   });
 }
 

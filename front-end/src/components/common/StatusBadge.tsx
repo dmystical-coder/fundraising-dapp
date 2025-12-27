@@ -7,6 +7,10 @@ export type CampaignStatus = "active" | "ended" | "cancelled" | "withdrawn";
 interface StatusBadgeProps extends Omit<BadgeProps, "variant"> {
   status: CampaignStatus;
   size?: "sm" | "md" | "lg";
+  overrides?: {
+    label?: string;
+    colorScheme?: string;
+  };
 }
 
 const statusConfig: Record<
@@ -61,6 +65,7 @@ export function getCampaignStatus(campaign: {
 export function StatusBadge({
   status,
   size = "md",
+  overrides,
   ...props
 }: StatusBadgeProps) {
   const config = statusConfig[status];
@@ -68,7 +73,7 @@ export function StatusBadge({
 
   return (
     <Badge
-      colorScheme={config.colorScheme}
+      colorScheme={overrides?.colorScheme || config.colorScheme}
       borderRadius="full"
       textTransform="uppercase"
       fontWeight="600"
@@ -76,7 +81,7 @@ export function StatusBadge({
       {...sizeStyle}
       {...props}
     >
-      {config.label}
+      {overrides?.label || config.label}
     </Badge>
   );
 }
