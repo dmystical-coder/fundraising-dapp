@@ -12,10 +12,11 @@ import {
   VStack,
   Button,
 } from "@chakra-ui/react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
+import { useAddress } from "@/components/ConnectWallet";
 
 type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
 
@@ -78,23 +79,85 @@ export function CampaignGrid({
   limit,
 }: CampaignGridProps) {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
+  const address = useAddress();
 
   // Use prop campaigns or fetch from indexer
   const { data: indexerCampaigns, isLoading: indexerLoading } =
     useIndexerCampaigns();
   const { data: prices } = useCurrentPrices();
 
+  // Check for pending campaign metadata in localStorage
+  useEffect(() => {
+    if (!address) return;
+    
+    const checkPending = () => {
+      const key = `pending_campaign_metadata_${address}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const meta = JSON.parse(saved);
+          // Only show if recent (< 24h)
+          if (Date.now() - meta.createdAt < 86400000) {
+            setPendingCampaign({
+              campaign_id: -1, // Temporary ID
+              owner: meta.owner,
+              beneficiary: meta.owner,
+              title: meta.title,
+              description: meta.description,
+              total_stx: "0",
+              total_sbtc: "0",
+              donation_count: 0,
+              is_cancelled: false,
+              is_withdrawn: false,
+              created_at: new Date(meta.createdAt).toISOString(),
+              isExpired: false,
+              // Add a special flag to identify pending campaigns
+              // @ts-ignore
+              isPending: true
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse pending metadata", e);
+        }
+      } else {
+        setPendingCampaign(null);
+      }
+    };
+
+    checkPending();
+    // Poll for changes in case it gets cleared
+    const interval = setInterval(checkPending, 2000);
+    return () => clearInterval(interval);
+  }, [address]);
+
   const isLoading = propIsLoading !== undefined ? propIsLoading : indexerLoading;
 
   // Transform and sort campaigns
   const displayCampaigns = useMemo(() => {
-    const baseCampaigns = propCampaigns || indexerCampaigns || [];
+    let baseCampaigns = propCampaigns || indexerCampaigns || [];
+    
+    // Filter out any campaigns that match our pending one (by title/owner) to avoid duplicates
+    if (pendingCampaign) {
+       const exists = baseCampaigns.some(c => 
+         c.owner === pendingCampaign.owner && 
+         c.title === pendingCampaign.title
+       );
+       if (exists) {
+         // If it exists in indexer, stop showing pending
+         setPendingCampaign(null); 
+       } else {
+         // Prepend pending campaign
+         baseCampaigns = [pendingCampaign, ...baseCampaigns];
+       }
+    }
+
     // Add isExpired flag based on current time and endAt
     const now = Math.floor(Date.now() / 1000);
     const enriched: CampaignWithOnChain[] = baseCampaigns.map((c) => ({
       ...c,
-      endAt: (c as CampaignWithOnChain).endAt,
-      goal: (c as CampaignWithOnChain).goal,
+      endAt: (c as CampaignWithOnChain).endAt || 0,
+      goal: (c as CampaignWithOnChain).goal || 0,
       isExpired: (c as CampaignWithOnChain).endAt 
         ? ((c as CampaignWithOnChain).endAt as number) <= now 
         : false,
@@ -102,7 +165,7 @@ export function CampaignGrid({
 
     const sorted = sortCampaigns(enriched, sortBy);
     return limit ? sorted.slice(0, limit) : sorted;
-  }, [propCampaigns, indexerCampaigns, sortBy, limit]);
+  }, [propCampaigns, indexerCampaigns, sortBy, limit, pendingCampaign]);
 
   if (isLoading) {
     return (
@@ -193,6 +256,9 @@ export function CampaignGrid({
               isExpired={campaign.isExpired}
               stxPrice={prices?.stx}
               sbtcPrice={prices?.sbtc}
+              title={campaign.title || undefined}
+              // @ts-ignore - Handle custom isPending flag
+              isPending={campaign.isPending}
             />
           ))}
         </SimpleGrid>
