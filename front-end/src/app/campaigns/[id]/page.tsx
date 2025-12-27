@@ -37,6 +37,7 @@ import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
+import { useAddress } from "@/components/ConnectWallet";
 
 /**
  * Campaign detail page with dynamic routing.
@@ -50,6 +51,11 @@ export default function CampaignDetailPage() {
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
   const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
+  
+  // Get current wallet address to check ownership
+  const currentAddress = useAddress();
+  const isOwner = currentAddress && campaign?.owner && 
+    currentAddress.toLowerCase() === campaign.owner.toLowerCase();
 
   // Loading state
   if (isLoading || pricesLoading) {
@@ -229,16 +235,18 @@ export default function CampaignDetailPage() {
               </CardBody>
             </Card>
 
-            {/* Admin controls */}
-            <CampaignAdminControls
-              campaignId={campaign.id}
-              campaignIsUninitialized={false}
-              campaignIsCancelled={campaign.isCancelled}
-              campaignIsExpired={campaign.isExpired}
-              campaignIsWithdrawn={campaign.isWithdrawn}
-              totalStx={campaign.totalStx}
-              totalSbtc={campaign.totalSbtc}
-            />
+            {/* Admin controls - only visible to campaign owner */}
+            {isOwner && (
+              <CampaignAdminControls
+                campaignId={campaign.id}
+                campaignIsUninitialized={false}
+                campaignIsCancelled={campaign.isCancelled}
+                campaignIsExpired={campaign.isExpired}
+                campaignIsWithdrawn={campaign.isWithdrawn}
+                totalStx={campaign.totalStx}
+                totalSbtc={campaign.totalSbtc}
+              />
+            )}
 
             {/* Activity Feed */}
             <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
@@ -261,8 +269,8 @@ export default function CampaignDetailPage() {
         {/* Sidebar */}
         <GridItem>
           <VStack spacing={6} align="stretch" position="sticky" top={6}>
-            {/* Donation panel */}
-            {status === "active" && (
+            {/* Donation panel - hidden from campaign owner */}
+            {status === "active" && !isOwner && (
               <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
                 <CardHeader>
                   <Heading size="md" color="gray.700">Support This Campaign</Heading>
