@@ -315,6 +315,7 @@ export default function CampaignDetailPage() {
                   <DonationModal
                     isOpen={isDonateOpen}
                     campaignId={campaign.id}
+                    campaignTitle={campaign.title || `Campaign #${campaign.id}`}
                     onClose={onDonateClose}
                   />
                 </CardBody>

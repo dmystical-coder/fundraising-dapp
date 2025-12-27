@@ -49,10 +49,12 @@ import {
 export default function DonationModal({
   isOpen,
   campaignId,
+  campaignTitle,
   onClose,
 }: {
   isOpen: boolean;
   campaignId: number | null;
+  campaignTitle?: string;
   onClose: () => void;
 }) {
   const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
@@ -81,6 +83,7 @@ export default function DonationModal({
   const [paymentMethod, setPaymentMethod] = useState("stx");
   const [customAmount, setCustomAmount] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [successTxId, setSuccessTxId] = useState<string | null>(null);
   const toast = useToast();
 
   const presetAmounts = [10, 25, 50, 100];
@@ -142,8 +145,12 @@ export default function DonationModal({
               ),
             });
 
-      const doSuccessToast = (txid: string) => {
+      const doSuccess = (txid: string) => {
+        setSuccessTxId(txid);
+        setIsLoading(false);
+        // Don't close modal, show success state
         toast({
+          title: "Donation Submitted!",
           title: "Thank you!",
           description: (
             <Flex direction="column" gap="4">
@@ -162,12 +169,12 @@ export default function DonationModal({
       // Devnet uses direct call, Testnet/Mainnet needs to prompt with browser extension
       if (isDevnetEnvironment()) {
         const { txid } = await executeContractCall(txOptions, devnetWallet);
-        doSuccessToast(txid);
+        doSuccess(txid);
       } else {
         await openContractCall({
           ...txOptions,
           onFinish: (data) => {
-            doSuccessToast(data.txId);
+            doSuccess(data.txId);
           },
           onCancel: () => {
             toast({
@@ -176,6 +183,8 @@ export default function DonationModal({
               status: "info",
               duration: 3000,
             });
+            setIsLoading(false);
+            onClose();
           },
         });
       }
@@ -188,10 +197,36 @@ export default function DonationModal({
         description: "Failed to make contribution",
         status: "error",
       });
-    } finally {
       setIsLoading(false);
-      onClose();
+      onClose(); // Only close on error or user cancel if not handled
     }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.origin + `/campaigns/${campaignId}`;
+    const text = `I just contributed to "${campaignTitle || 'a campaign'}" on Stacks! Join me in supporting this project.`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "I just donated!",
+          text: text,
+          url: url,
+        });
+      } catch (err) {
+        console.warn("Share failed", err);
+      }
+    } else {
+      navigator.clipboard.writeText(`${text} ${url}`);
+      toast({ title: "Link copied to clipboard!", status: "success" });
+    }
+  };
+
+  const handleReset = () => {
+    setSuccessTxId(null);
+    setCustomAmount("");
+    setSelectedAmount(null);
+    onClose();
   };
 
   return (
@@ -223,6 +258,49 @@ export default function DonationModal({
                   <ConnectWalletButton />
                 )}
               </Flex>
+            ) : successTxId ? (
+              <VStack spacing={6} py={8} textAlign="center">
+                <Box color="success.500">
+                  <svg
+                    width="64"
+                    height="64"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </Box>
+                <VStack spacing={2}>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    Thank You!
+                  </Text>
+                  <Text color="gray.600">
+                    Your donation of ${selectedAmount || customAmount} has been submitted.
+                  </Text>
+                  <Text fontSize="xs" color="gray.400">
+                    TxID: {successTxId.slice(0, 8)}...{successTxId.slice(-8)}
+                  </Text>
+                </VStack>
+
+                <Button
+                  onClick={handleShare}
+                  size="lg"
+                  colorScheme="twitter"
+                  width="100%"
+                  leftIcon={<span>📣</span>}
+                >
+                  Share Contribution
+                </Button>
+
+                <Button variant="ghost" onClick={handleReset}>
+                  Close
+                </Button>
+              </VStack>
             ) : (
               <>
                 {hasMadePreviousDonation ? (
@@ -334,9 +412,11 @@ export default function DonationModal({
             )}
           </Flex>
         </ModalBody>
-        <ModalFooter>
-          <Button onClick={onClose}>Close</Button>
-        </ModalFooter>
+        {!successTxId && (
+          <ModalFooter>
+             <Button onClick={onClose}>Close</Button>
+          </ModalFooter>
+        )}
       </ModalContent>
     </Modal>
   );
