@@ -46,6 +46,8 @@ import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
 import { openContractCall } from "@/lib/contract-utils";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
 import { getStacksNetwork } from "@/lib/stacks-api";
+import { saveCampaignMetadata } from "@/hooks/indexerQueries";
+import { useLastCampaignId } from "@/hooks/campaignQueries";
 
 // Form steps configuration
 const steps = [
@@ -181,6 +183,16 @@ export default function CreateCampaignPage() {
       const beneficiaryAddress = formData.beneficiary || address;
       const endAt = getEndTimestamp();
 
+      // Store pending metadata in localStorage keyed by owner address
+      // This will be picked up after the campaign is confirmed on-chain
+      const pendingMetadata = {
+        owner: address,
+        title: formData.title,
+        description: formData.description,
+        createdAt: Date.now(),
+      };
+      localStorage.setItem(`pending_campaign_metadata_${address}`, JSON.stringify(pendingMetadata));
+
       await openContractCall({
         contractAddress: FUNDRAISING_CONTRACT.address || "",
         contractName: FUNDRAISING_CONTRACT.name,
@@ -194,7 +206,7 @@ export default function CreateCampaignPage() {
         onFinish: () => {
           toast({
             title: "Campaign Created!",
-            description: "Your campaign has been submitted. It will appear once confirmed.",
+            description: "Your campaign has been submitted. Metadata will be saved once confirmed.",
             status: "success",
             duration: 8000,
             isClosable: true,
@@ -204,6 +216,8 @@ export default function CreateCampaignPage() {
         },
         onCancel: () => {
           setIsSubmitting(false);
+          // Clean up pending metadata on cancel
+          localStorage.removeItem(`pending_campaign_metadata_${address}`);
           toast({
             title: "Transaction Cancelled",
             status: "warning",
@@ -213,6 +227,8 @@ export default function CreateCampaignPage() {
       });
     } catch (error) {
       console.error("Failed to create campaign:", error);
+      // Clean up pending metadata on error
+      localStorage.removeItem(`pending_campaign_metadata_${address}`);
       toast({
         title: "Failed to create campaign",
         description: error instanceof Error ? error.message : "Unknown error occurred",

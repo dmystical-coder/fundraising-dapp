@@ -28,7 +28,7 @@ import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
 import { useCampaignById } from "@/hooks/campaignQueries";
-import { useCampaignActivity, useCampaignLeaderboard } from "@/hooks/indexerQueries";
+import { useCampaignActivity, useCampaignLeaderboard, useIndexerCampaign } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
@@ -37,6 +37,7 @@ import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
+import { useAddress } from "@/components/ConnectWallet";
 
 /**
  * Campaign detail page with dynamic routing.
@@ -48,8 +49,14 @@ export default function CampaignDetailPage() {
 
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
+  const { data: indexedCampaign } = useIndexerCampaign(campaignId);
   const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
+  
+  // Get current wallet address to check ownership
+  const currentAddress = useAddress();
+  const isOwner = currentAddress && campaign?.owner && 
+    currentAddress.toLowerCase() === campaign.owner.toLowerCase();
 
   // Loading state
   if (isLoading || pricesLoading) {
@@ -121,10 +128,19 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  // Calculate progress
-  const stxUsd = prices?.stx ? (campaign.totalStx / 1_000_000) * prices.stx : 0;
-  const sbtcUsd = prices?.sbtc ? (campaign.totalSbtc / 100_000_000) * prices.sbtc : 0;
-  const totalUsd = stxUsd + sbtcUsd;
+  // Calculate progress using historical totals from indexer (on-chain totals are 0 after withdrawal)
+  // Indexer stores totals as strings, so parse them
+  const stxAmount = indexedCampaign?.total_stx 
+    ? parseInt(indexedCampaign.total_stx, 10) 
+    : (campaign.totalStx || 0);
+  const sbtcAmount = indexedCampaign?.total_sbtc 
+    ? parseInt(indexedCampaign.total_sbtc, 10) 
+    : (campaign.totalSbtc || 0);
+  const stxPrice = prices?.stx || 0;
+  const sbtcPrice = prices?.sbtc || 0;
+  const stxUsd = (stxAmount / 1_000_000) * stxPrice;
+  const sbtcUsd = (sbtcAmount / 100_000_000) * sbtcPrice;
+  const totalUsd = isNaN(stxUsd + sbtcUsd) ? 0 : stxUsd + sbtcUsd;
   const progress = campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
 
   return (
@@ -153,8 +169,13 @@ export default function CampaignDetailPage() {
                 )}
               </HStack>
               <Heading size="xl" color="gray.800" mb={2}>
-                Campaign #{campaign.id}
+                {indexedCampaign?.title || `Campaign #${campaign.id}`}
               </Heading>
+              {indexedCampaign?.description && (
+                <Text color="gray.600" mb={4} whiteSpace="pre-wrap">
+                  {indexedCampaign.description}
+                </Text>
+              )}
               <HStack spacing={4} flexWrap="wrap">
                 <HStack>
                   <Text color="gray.500" fontSize="sm">Owner:</Text>
@@ -179,8 +200,8 @@ export default function CampaignDetailPage() {
                   </HStack>
                   
                   <CombinedAmountDisplay
-                    stxAmount={campaign.totalStx}
-                    sbtcAmount={campaign.totalSbtc}
+                    stxAmount={stxAmount}
+                    sbtcAmount={sbtcAmount}
                     stxPrice={prices?.stx}
                     sbtcPrice={prices?.sbtc}
                     size="lg"
@@ -220,25 +241,37 @@ export default function CampaignDetailPage() {
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
                       <Text fontWeight="700" fontSize="xl" color="gray.800">
-                        {new Date(campaign.createdAt * 1000).toLocaleDateString()}
+                        {(() => {
+                          if (!campaign.endAt) return "Ongoing";
+                          const durationSecs = campaign.endAt - campaign.createdAt;
+                          const days = Math.floor(durationSecs / 86400);
+                          const hours = Math.floor((durationSecs % 86400) / 3600);
+                          const minutes = Math.floor((durationSecs % 3600) / 60);
+                          if (days > 0) return `${days} day${days !== 1 ? "s" : ""}`;
+                          if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+                          if (minutes > 0) return `${minutes} min${minutes !== 1 ? "s" : ""}`;
+                          return "< 1 min";
+                        })()}
                       </Text>
-                      <Text fontSize="sm" color="gray.500">Created</Text>
+                      <Text fontSize="sm" color="gray.500">Duration</Text>
                     </VStack>
                   </HStack>
                 </VStack>
               </CardBody>
             </Card>
 
-            {/* Admin controls */}
-            <CampaignAdminControls
-              campaignId={campaign.id}
-              campaignIsUninitialized={false}
-              campaignIsCancelled={campaign.isCancelled}
-              campaignIsExpired={campaign.isExpired}
-              campaignIsWithdrawn={campaign.isWithdrawn}
-              totalStx={campaign.totalStx}
-              totalSbtc={campaign.totalSbtc}
-            />
+            {/* Admin controls - only visible to campaign owner */}
+            {isOwner && (
+              <CampaignAdminControls
+                campaignId={campaign.id}
+                campaignIsUninitialized={false}
+                campaignIsCancelled={campaign.isCancelled}
+                campaignIsExpired={campaign.isExpired}
+                campaignIsWithdrawn={campaign.isWithdrawn}
+                totalStx={campaign.totalStx}
+                totalSbtc={campaign.totalSbtc}
+              />
+            )}
 
             {/* Activity Feed */}
             <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
@@ -261,8 +294,8 @@ export default function CampaignDetailPage() {
         {/* Sidebar */}
         <GridItem>
           <VStack spacing={6} align="stretch" position="sticky" top={6}>
-            {/* Donation panel */}
-            {status === "active" && (
+            {/* Donation panel - hidden from campaign owner */}
+            {status === "active" && !isOwner && (
               <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
                 <CardHeader>
                   <Heading size="md" color="gray.700">Support This Campaign</Heading>

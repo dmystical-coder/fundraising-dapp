@@ -127,19 +127,22 @@ app.get("/api/campaigns", async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT 
-        campaign_id,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN owner END) as owner,
+        fe.campaign_id,
+        MAX(CASE WHEN event_name = 'campaign-created' THEN fe.owner END) as owner,
         MAX(CASE WHEN event_name = 'campaign-created' THEN beneficiary END) as beneficiary,
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
         BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
         BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
-        MIN(inserted_at) as created_at
-      FROM fundraising_events
-      WHERE campaign_id IS NOT NULL
-      GROUP BY campaign_id
-      ORDER BY campaign_id DESC
+        MIN(fe.inserted_at) as created_at,
+        MAX(cm.title) as title,
+        MAX(cm.description) as description
+      FROM fundraising_events fe
+      LEFT JOIN campaign_metadata cm ON fe.campaign_id = cm.campaign_id
+      WHERE fe.campaign_id IS NOT NULL
+      GROUP BY fe.campaign_id
+      ORDER BY fe.campaign_id DESC
     `);
     res.json({ campaigns: result.rows });
   } catch (err) {
@@ -163,18 +166,21 @@ app.get("/api/campaigns/:id", async (req: Request, res: Response) => {
     const result = await db.query(
       `
       SELECT 
-        campaign_id,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN owner END) as owner,
+        fe.campaign_id,
+        MAX(CASE WHEN event_name = 'campaign-created' THEN fe.owner END) as owner,
         MAX(CASE WHEN event_name = 'campaign-created' THEN beneficiary END) as beneficiary,
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
         BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
         BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
-        MIN(inserted_at) as created_at
-      FROM fundraising_events
-      WHERE campaign_id = $1
-      GROUP BY campaign_id
+        MIN(fe.inserted_at) as created_at,
+        MAX(cm.title) as title,
+        MAX(cm.description) as description
+      FROM fundraising_events fe
+      LEFT JOIN campaign_metadata cm ON fe.campaign_id = cm.campaign_id
+      WHERE fe.campaign_id = $1
+      GROUP BY fe.campaign_id
     `,
       [campaignId]
     );
@@ -187,6 +193,48 @@ app.get("/api/campaigns/:id", async (req: Request, res: Response) => {
     res.json({ campaign: result.rows[0] });
   } catch (err) {
     console.error("Error fetching campaign:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+/**
+ * POST /api/campaigns/:id/metadata
+ * Save or update campaign metadata (title, description).
+ */
+app.post("/api/campaigns/:id/metadata", async (req: Request, res: Response) => {
+  const campaignId = parseInt(req.params.id, 10);
+  if (isNaN(campaignId)) {
+    res.status(400).json({ error: "Invalid campaign ID" });
+    return;
+  }
+
+  const { title, description, owner } = req.body as {
+    title?: string;
+    description?: string;
+    owner?: string;
+  };
+
+  if (!title || !owner) {
+    res.status(400).json({ error: "Title and owner are required" });
+    return;
+  }
+
+  try {
+    await db.query(
+      `
+      INSERT INTO campaign_metadata (campaign_id, owner, title, description)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (campaign_id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        updated_at = now()
+    `,
+      [campaignId, owner, title, description || ""]
+    );
+
+    res.json({ ok: true, campaignId });
+  } catch (err) {
+    console.error("Error saving campaign metadata:", err);
     res.status(500).json({ error: "Database error" });
   }
 });

@@ -1,7 +1,23 @@
 "use client";
 
-import { Box, Container, Flex, Link, HStack, Button } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Container,
+  Flex,
+  Link,
+  HStack,
+  Button,
+  IconButton,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerHeader,
+  DrawerBody,
+  VStack,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { AddIcon, HamburgerIcon } from "@chakra-ui/icons";
 import NextLink from "next/link";
 import { isDevnetEnvironment } from "@/lib/contract-utils";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
@@ -11,6 +27,7 @@ import { ConnectWalletButton, useAddress } from "./ConnectWallet";
 export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
   const address = useAddress();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <Box as="nav" bg="warm.surface" borderBottomWidth="1px" borderColor="warm.border">
@@ -45,7 +62,7 @@ export const Navbar = () => {
               </HStack>
             </Link>
 
-            {/* Navigation Links */}
+            {/* Desktop Navigation Links */}
             <HStack spacing={4} display={{ base: "none", md: "flex" }}>
               <Link
                 as={NextLink}
@@ -94,10 +111,66 @@ export const Navbar = () => {
             ) : (
               <ConnectWalletButton />
             )}
+            
+            {/* Mobile hamburger menu */}
+            <IconButton
+              aria-label="Open menu"
+              icon={<HamburgerIcon />}
+              variant="ghost"
+              display={{ base: "flex", md: "none" }}
+              onClick={onOpen}
+            />
           </HStack>
         </Flex>
       </Container>
+
+      {/* Mobile drawer menu */}
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px">Menu</DrawerHeader>
+          <DrawerBody>
+            <VStack spacing={4} align="stretch" pt={4}>
+              <Link
+                as={NextLink}
+                href="/"
+                color="gray.700"
+                fontWeight="500"
+                fontSize="lg"
+                _hover={{ color: "primary.600" }}
+                onClick={onClose}
+              >
+                Campaigns
+              </Link>
+              {address && (
+                <Link
+                  as={NextLink}
+                  href="/dashboard"
+                  color="gray.700"
+                  fontWeight="500"
+                  fontSize="lg"
+                  _hover={{ color: "primary.600" }}
+                  onClick={onClose}
+                >
+                  Dashboard
+                </Link>
+              )}
+              <Button
+                as={NextLink}
+                href="/campaigns/new"
+                leftIcon={<AddIcon />}
+                bg="primary.500"
+                color="white"
+                _hover={{ bg: "primary.600", color: "white" }}
+                onClick={onClose}
+              >
+                Create Campaign
+              </Button>
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 };
-

@@ -8,6 +8,7 @@ export const INDEXER_CONFIG = {
   endpoints: {
     campaigns: "/api/campaigns",
     campaign: (id: number) => `/api/campaigns/${id}`,
+    campaignMetadata: (id: number) => `/api/campaigns/${id}/metadata`,
     campaignEvents: (id: number) => `/api/campaigns/${id}/events`,
     campaignLeaderboard: (id: number) => `/api/campaigns/${id}/leaderboard`,
     activity: "/api/activity",
