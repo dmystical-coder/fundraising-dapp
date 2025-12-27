@@ -33,6 +33,7 @@ async function main() {
   console.log(`Checking status for Chainhook UUID: ${uuid}...`);
   try {
     const hook = await client.getChainhook(uuid);
+    console.log("Hook Definition:", JSON.stringify(hook.definition, null, 2));
     console.log("Hook Status:", JSON.stringify(hook.status, null, 2));
     
     // Also try to list events? The client might support it but it's not in the simple interface

@@ -93,9 +93,9 @@ async function main() {
       events: [
         {
           type: "contract_log",
-          ...(env.EXPECTED_CONTRACT_IDENTIFIER
-            ? { contract_identifier: env.EXPECTED_CONTRACT_IDENTIFIER }
-            : {}),
+          contract_identifier:
+            env.EXPECTED_CONTRACT_IDENTIFIER ||
+            "SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH.fundraising",
         },
       ],
     },
