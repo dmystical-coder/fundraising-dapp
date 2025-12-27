@@ -29,7 +29,7 @@ const statusConfig: Record<
     variant: "cancelled",
   },
   withdrawn: {
-    label: "Funded",
+    label: "Funded ✓",
     colorScheme: "teal",
     variant: "withdrawn",
   },

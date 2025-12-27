@@ -236,9 +236,19 @@ export default function CampaignDetailPage() {
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
                       <Text fontWeight="700" fontSize="xl" color="gray.800">
-                        {new Date(campaign.createdAt * 1000).toLocaleDateString()}
+                        {(() => {
+                          if (!campaign.endAt) return "Ongoing";
+                          const durationSecs = campaign.endAt - campaign.createdAt;
+                          const days = Math.floor(durationSecs / 86400);
+                          const hours = Math.floor((durationSecs % 86400) / 3600);
+                          const minutes = Math.floor((durationSecs % 3600) / 60);
+                          if (days > 0) return `${days} day${days !== 1 ? "s" : ""}`;
+                          if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+                          if (minutes > 0) return `${minutes} min${minutes !== 1 ? "s" : ""}`;
+                          return "< 1 min";
+                        })()}
                       </Text>
-                      <Text fontSize="sm" color="gray.500">Created</Text>
+                      <Text fontSize="sm" color="gray.500">Duration</Text>
                     </VStack>
                   </HStack>
                 </VStack>
