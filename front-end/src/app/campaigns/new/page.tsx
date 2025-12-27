@@ -59,9 +59,7 @@ interface FormData {
   title: string;
   description: string;
   goal: number;
-  durationDays: number;
-  customEndDate: string;
-  useCustomDate: boolean;
+  endDate: string;
   beneficiary: string;
 }
 
@@ -69,9 +67,7 @@ const initialFormData: FormData = {
   title: "",
   description: "",
   goal: 100,
-  durationDays: 30,
-  customEndDate: "",
-  useCustomDate: false,
+  endDate: "",
   beneficiary: "",
 };
 
@@ -114,13 +110,12 @@ export default function CreateCampaignPage() {
         if (formData.goal <= 0) {
           newErrors.goal = "Goal must be greater than 0";
         }
-        if (!formData.useCustomDate && formData.durationDays < 1) {
-          newErrors.durationDays = "Duration must be at least 1 day";
-        }
-        if (formData.useCustomDate) {
-          const endDate = new Date(formData.customEndDate);
+        if (!formData.endDate) {
+          newErrors.endDate = "End date is required";
+        } else {
+          const endDate = new Date(formData.endDate);
           if (isNaN(endDate.getTime()) || endDate <= new Date()) {
-            newErrors.customEndDate = "End date must be in the future";
+            newErrors.endDate = "End date must be in the future";
           }
         }
         break;
@@ -149,16 +144,13 @@ export default function CreateCampaignPage() {
     }
   };
 
-  // Calculate end timestamp
+  // Calculate end timestamp from selected date
   const getEndTimestamp = (): number => {
-    if (formData.useCustomDate && formData.customEndDate) {
-      return Math.floor(new Date(formData.customEndDate).getTime() / 1000);
+    if (formData.endDate) {
+      return Math.floor(new Date(formData.endDate).getTime() / 1000);
     }
-    // Use 0 to let contract use default duration, or calculate
-    if (formData.durationDays === 30) {
-      return 0; // Contract default
-    }
-    return Math.floor(Date.now() / 1000) + formData.durationDays * 86400;
+    // Default: 30 days from now if no date selected (shouldn't happen due to validation)
+    return Math.floor(Date.now() / 1000) + 30 * 86400;
   };
 
   // Submit campaign
@@ -297,24 +289,20 @@ export default function CreateCampaignPage() {
               <FormErrorMessage>{errors.goal}</FormErrorMessage>
             </FormControl>
 
-            <FormControl isInvalid={!!errors.durationDays}>
-              <FormLabel fontWeight="600">Campaign Duration</FormLabel>
-              <InputGroup size="lg">
-                <NumberInput
-                  value={formData.durationDays}
-                  onChange={(_, val) => updateField("durationDays", val || 30)}
-                  min={1}
-                  max={365}
-                  w="100%"
-                >
-                  <NumberInputField bg="warm.surface" />
-                </NumberInput>
-                <InputRightAddon>days</InputRightAddon>
-              </InputGroup>
+            <FormControl isInvalid={!!errors.endDate}>
+              <FormLabel fontWeight="600">Campaign End Date</FormLabel>
+              <Input
+                type="datetime-local"
+                value={formData.endDate || ""}
+                onChange={(e) => updateField("endDate", e.target.value)}
+                size="lg"
+                bg="warm.surface"
+                min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
+              />
               <FormHelperText>
-                How long should your campaign run? (Default: 30 days)
+                When should your campaign end? Must be at least 1 hour from now.
               </FormHelperText>
-              <FormErrorMessage>{errors.durationDays}</FormErrorMessage>
+              <FormErrorMessage>{errors.endDate}</FormErrorMessage>
             </FormControl>
           </VStack>
         );
@@ -382,8 +370,12 @@ export default function CreateCampaignPage() {
                       </Text>
                     </Box>
                     <Box textAlign="right">
-                      <Text fontSize="sm" color="gray.500">Duration</Text>
-                      <Text fontWeight="600">{formData.durationDays} days</Text>
+                      <Text fontSize="sm" color="gray.500">End Date</Text>
+                      <Text fontWeight="600">
+                        {formData.endDate 
+                          ? new Date(formData.endDate).toLocaleString() 
+                          : "Not set"}
+                      </Text>
                     </Box>
                   </HStack>
                   <Box>
