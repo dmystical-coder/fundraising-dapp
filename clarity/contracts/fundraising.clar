@@ -390,3 +390,18 @@
 (define-read-only (get-contract-balance)
   (stx-get-balance (get-contract-principal))
 )
+
+;; ==============================================
+;; Contract Deployment Event
+;; ==============================================
+
+(print {
+    event: "fundraising-contract-deployed",
+    deployer: contract-owner,
+    version: "1.0.0",
+    timestamp: stacks-block-time,
+    block-height: burn-block-height,
+    sbtc-token: sbtc-token,
+    default-duration: default-duration-secs,
+    contract-principal: (get-contract-principal)
+})
