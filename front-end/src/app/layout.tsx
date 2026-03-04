@@ -14,8 +14,9 @@ export const metadata: Metadata = {
     description: "Raise funds in STX and sBTC on the Stacks blockchain.",
     type: "website",
   },
-  name:"talentapp:project_verification",
-  content:"54b550be12306fc6f4bb8e77674b1920460549ab6eaa00401bf1f3b8958bf9a1fe4fb78a43f5c7f87ce2e1065ab970b23963fe7062770545d23eb7e90548eb4a",
+  other: {
+    "talentapp:project_verification": "54b550be12306fc6f4bb8e77674b1920460549ab6eaa00401bf1f3b8958bf9a1fe4fb78a43f5c7f87ce2e1065ab970b23963fe7062770545d23eb7e90548eb4a",
+  },
 };
 
 export default function RootLayout({
