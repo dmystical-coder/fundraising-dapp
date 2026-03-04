@@ -2,3 +2,4 @@
 export { HeroSection } from "./HeroSection";
 export { QuickStatsBar } from "./QuickStatsBar";
 export { CampaignGrid } from "./CampaignGrid";
+export { HowItWorksSection } from "./HowItWorksSection";

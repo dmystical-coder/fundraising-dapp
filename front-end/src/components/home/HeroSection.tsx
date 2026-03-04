@@ -8,14 +8,12 @@ import {
   Button,
   VStack,
   Stack,
+  HStack,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
-/**
- * Hero section for the homepage with value proposition and CTA.
- */
 export function HeroSection() {
   const headingSize = useBreakpointValue({ base: "xl", sm: "2xl", md: "3xl", lg: "4xl" });
   const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
@@ -24,28 +22,48 @@ export function HeroSection() {
     <Box
       position="relative"
       overflow="hidden"
-      bg="linear-gradient(180deg, #FFF7ED 0%, #FFEDD5 100%)"
+      bg="linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%)"
+      _dark={{ bg: "gray.900" }}
       py={{ base: 10, md: 16, lg: 20 }}
       px={{ base: 4, md: 0 }}
     >
       <Container maxW="container.lg" position="relative" zIndex={1}>
         <VStack spacing={{ base: 4, md: 6 }} textAlign="center">
+          {/* Trust badge */}
+          <Box
+            display="inline-flex"
+            alignItems="center"
+            gap={2}
+            bg="white"
+            border="1px solid"
+            borderColor="primary.200"
+            borderRadius="full"
+            px={4}
+            py={1.5}
+            fontSize="sm"
+            color="primary.700"
+            fontWeight="500"
+          >
+            <Text as="span" role="img" aria-label="lock">🔐</Text>
+            Built on Bitcoin &middot; Powered by Stacks
+          </Box>
+
           {/* Headline */}
           <Heading
             as="h1"
             size={headingSize}
-            color="gray.800"
+            color="chakra-body-text"
             fontWeight="800"
             lineHeight="1.2"
             maxW="600px"
             px={{ base: 2, md: 0 }}
           >
             Raise funds with{" "}
-            <Text as="span" color="primary.600">
+            <Text as="span" color="primary.500">
               STX
             </Text>{" "}
             &{" "}
-            <Text as="span" color="warning.600">
+            <Text as="span" color="warning.500">
               sBTC
             </Text>
           </Heading>
@@ -54,15 +72,16 @@ export function HeroSection() {
           <Text
             fontSize={{ base: "md", md: "lg", lg: "xl" }}
             color="gray.600"
-            maxW="450px"
+            _dark={{ color: "gray.300" }}
+            maxW="480px"
             lineHeight="1.6"
             px={{ base: 2, md: 0 }}
           >
-            Create campaigns, accept crypto donations, 
-            and manage funds on the Stacks blockchain.
+            Create campaigns, accept crypto donations, and manage funds
+            transparently on the Stacks blockchain.
           </Text>
 
-          {/* CTAs - Stack vertically on mobile */}
+          {/* CTAs */}
           <Stack 
             direction={{ base: "column", sm: "row" }} 
             spacing={{ base: 3, sm: 4 }} 
@@ -73,12 +92,9 @@ export function HeroSection() {
               as={Link}
               href="/campaigns/new"
               size={buttonSize}
-              bg="primary.500"
-              color="white"
+              colorScheme="primary"
               leftIcon={<AddIcon />}
               _hover={{
-                bg: "primary.600",
-                color: "white",
                 transform: "translateY(-2px)",
                 boxShadow: "lg",
               }}
@@ -92,18 +108,36 @@ export function HeroSection() {
               href="#campaigns"
               size={buttonSize}
               variant="outline"
-              borderColor="gray.400"
-              color="gray.700"
+              colorScheme="primary"
               bg="white"
-              _hover={{
-                bg: "gray.50",
-                borderColor: "primary.500",
-              }}
               w={{ base: "100%", sm: "auto" }}
             >
               Explore Campaigns
             </Button>
           </Stack>
+
+          {/* Trust indicators */}
+          <HStack
+            spacing={{ base: 4, md: 8 }}
+            pt={4}
+            flexWrap="wrap"
+            justify="center"
+          >
+            {[
+              { icon: "✓", label: "Non-custodial" },
+              { icon: "✓", label: "Smart contract secured" },
+              { icon: "✓", label: "No platform fees" },
+            ].map((item) => (
+              <HStack key={item.label} spacing={1.5}>
+                <Text color="success.500" fontWeight="bold" fontSize="sm">
+                  {item.icon}
+                </Text>
+              <Text fontSize="sm" color="gray.500" _dark={{ color: "gray.400" }}>
+                  {item.label}
+                </Text>
+              </HStack>
+            ))}
+          </HStack>
         </VStack>
       </Container>
     </Box>

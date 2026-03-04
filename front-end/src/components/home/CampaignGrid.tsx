@@ -11,8 +11,10 @@ import {
   Skeleton,
   VStack,
   Button,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
@@ -34,9 +36,6 @@ interface CampaignGridProps {
   limit?: number;
 }
 
-/**
- * Sort campaigns based on selected option.
- */
 function sortCampaigns(
   campaigns: CampaignWithOnChain[],
   sortBy: SortOption
@@ -50,7 +49,6 @@ function sortCampaigns(
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     case "most-funded":
-      // Sort by total STX + proportional sBTC value
       return sorted.sort((a, b) => {
         const aTotal = parseInt(a.total_stx, 10) + parseInt(a.total_sbtc, 10) * 10000;
         const bTotal = parseInt(b.total_stx, 10) + parseInt(b.total_sbtc, 10) * 10000;
@@ -68,9 +66,6 @@ function sortCampaigns(
   }
 }
 
-/**
- * Campaign grid component with sorting options.
- */
 export function CampaignGrid({
   campaigns: propCampaigns,
   isLoading: propIsLoading,
@@ -82,77 +77,83 @@ export function CampaignGrid({
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
   const address = useAddress();
 
-  // Use prop campaigns or fetch from indexer
-  const { data: indexerCampaigns, isLoading: indexerLoading } =
+  const { data: indexerCampaigns, isLoading: indexerLoading, error: fetchError, refetch } =
     useIndexerCampaigns();
   const { data: prices } = useCurrentPrices();
 
-  // Check for pending campaign metadata in localStorage
-  useEffect(() => {
+  // Listen for localStorage changes via storage event instead of polling
+  const checkPending = useCallback(() => {
     if (!address) return;
-    
-    const checkPending = () => {
-      const key = `pending_campaign_metadata_${address}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        try {
-          const meta = JSON.parse(saved);
-          // Only show if recent (< 24h)
-          if (Date.now() - meta.createdAt < 86400000) {
-            setPendingCampaign({
-              campaign_id: -1, // Temporary ID
-              owner: meta.owner,
-              beneficiary: meta.owner,
-              title: meta.title,
-              description: meta.description,
-              total_stx: "0",
-              total_sbtc: "0",
-              donation_count: 0,
-              is_cancelled: false,
-              is_withdrawn: false,
-              created_at: new Date(meta.createdAt).toISOString(),
-              isExpired: false,
-              // Add a special flag to identify pending campaigns
-              // @ts-expect-error - CampaignWithOnChain type mismatch expected
-              isPending: true
-            });
-          }
-        } catch (e) {
-          console.error("Failed to parse pending metadata", e);
+    const key = `pending_campaign_metadata_${address}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const meta = JSON.parse(saved);
+        if (Date.now() - meta.createdAt < 86400000) {
+          setPendingCampaign({
+            campaign_id: -1,
+            owner: meta.owner,
+            beneficiary: meta.owner,
+            title: meta.title,
+            description: meta.description,
+            total_stx: "0",
+            total_sbtc: "0",
+            donation_count: 0,
+            is_cancelled: false,
+            is_withdrawn: false,
+            created_at: new Date(meta.createdAt).toISOString(),
+            isExpired: false,
+            // @ts-expect-error - CampaignWithOnChain type mismatch expected
+            isPending: true
+          });
         }
-      } else {
-        setPendingCampaign(null);
+      } catch (e) {
+        console.error("Failed to parse pending metadata", e);
+      }
+    } else {
+      setPendingCampaign(null);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    checkPending();
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key?.startsWith("pending_campaign_metadata_")) {
+        checkPending();
       }
     };
-
-    checkPending();
-    // Poll for changes in case it gets cleared
-    const interval = setInterval(checkPending, 2000);
-    return () => clearInterval(interval);
-  }, [address]);
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [checkPending]);
 
   const isLoading = propIsLoading !== undefined ? propIsLoading : indexerLoading;
 
-  // Transform and sort campaigns
+  // Separate pending campaign check from the memo to avoid state-setter-in-memo
+  useEffect(() => {
+    if (!pendingCampaign) return;
+    const baseCampaigns = propCampaigns || indexerCampaigns || [];
+    const exists = baseCampaigns.some(c =>
+      c.owner === pendingCampaign.owner &&
+      c.title === pendingCampaign.title
+    );
+    if (exists) {
+      setPendingCampaign(null);
+    }
+  }, [propCampaigns, indexerCampaigns, pendingCampaign]);
+
   const displayCampaigns = useMemo(() => {
     let baseCampaigns = propCampaigns || indexerCampaigns || [];
-    
-    // Filter out any campaigns that match our pending one (by title/owner) to avoid duplicates
+
     if (pendingCampaign) {
-       const exists = baseCampaigns.some(c => 
-         c.owner === pendingCampaign.owner && 
-         c.title === pendingCampaign.title
-       );
-       if (exists) {
-         // If it exists in indexer, stop showing pending
-         setPendingCampaign(null); 
-       } else {
-         // Prepend pending campaign
-         baseCampaigns = [pendingCampaign, ...baseCampaigns];
-       }
+      const exists = baseCampaigns.some(c =>
+        c.owner === pendingCampaign.owner &&
+        c.title === pendingCampaign.title
+      );
+      if (!exists) {
+        baseCampaigns = [pendingCampaign, ...baseCampaigns];
+      }
     }
 
-    // Add isExpired flag based on current time and endAt
     const now = Math.floor(Date.now() / 1000);
     const enriched: CampaignWithOnChain[] = baseCampaigns.map((c) => ({
       ...c,
@@ -185,13 +186,48 @@ export function CampaignGrid({
     );
   }
 
+  if (fetchError) {
+    return (
+      <Box id="campaigns" py={8}>
+        <Container maxW="container.xl">
+          <Alert
+            status="warning"
+            borderRadius="xl"
+            p={6}
+            flexDirection={{ base: "column", sm: "row" }}
+            alignItems="center"
+            gap={4}
+          >
+            <AlertIcon boxSize={6} />
+            <Box flex="1">
+              <Text fontWeight="600" color="chakra-body-text">
+                Could not load campaigns
+              </Text>
+              <Text fontSize="sm" color="gray.500">
+                Check your connection or try again.
+              </Text>
+            </Box>
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="primary"
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
+
   if (!displayCampaigns || displayCampaigns.length === 0) {
     return (
       <Box id="campaigns" py={8}>
         <Container maxW="container.xl">
           <VStack spacing={6} py={12} textAlign="center">
             <Text fontSize="6xl">🎯</Text>
-            <Heading size="lg" color="gray.700">
+            <Heading size="lg">
               No Campaigns Yet
             </Heading>
             <Text color="gray.500" maxW="400px">
@@ -201,9 +237,7 @@ export function CampaignGrid({
             <Button
               as="a"
               href="/campaigns/new"
-              bg="primary.500"
-              color="white"
-              _hover={{ bg: "primary.600", color: "white" }}
+              colorScheme="primary"
               size="lg"
             >
               Create First Campaign
@@ -217,9 +251,8 @@ export function CampaignGrid({
   return (
     <Box id="campaigns" py={8}>
       <Container maxW="container.xl">
-        {/* Header */}
         <HStack justify="space-between" mb={6} flexWrap="wrap" gap={4}>
-          <Heading size="lg" color="gray.800">
+          <Heading size="lg">
             {title}
           </Heading>
           {showSort && (
@@ -239,7 +272,6 @@ export function CampaignGrid({
           )}
         </HStack>
 
-        {/* Grid */}
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {displayCampaigns.map((campaign) => (
             <CampaignCard

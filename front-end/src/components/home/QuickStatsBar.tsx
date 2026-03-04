@@ -10,22 +10,20 @@ import {
   StatHelpText,
   Skeleton,
   HStack,
+  Alert,
+  AlertIcon,
+  Text,
+  Button,
 } from "@chakra-ui/react";
 import { usePlatformStats } from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 
-/**
- * Format large numbers for display.
- */
 function formatNumber(num: number): string {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return num.toLocaleString();
 }
 
-/**
- * Format currency amount.
- */
 function formatCurrency(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`;
   if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
@@ -47,7 +45,7 @@ function StatCard({
   helpText,
   isLoading = false,
   icon,
-  color = "gray.800",
+  color = "chakra-body-text",
 }: StatCardProps) {
   return (
     <Stat
@@ -83,16 +81,12 @@ function StatCard({
   );
 }
 
-/**
- * Quick stats bar showing platform-wide metrics.
- */
 export function QuickStatsBar() {
-  const { data: stats, isLoading: statsLoading } = usePlatformStats();
+  const { data: stats, isLoading: statsLoading, error: statsError, refetch } = usePlatformStats();
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
 
   const isLoading = statsLoading || pricesLoading;
 
-  // Calculate total USD raised
   const totalStxRaised = stats ? parseInt(stats.total_stx_raised, 10) : 0;
   const totalSbtcRaised = stats ? parseInt(stats.total_sbtc_raised, 10) : 0;
 
@@ -103,6 +97,22 @@ export function QuickStatsBar() {
     ? (totalSbtcRaised / 100_000_000) * prices.sbtc
     : 0;
   const totalUsd = stxUsd + sbtcUsd;
+
+  if (statsError) {
+    return (
+      <Box py={6}>
+        <Container maxW="container.xl">
+          <Alert status="warning" borderRadius="xl" py={3}>
+            <AlertIcon />
+            <Text fontSize="sm" flex="1">Could not load platform stats.</Text>
+            <Button size="xs" variant="outline" colorScheme="primary" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box py={6}>
