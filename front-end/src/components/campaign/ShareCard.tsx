@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Box,
   Button,
   Card,
   CardBody,
@@ -24,7 +23,7 @@ interface ShareCardProps {
 }
 
 // X (Twitter) Icon
-const XIcon = (props: any) => (
+const XIcon = (props: Record<string, unknown>) => (
   <Icon viewBox="0 0 24 24" {...props}>
     <path
       fill="currentColor"
@@ -34,7 +33,7 @@ const XIcon = (props: any) => (
 );
 
 // WhatsApp Icon
-const WhatsAppIcon = (props: any) => (
+const WhatsAppIcon = (props: Record<string, unknown>) => (
   <Icon viewBox="0 0 24 24" {...props}>
      <path
       fill="currentColor"
