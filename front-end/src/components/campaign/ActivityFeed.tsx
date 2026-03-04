@@ -171,7 +171,7 @@ export function ActivityFeedItem({
             href={getTxExplorerUrl(txid)}
             isExternal
             fontSize="xs"
-            color="secondary.500"
+            color="primary.500"
             _hover={{ textDecor: "underline" }}
           >
             View tx

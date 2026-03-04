@@ -112,7 +112,7 @@ export function CountdownTimer({
 
   if (remaining.isExpired) {
     return (
-      <HStack spacing={styles.spacing}>
+      <HStack spacing={styles.spacing} aria-label="Campaign has ended">
         {showIcon && (
           <Icon as={TimeIcon} boxSize={styles.iconSize} color="gray.400" />
         )}
@@ -139,7 +139,7 @@ export function CountdownTimer({
   }
 
   return (
-    <HStack spacing={styles.spacing}>
+    <HStack spacing={styles.spacing} aria-label={`Time remaining: ${timeDisplay}`} role="timer">
       {showIcon && (
         <Icon
           as={TimeIcon}
@@ -179,7 +179,7 @@ export function TimeRemainingDisplay({
 
   if (remaining.isExpired) {
     return (
-      <Text fontSize={styles.fontSize} color="gray.500" {...props}>
+      <Text fontSize={styles.fontSize} color="gray.500" aria-label="Campaign has ended" {...props}>
         Ended
       </Text>
     );
@@ -197,7 +197,7 @@ export function TimeRemainingDisplay({
   }
 
   return (
-    <Text fontSize={styles.fontSize} color={urgencyColor} fontWeight="500" {...props}>
+    <Text fontSize={styles.fontSize} color={urgencyColor} fontWeight="500" aria-label={`Time remaining: ${text}`} {...props}>
       {text}
     </Text>
   );

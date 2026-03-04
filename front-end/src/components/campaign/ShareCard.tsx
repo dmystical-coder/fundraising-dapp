@@ -22,7 +22,6 @@ interface ShareCardProps {
   campaignId: number;
 }
 
-// X (Twitter) Icon
 const XIcon = (props: Record<string, unknown>) => (
   <Icon viewBox="0 0 24 24" {...props}>
     <path
@@ -32,7 +31,6 @@ const XIcon = (props: Record<string, unknown>) => (
   </Icon>
 );
 
-// WhatsApp Icon
 const WhatsAppIcon = (props: Record<string, unknown>) => (
   <Icon viewBox="0 0 24 24" {...props}>
      <path
@@ -87,7 +85,7 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
   return (
     <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
       <CardHeader pb={2}>
-        <Heading size="md" color="gray.700">
+        <Heading size="md">
           Share Campaign
         </Heading>
       </CardHeader>
@@ -95,9 +93,7 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
         <VStack spacing={4} align="stretch">
           <Button
             onClick={handleNativeShare}
-            bg="success.500"
-            color="white"
-            _hover={{ bg: "success.600" }}
+            colorScheme="primary"
             size="lg"
             rightIcon={<Icon as={LinkIcon} />}
           >
@@ -115,7 +111,6 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
                 icon={<XIcon boxSize={5} />}
                 variant="ghost"
                 size="lg"
-                colorScheme="twitter"
               />
             </Tooltip>
             
@@ -129,7 +124,6 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
                 icon={<WhatsAppIcon boxSize={6} />}
                 variant="ghost"
                 size="lg"
-                colorScheme="whatsapp"
                 color="green.500"
               />
             </Tooltip>

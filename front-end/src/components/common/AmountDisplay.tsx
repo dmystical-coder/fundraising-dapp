@@ -163,6 +163,15 @@ export function CombinedAmountDisplay({
 
   const styles = sizeStyles[size];
 
+  // Zero state: nothing raised yet
+  if (stxRaw === 0 && sbtcRaw === 0) {
+    return (
+      <Text fontSize={styles.fontSize} color="gray.400" fontWeight="500">
+        No donations yet
+      </Text>
+    );
+  }
+
   return (
     <HStack spacing={3} flexWrap="wrap">
       {stxRaw > 0 && (

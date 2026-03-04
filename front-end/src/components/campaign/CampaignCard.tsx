@@ -29,14 +29,10 @@ interface CampaignCardProps {
   isExpired: boolean;
   stxPrice?: number;
   sbtcPrice?: number;
-  title?: string; // For future metadata support
+  title?: string;
   isPending?: boolean;
 }
 
-/**
- * Calculate progress percentage based on raised amount vs goal.
- * If no goal is set, returns a proportional value based on total raised.
- */
 function calculateProgress(
   totalStx: number,
   totalSbtc: number,
@@ -46,7 +42,6 @@ function calculateProgress(
 ): number {
   if (!goal || goal === 0) return 0;
 
-  // Calculate USD value of raised amount
   const stxValue = stxPrice ? (totalStx / 1_000_000) * stxPrice : 0;
   const sbtcValue = sbtcPrice ? (totalSbtc / 100_000_000) * sbtcPrice : 0;
   const totalValue = stxValue + sbtcValue;
@@ -55,9 +50,6 @@ function calculateProgress(
   return Math.min(progress, 100);
 }
 
-/**
- * Campaign card component for grid display.
- */
 export function CampaignCard({
   campaignId,
   beneficiary,
@@ -81,11 +73,11 @@ export function CampaignCard({
 
   const progress = calculateProgress(stxNum, sbtcNum, goal, stxPrice, sbtcPrice);
 
-  // Generate a display title if not provided
   const displayTitle = title || `Campaign #${campaignId}`;
 
   const CardContent = (
     <Card
+      position="relative"
       cursor={isPending ? "default" : "pointer"}
       transition="all 0.2s"
       _hover={!isPending ? {
@@ -100,7 +92,7 @@ export function CampaignCard({
       overflow="hidden"
       opacity={isPending ? 0.7 : 1}
     >
-      {/* Status badge positioned at top right */}
+      {/* Status badge */}
       <Box position="absolute" top={3} right={3} zIndex={1}>
         {isPending ? (
           <StatusBadge status="active" size="sm" overrides={{ label: "Pending", colorScheme: "yellow" }} />
@@ -111,17 +103,15 @@ export function CampaignCard({
 
       <CardBody p={5}>
         <VStack align="stretch" spacing={4}>
-          {/* Title */}
           <Heading
             size="md"
             noOfLines={2}
-            color="gray.800"
-            pr={16} // Space for badge
+            color="chakra-body-text"
+            pr={16}
           >
             {displayTitle}
           </Heading>
 
-          {/* Beneficiary */}
           {beneficiary && (
             <HStack spacing={2}>
               <Text fontSize="sm" color="gray.500">
@@ -131,7 +121,6 @@ export function CampaignCard({
             </HStack>
           )}
 
-          {/* Amount raised */}
           <Box>
             <Text fontSize="sm" color="gray.500" mb={1}>
               Raised
@@ -145,7 +134,6 @@ export function CampaignCard({
             />
           </Box>
 
-          {/* Progress bar */}
           {goal && goal > 0 && (
             <Box>
               <HStack justify="space-between" mb={1}>
@@ -175,11 +163,9 @@ export function CampaignCard({
             </Box>
           )}
 
-          {/* Footer stats */}
           <HStack justify="space-between" pt={2} borderTop="1px" borderColor="warm.border">
-            {/* Donor count */}
             <HStack spacing={1}>
-              <Text fontSize="sm" fontWeight="600" color="gray.700">
+              <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
                 {donationCount}
               </Text>
               <Text fontSize="sm" color="gray.500">
@@ -187,12 +173,11 @@ export function CampaignCard({
               </Text>
             </HStack>
 
-            {/* Time remaining */}
             {endAt && status === "active" && !isPending && (
               <TimeRemainingDisplay endAt={endAt} size="sm" />
             )}
             {isPending && (
-              <Text fontSize="xs" color="orange.500" fontWeight="bold">
+              <Text fontSize="xs" color="warning.500" fontWeight="bold">
                 Confirming...
               </Text>
             )}

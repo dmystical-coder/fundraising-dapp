@@ -126,7 +126,6 @@ export default function DonationModal({
       return;
     }
 
-    // Handle donation
     try {
       const txOptions =
         paymentMethod === "sbtc"
@@ -148,7 +147,6 @@ export default function DonationModal({
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
         setIsLoading(false);
-        // Don't close modal, show success state
         toast({
           title: "Donation Submitted! Thank you!",
           description: (
@@ -165,7 +163,6 @@ export default function DonationModal({
         });
       };
 
-      // Devnet uses direct call, Testnet/Mainnet needs to prompt with browser extension
       if (isDevnetEnvironment()) {
         const { txid } = await executeContractCall(txOptions, devnetWallet);
         doSuccess(txid);
@@ -197,7 +194,7 @@ export default function DonationModal({
         status: "error",
       });
       setIsLoading(false);
-      onClose(); // Only close on error or user cancel if not handled
+      onClose();
     }
   };
 
@@ -229,9 +226,9 @@ export default function DonationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="full">
-      <ModalOverlay />
-      <ModalContent>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+      <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+      <ModalContent mx={4}>
         <ModalHeader>Make a Contribution</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb="8">
@@ -241,12 +238,15 @@ export default function DonationModal({
                 p={6}
                 borderWidth="1px"
                 borderRadius="lg"
+                borderColor="warm.border"
                 align="center"
                 justify="center"
                 direction="column"
                 gap="4"
               >
-                <Box>Please connect a STX wallet to make a contribution.</Box>
+                <Box color="chakra-body-text">
+                  Please connect a STX wallet to make a contribution.
+                </Box>
                 {isDevnetEnvironment() ? (
                   <DevnetWalletButton
                     currentWallet={devnetWallet}
@@ -275,7 +275,7 @@ export default function DonationModal({
                   </svg>
                 </Box>
                 <VStack spacing={2}>
-                  <Text fontSize="2xl" fontWeight="bold">
+                  <Text fontSize="2xl" fontWeight="bold" color="chakra-body-text">
                     Thank You!
                   </Text>
                   <Text color="gray.600">
@@ -289,7 +289,7 @@ export default function DonationModal({
                 <Button
                   onClick={handleShare}
                   size="lg"
-                  colorScheme="twitter"
+                  colorScheme="primary"
                   width="100%"
                   leftIcon={<span>📣</span>}
                 >
@@ -303,7 +303,7 @@ export default function DonationModal({
             ) : (
               <>
                 {hasMadePreviousDonation ? (
-                  <Alert mb="4">
+                  <Alert mb="4" status="info" borderRadius="lg">
                     <Box>
                       <AlertTitle>
                         Heads up: you&apos;ve contributed before. Thank you!
@@ -323,9 +323,9 @@ export default function DonationModal({
                     </Box>
                   </Alert>
                 ) : null}
-                <Box mx="auto" p={6} borderWidth="1px" borderRadius="lg">
+                <Box mx="auto" w="100%" p={6} borderWidth="1px" borderRadius="lg" borderColor="warm.border">
                   <VStack spacing={6} align="stretch">
-                    <Text fontSize="lg" fontWeight="bold">
+                    <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
                       Choose Payment Method
                     </Text>
 
@@ -333,23 +333,21 @@ export default function DonationModal({
                       value={paymentMethod}
                       onChange={setPaymentMethod}
                     >
-                      <div>
-                        <Radio value="stx" id="stx">
+                      <HStack spacing={6}>
+                        <Radio value="stx" colorScheme="primary">
                           STX
                         </Radio>
-                      </div>
-                      <div>
-                        <Radio value="sbtc" id="sbtc">
+                        <Radio value="sbtc" colorScheme="primary">
                           sBTC
                         </Radio>
-                      </div>
+                      </HStack>
                     </RadioGroup>
 
-                    <Text fontSize="lg" fontWeight="bold">
+                    <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
                       Choose Contribution Amount
                     </Text>
 
-                    <HStack spacing={4} justify="center" wrap="wrap">
+                    <HStack spacing={3} justify="center" wrap="wrap">
                       {presetAmounts.map((amount) => (
                         <Button
                           key={amount}
@@ -357,7 +355,7 @@ export default function DonationModal({
                           variant={
                             selectedAmount === amount ? "solid" : "outline"
                           }
-                          colorScheme="blue"
+                          colorScheme="primary"
                           onClick={() => handlePresetClick(amount)}
                         >
                           ${amount}
@@ -365,7 +363,7 @@ export default function DonationModal({
                       ))}
                     </HStack>
 
-                    <Text fontSize="md">Or enter custom amount:</Text>
+                    <Text fontSize="md" color="gray.500" _dark={{ color: "gray.400" }}>Or enter custom amount:</Text>
 
                     <NumberInput
                       min={1}
@@ -381,7 +379,7 @@ export default function DonationModal({
 
                     <Flex direction="column" gap="1">
                       <Button
-                        colorScheme="green"
+                        colorScheme="primary"
                         size="lg"
                         onClick={handleSubmit}
                         isDisabled={
@@ -391,7 +389,7 @@ export default function DonationModal({
                       >
                         Donate ${selectedAmount || customAmount || "0"}
                       </Button>
-                      <Box mx="auto" fontSize="sm" fontWeight="bold">
+                      <Box mx="auto" fontSize="sm" fontWeight="bold" color="gray.500" _dark={{ color: "gray.400" }}>
                         (≈
                         {paymentMethod === "stx"
                           ? `${usdToStx(
@@ -413,7 +411,7 @@ export default function DonationModal({
         </ModalBody>
         {!successTxId && (
           <ModalFooter>
-             <Button onClick={onClose}>Close</Button>
+             <Button variant="ghost" onClick={onClose}>Close</Button>
           </ModalFooter>
         )}
       </ModalContent>

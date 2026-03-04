@@ -37,6 +37,7 @@ import {
   Alert,
   AlertIcon,
   Spinner,
+  Tooltip,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, ArrowForwardIcon, CheckIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -48,7 +49,6 @@ import { openContractCall } from "@/lib/contract-utils";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
 import { getStacksNetwork } from "@/lib/stacks-api";
 
-// Form steps configuration
 const steps = [
   { title: "Basics", description: "Campaign info" },
   { title: "Funding", description: "Goal & deadline" },
@@ -86,21 +86,18 @@ export default function CreateCampaignPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update form field
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when field is updated
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // Validate current step
   const validateStep = (step: number): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
     switch (step) {
-      case 0: // Basics
+      case 0:
         if (!formData.title.trim()) {
           newErrors.title = "Campaign title is required";
         }
@@ -108,7 +105,7 @@ export default function CreateCampaignPage() {
           newErrors.description = "Description must be at least 20 characters";
         }
         break;
-      case 1: // Funding
+      case 1:
         if (formData.goal <= 0) {
           newErrors.goal = "Goal must be greater than 0";
         }
@@ -121,9 +118,8 @@ export default function CreateCampaignPage() {
           }
         }
         break;
-      case 2: // Beneficiary
+      case 2:
         if (!formData.beneficiary.trim()) {
-          // Use connected wallet if not specified
           if (address) {
             setFormData((prev) => ({ ...prev, beneficiary: address }));
           } else {
@@ -139,23 +135,19 @@ export default function CreateCampaignPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle next step
   const handleNext = () => {
     if (validateStep(activeStep)) {
       goToNext();
     }
   };
 
-  // Calculate end timestamp from selected date
   const getEndTimestamp = (): number => {
     if (formData.endDate) {
       return Math.floor(new Date(formData.endDate).getTime() / 1000);
     }
-    // Default: 30 days from now if no date selected (shouldn't happen due to validation)
     return Math.floor(Date.now() / 1000) + 30 * 86400;
   };
 
-  // Submit campaign
   const handleSubmit = async () => {
     if (!address) {
       toast({
@@ -175,8 +167,6 @@ export default function CreateCampaignPage() {
       const beneficiaryAddress = formData.beneficiary || address;
       const endAt = getEndTimestamp();
 
-      // Store pending metadata in localStorage keyed by owner address
-      // This will be picked up after the campaign is confirmed on-chain
       const pendingMetadata = {
         owner: address,
         title: formData.title,
@@ -190,13 +180,12 @@ export default function CreateCampaignPage() {
         contractName: FUNDRAISING_CONTRACT.name,
         functionName: "create-campaign",
         functionArgs: [
-          uintCV(formData.goal), // goal (informational USD)
-          uintCV(endAt), // endAt timestamp (0 for default)
-          principalCV(beneficiaryAddress), // beneficiary
+          uintCV(formData.goal),
+          uintCV(endAt),
+          principalCV(beneficiaryAddress),
         ],
         network: getStacksNetwork(),
         onFinish: () => {
-          // Invalidate campaigns query to trigger immediate refresh
           queryClient.invalidateQueries({ queryKey: ["indexer", "campaigns"] });
           queryClient.invalidateQueries({ queryKey: ["campaigns"] });
           
@@ -207,12 +196,10 @@ export default function CreateCampaignPage() {
             duration: 8000,
             isClosable: true,
           });
-          // Redirect to home after successful creation
           router.push("/");
         },
         onCancel: () => {
           setIsSubmitting(false);
-          // Clean up pending metadata on cancel
           localStorage.removeItem(`pending_campaign_metadata_${address}`);
           toast({
             title: "Transaction Cancelled",
@@ -223,7 +210,6 @@ export default function CreateCampaignPage() {
       });
     } catch (error) {
       console.error("Failed to create campaign:", error);
-      // Clean up pending metadata on error
       localStorage.removeItem(`pending_campaign_metadata_${address}`);
       toast({
         title: "Failed to create campaign",
@@ -235,7 +221,6 @@ export default function CreateCampaignPage() {
     }
   };
 
-  // Render step content
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -343,6 +328,7 @@ export default function CreateCampaignPage() {
             {address && !formData.beneficiary && (
               <Button
                 variant="outline"
+                colorScheme="primary"
                 size="sm"
                 onClick={() => updateField("beneficiary", address)}
               >
@@ -355,18 +341,18 @@ export default function CreateCampaignPage() {
       case 3:
         return (
           <VStack spacing={6} align="stretch">
-            <Heading size="md" color="gray.700">Review Your Campaign</Heading>
+            <Heading size="md">Review Your Campaign</Heading>
             
             <Card bg="warm.muted" borderRadius="lg">
               <CardBody>
                 <VStack spacing={4} align="stretch">
                   <Box>
                     <Text fontSize="sm" color="gray.500">Title</Text>
-                    <Text fontWeight="600">{formData.title || "Untitled Campaign"}</Text>
+                    <Text fontWeight="600" color="chakra-body-text">{formData.title || "Untitled Campaign"}</Text>
                   </Box>
                   <Box>
                     <Text fontSize="sm" color="gray.500">Description</Text>
-                    <Text noOfLines={3}>{formData.description || "No description"}</Text>
+                    <Text noOfLines={3} color="chakra-body-text">{formData.description || "No description"}</Text>
                   </Box>
                   <HStack justify="space-between">
                     <Box>
@@ -377,7 +363,7 @@ export default function CreateCampaignPage() {
                     </Box>
                     <Box textAlign="right">
                       <Text fontSize="sm" color="gray.500">End Date</Text>
-                      <Text fontWeight="600">
+                      <Text fontWeight="600" color="chakra-body-text">
                         {formData.endDate 
                           ? new Date(formData.endDate).toLocaleString() 
                           : "Not set"}
@@ -386,7 +372,7 @@ export default function CreateCampaignPage() {
                   </HStack>
                   <Box>
                     <Text fontSize="sm" color="gray.500">Beneficiary</Text>
-                    <Text fontFamily="mono" fontSize="sm">
+                    <Text fontFamily="mono" fontSize="sm" color="chakra-body-text">
                       {formData.beneficiary || address || "Not set"}
                     </Text>
                   </Box>
@@ -411,7 +397,6 @@ export default function CreateCampaignPage() {
 
   return (
     <Container maxW="container.md" py={8}>
-      {/* Header */}
       <Button
         as={Link}
         href="/"
@@ -422,29 +407,46 @@ export default function CreateCampaignPage() {
         Back to Campaigns
       </Button>
 
-      <Heading size="xl" mb={2} color="gray.800">
+      <Heading size="xl" mb={2}>
         Create a Campaign
       </Heading>
       <Text color="gray.600" mb={8}>
         Start raising funds in STX and sBTC on the Stacks blockchain.
       </Text>
 
-      {/* Stepper */}
+      {/* Stepper — shows abbreviated labels on mobile via Tooltip */}
       <Box mb={8}>
         <Stepper index={activeStep} colorScheme="primary">
           {steps.map((step, index) => (
             <Step key={index} onClick={() => index <= activeStep && setActiveStep(index)}>
-              <StepIndicator cursor={index <= activeStep ? "pointer" : "default"}>
-                <StepStatus
-                  complete={<StepIcon />}
-                  incomplete={<StepNumber />}
-                  active={<StepNumber />}
-                />
-              </StepIndicator>
+              <Tooltip
+                label={`${step.title}: ${step.description}`}
+                display={{ md: "none" }}
+                hasArrow
+              >
+                <StepIndicator cursor={index <= activeStep ? "pointer" : "default"}>
+                  <StepStatus
+                    complete={<StepIcon />}
+                    incomplete={<StepNumber />}
+                    active={<StepNumber />}
+                  />
+                </StepIndicator>
+              </Tooltip>
 
-              <Box flexShrink={0} display={{ base: "none", md: "block" }}>
-                <StepTitle>{step.title}</StepTitle>
-                <StepDescription>{step.description}</StepDescription>
+              <Box flexShrink={0}>
+                <Box display={{ base: "none", md: "block" }}>
+                  <StepTitle>{step.title}</StepTitle>
+                  <StepDescription>{step.description}</StepDescription>
+                </Box>
+                {/* Abbreviated label on mobile */}
+                <Text
+                  display={{ base: "block", md: "none" }}
+                  fontSize="xs"
+                  fontWeight={index === activeStep ? "bold" : "normal"}
+                  color={index <= activeStep ? "primary.600" : "gray.400"}
+                >
+                  {step.title}
+                </Text>
               </Box>
 
               <StepSeparator />
@@ -453,7 +455,6 @@ export default function CreateCampaignPage() {
         </Stepper>
       </Box>
 
-      {/* Form content */}
       <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl" mb={6}>
         <CardBody py={8}>
           {!address ? (
@@ -469,7 +470,6 @@ export default function CreateCampaignPage() {
         </CardBody>
       </Card>
 
-      {/* Navigation buttons */}
       {address && (
         <HStack justify="space-between">
           <Button
@@ -484,9 +484,7 @@ export default function CreateCampaignPage() {
           {activeStep < steps.length - 1 ? (
             <Button
               rightIcon={<ArrowForwardIcon />}
-              bg="primary.500"
-              color="white"
-              _hover={{ bg: "primary.600", color: "white" }}
+              colorScheme="primary"
               onClick={handleNext}
             >
               Next
@@ -494,9 +492,7 @@ export default function CreateCampaignPage() {
           ) : (
             <Button
               leftIcon={isSubmitting ? <Spinner size="sm" /> : <CheckIcon />}
-              bg="primary.500"
-              color="white"
-              _hover={{ bg: "primary.600", color: "white" }}
+              colorScheme="primary"
               onClick={handleSubmit}
               isLoading={isSubmitting}
               loadingText="Creating..."

@@ -209,7 +209,7 @@ export default function CampaignAdminControls({
                       onChange={(e) => setEndDateTimeLocal(e.target.value)}
                     />
                     <Button
-                      colorScheme="green"
+                      colorScheme="primary"
                       onClick={handleInitializeCampaign}
                       isDisabled={!goal}
                     >
@@ -236,7 +236,7 @@ export default function CampaignAdminControls({
                             </Box>
                           ) : (
                             <Button
-                              colorScheme="green"
+                              colorScheme="success"
                               onClick={handleWithdraw}
                             >
                               Withdraw funds
@@ -289,7 +289,7 @@ export default function CampaignAdminControls({
             >
               Nevermind
             </Button>
-            <Button colorScheme="blue" onClick={handleCancel}>
+            <Button colorScheme="error" onClick={handleCancel}>
               Yes, End Campaign
             </Button>
           </ModalFooter>

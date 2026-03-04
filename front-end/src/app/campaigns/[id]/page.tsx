@@ -40,9 +40,6 @@ import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
 
-/**
- * Campaign detail page with dynamic routing.
- */
 export default function CampaignDetailPage() {
   const params = useParams();
   const campaignId = params?.id ? parseInt(params.id as string, 10) : null;
@@ -54,12 +51,10 @@ export default function CampaignDetailPage() {
   const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
   
-  // Get current wallet address to check ownership
   const currentAddress = useAddress();
   const isOwner = currentAddress && campaign?.owner && 
     currentAddress.toLowerCase() === campaign.owner.toLowerCase();
 
-  // Loading state
   if (isLoading || pricesLoading) {
     return (
       <Container maxW="container.xl" py={8}>
@@ -88,7 +83,6 @@ export default function CampaignDetailPage() {
     );
   }
 
-  // Error state
   if (error || !campaign) {
     return (
       <Container maxW="container.xl" py={8}>
@@ -129,8 +123,6 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  // Calculate progress using historical totals from indexer (on-chain totals are 0 after withdrawal)
-  // Indexer stores totals as strings, so parse them
   const stxAmount = indexedCampaign?.total_stx 
     ? parseInt(indexedCampaign.total_stx, 10) 
     : (campaign.totalStx || 0);
@@ -146,7 +138,6 @@ export default function CampaignDetailPage() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      {/* Back button */}
       <Button
         as={Link}
         href="/"
@@ -158,10 +149,8 @@ export default function CampaignDetailPage() {
       </Button>
 
       <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
-        {/* Main content */}
         <GridItem>
           <VStack spacing={6} align="stretch">
-            {/* Header */}
             <Box>
               <HStack spacing={3} mb={2}>
                 <StatusBadge status={status} size="md" />
@@ -169,7 +158,7 @@ export default function CampaignDetailPage() {
                   <CountdownTimer endAt={campaign.endAt} size="md" />
                 )}
               </HStack>
-              <Heading size="xl" color="gray.800" mb={2}>
+              <Heading size="xl" mb={2}>
                 {indexedCampaign?.title || `Campaign #${campaign.id}`}
               </Heading>
               {indexedCampaign?.description && (
@@ -189,7 +178,6 @@ export default function CampaignDetailPage() {
               </HStack>
             </Box>
 
-            {/* Progress card */}
             <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
               <CardBody>
                 <VStack spacing={4} align="stretch">
@@ -234,14 +222,14 @@ export default function CampaignDetailPage() {
 
                   <HStack justify="space-around" pt={4} borderTop="1px" borderColor="warm.border">
                     <VStack spacing={0}>
-                      <Text fontWeight="700" fontSize="xl" color="gray.800">
+                      <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
                         {campaign.donationCount}
                       </Text>
                       <Text fontSize="sm" color="gray.500">Donations</Text>
                     </VStack>
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
-                      <Text fontWeight="700" fontSize="xl" color="gray.800">
+                      <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
                         {(() => {
                           if (!campaign.endAt) return "Ongoing";
                           const durationSecs = campaign.endAt - campaign.createdAt;
@@ -261,7 +249,6 @@ export default function CampaignDetailPage() {
               </CardBody>
             </Card>
 
-            {/* Admin controls - only visible to campaign owner */}
             {isOwner && (
               <CampaignAdminControls
                 campaignId={campaign.id}
@@ -274,10 +261,9 @@ export default function CampaignDetailPage() {
               />
             )}
 
-            {/* Activity Feed */}
             <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
               <CardHeader pb={0}>
-                <Heading size="md" color="gray.700">Recent Activity</Heading>
+                <Heading size="md">Recent Activity</Heading>
               </CardHeader>
               <CardBody>
                 <ActivityFeed
@@ -292,20 +278,16 @@ export default function CampaignDetailPage() {
           </VStack>
         </GridItem>
 
-        {/* Sidebar */}
         <GridItem>
           <VStack spacing={6} align="stretch" position="sticky" top={6}>
-            {/* Donation panel - hidden from campaign owner */}
             {status === "active" && !isOwner && (
               <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
                 <CardHeader>
-                  <Heading size="md" color="gray.700">Support This Campaign</Heading>
+                  <Heading size="md">Support This Campaign</Heading>
                 </CardHeader>
                 <CardBody pt={0}>
                   <Button
-                    bg="primary.500"
-                    color="white"
-                    _hover={{ bg: "primary.600", color: "white" }}
+                    colorScheme="primary"
                     size="lg"
                     width="100%"
                     onClick={onDonateOpen}
@@ -315,27 +297,23 @@ export default function CampaignDetailPage() {
                   <DonationModal
                     isOpen={isDonateOpen}
                     campaignId={campaign.id}
-                    campaignTitle={`Campaign #${campaign.id}`}
+                    campaignTitle={indexedCampaign?.title || `Campaign #${campaign.id}`}
                     onClose={onDonateClose}
                   />
                 </CardBody>
               </Card>
             )}
 
-
-
-            {/* Share Card - Visible to everyone */}
             {campaign && (
               <ShareCard 
-                title={`Campaign #${campaign.id}`} 
+                title={indexedCampaign?.title || `Campaign #${campaign.id}`} 
                 campaignId={campaign.id} 
               />
             )}
 
-            {/* Leaderboard */}
             <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
               <CardHeader pb={2}>
-                <Heading size="md" color="gray.700">Top Donors</Heading>
+                <Heading size="md">Top Donors</Heading>
               </CardHeader>
               <CardBody pt={0}>
                 {leaderboardLoading ? (
