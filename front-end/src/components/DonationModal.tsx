@@ -150,8 +150,7 @@ export default function DonationModal({
         setIsLoading(false);
         // Don't close modal, show success state
         toast({
-          title: "Donation Submitted!",
-          title: "Thank you!",
+          title: "Donation Submitted! Thank you!",
           description: (
             <Flex direction="column" gap="4">
               <Box>Processing donation of ${amount}.</Box>
