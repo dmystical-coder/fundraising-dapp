@@ -315,7 +315,7 @@ export default function CampaignDetailPage() {
                   <DonationModal
                     isOpen={isDonateOpen}
                     campaignId={campaign.id}
-                    campaignTitle={campaign.title || `Campaign #${campaign.id}`}
+                    campaignTitle={`Campaign #${campaign.id}`}
                     onClose={onDonateClose}
                   />
                 </CardBody>
@@ -327,7 +327,7 @@ export default function CampaignDetailPage() {
             {/* Share Card - Visible to everyone */}
             {campaign && (
               <ShareCard 
-                title={campaign.title || `Campaign #${campaign.id}`} 
+                title={`Campaign #${campaign.id}`} 
                 campaignId={campaign.id} 
               />
             )}
