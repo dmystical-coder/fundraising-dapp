@@ -1,3 +1,5 @@
 node_modules
 clarity/.cache/
 .vscode/
+# Design review assets
+.kombai/
