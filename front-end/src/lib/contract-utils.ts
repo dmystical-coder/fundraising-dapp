@@ -8,24 +8,19 @@ import {
   broadcastTransaction,
   SignedContractCallOptions,
   ClarityValue,
-  serializeCV,
   PostCondition,
   PostConditionMode,
 } from "@stacks/transactions";
 import { generateWallet } from "@stacks/wallet-sdk";
 import { DevnetWallet } from "./devnet-wallet-context";
 
-/**
- * Contract call options interface.
- * Compatible with @stacks/connect ContractCallRegularOptions.
- */
 export interface ContractCallOptions {
   contractAddress: string;
   contractName: string;
   functionName: string;
   functionArgs: ClarityValue[] | unknown[];
   network?: unknown;
-  anchorMode?: number; // AnchorMode from @stacks/transactions
+  anchorMode?: number;
   postConditions?: PostCondition[];
   postConditionMode?: PostConditionMode;
   sponsored?: boolean;
@@ -96,87 +91,13 @@ function resolveStacksNetwork(options: ContractCallOptions): Network {
     }
   }
 
-  // Default to env if available, otherwise mainnet.
   if (isTestnetEnvironment()) return "testnet";
   if (isDevnetEnvironment()) return "devnet";
   return "mainnet";
 }
 
-function stacksChainIdFromNetwork(network: Network): string {
-  // Reown docs: Stacks mainnet => stacks:1, testnet => stacks:2147483648
-  return network === "testnet" ? "stacks:2147483648" : "stacks:1";
-}
-
-function encodeFunctionArgsForStacksRpc(args: unknown): string[] {
-  if (!Array.isArray(args)) return [];
-
-  return args.map((arg) => {
-    if (typeof arg === "string") return arg;
-    // Stacks RPC expects args as strings; serialize ClarityValues as 0x-prefixed hex.
-    return `0x${serializeCV(arg as ClarityValue)}`;
-  });
-}
-
 /**
- * Try to execute a contract call via WalletConnect.
- * Returns null if no WalletConnect session is available.
- */
-async function tryWalletConnectCallContract(params: {
-  contract: string;
-  functionName: string;
-  functionArgs: unknown;
-  network: Network;
-}): Promise<{ txid: string; transaction?: string } | null> {
-  if (typeof window === "undefined") return null;
-  if (params.network === "devnet") return null;
-
-  try {
-    const reown = await import("@reown/appkit/react");
-    const appKitModal = reown.modal;
-    if (!appKitModal) return null;
-
-    const universalProvider = await appKitModal.getUniversalProvider();
-    if (!universalProvider?.session) return null;
-
-    const chainId = stacksChainIdFromNetwork(params.network);
-
-    // Ensure the session actually includes stacks accounts for this chain.
-    const sessionNamespaces = universalProvider.session
-      .namespaces as unknown as Record<
-      string,
-      { accounts?: string[] } | undefined
-    >;
-    const stacksNs = sessionNamespaces?.stacks;
-    const accounts: string[] = stacksNs?.accounts || [];
-    const hasChainAccount = accounts.some((a) => a.startsWith(`${chainId}:`));
-    if (!hasChainAccount) return null;
-
-    const result = await universalProvider.request(
-      {
-        method: "stx_callContract",
-        params: {
-          contract: params.contract,
-          functionName: params.functionName,
-          functionArgs: encodeFunctionArgsForStacksRpc(params.functionArgs),
-        },
-      },
-      chainId
-    );
-
-    return result as { txid: string; transaction?: string };
-  } catch (err) {
-    // If WC is present but the request fails, fall back to @stacks/connect.
-    console.warn(
-      "WalletConnect Stacks stx_callContract failed; falling back to @stacks/connect",
-      err
-    );
-    return null;
-  }
-}
-
-/**
- * Open a contract call for signing.
- * Tries WalletConnect first, falls back to @stacks/connect browser extension.
+ * Open a contract call for signing via @stacks/connect (Leather / Xverse).
  */
 export const openContractCall = async (options: ContractCallOptions) => {
   try {
@@ -193,22 +114,6 @@ export const openContractCall = async (options: ContractCallOptions) => {
       );
     }
 
-    // Try WalletConnect first (for mobile wallets)
-    const wcResult = await tryWalletConnectCallContract({
-      contract,
-      functionName: options.functionName,
-      functionArgs: options.functionArgs,
-      network: resolvedNetwork,
-    });
-
-    if (wcResult) {
-      if (options.onFinish) {
-        options.onFinish({ txId: wcResult.txid });
-      }
-      return wcResult;
-    }
-
-    // Fallback to @stacks/connect (browser extension wallets)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any = {
       contract,
@@ -227,7 +132,6 @@ export const openContractCall = async (options: ContractCallOptions) => {
     const result = await request(
       {
         provider,
-        // If we cannot resolve a provider (no extension installed), force wallet selection.
         forceWalletSelect: !provider,
         persistWalletSelect: true,
       },
@@ -243,7 +147,6 @@ export const openContractCall = async (options: ContractCallOptions) => {
   } catch (error: unknown) {
     console.error("Failed to execute contract call:", error);
 
-    // Handle cancellation
     if (
       error instanceof Error &&
       error.message?.toLowerCase().includes("cancel") &&
@@ -253,7 +156,6 @@ export const openContractCall = async (options: ContractCallOptions) => {
       return;
     }
 
-    // Re-throw with more context if it's a wallet error
     if (error instanceof Error) {
       const msg = error.message || "";
       const looksLikeNoWallet =

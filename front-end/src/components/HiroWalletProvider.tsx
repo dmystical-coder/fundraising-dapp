@@ -44,12 +44,8 @@ interface ProviderProps {
 const HiroWalletProviderUnconfigured: FC<ProviderProps> = ({ children }) => {
   const hiroWalletContext: HiroWallet = useMemo(
     () => ({
-      authenticate: () => {
-        // no-op when not configured
-      },
-      disconnect: () => {
-        // no-op when not configured
-      },
+      authenticate: () => {},
+      disconnect: () => {},
       isWalletOpen: false,
       isWalletConnected: false,
       testnetAddress: null,
@@ -69,21 +65,26 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
   const [storage, setStorage] = useState<StorageData | null>(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
 
-  useEffect(() => {
-    // Hydrate initial state from localStorage.
-    setStorage(getLocalStorage());
-    setIsWalletConnected(stacksIsConnected());
-  }, []);
-
   const refreshFromStorage = useCallback(() => {
     setStorage(getLocalStorage());
     setIsWalletConnected(stacksIsConnected());
   }, []);
 
-  const authenticate = useCallback(async () => {
-    // Opens Stacks Connect modal (wallet extension selection) and stores addresses.
-    await stacksConnect({});
+  useEffect(() => {
     refreshFromStorage();
+  }, [refreshFromStorage]);
+
+  const authenticate = useCallback(async () => {
+    try {
+      await stacksConnect({});
+      // Small delay to let @stacks/connect persist session to localStorage
+      await new Promise((r) => setTimeout(r, 200));
+      refreshFromStorage();
+    } catch (err) {
+      // User cancelled or wallet extension not found — refresh state anyway
+      console.warn("Wallet connection failed or was cancelled:", err);
+      refreshFromStorage();
+    }
   }, [refreshFromStorage]);
 
   const handleDisconnect = useCallback(() => {
@@ -95,7 +96,6 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
     const stxAddresses = storage?.addresses?.stx ?? [];
     const anyStx = stxAddresses[0]?.address ?? null;
 
-    // Prefer explicit mainnet/testnet prefixes if present.
     const main =
       stxAddresses.find((a) => a.address?.startsWith("SP"))?.address ?? null;
     const test =
@@ -139,7 +139,6 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
 };
 
 export const HiroWalletProvider: FC<ProviderProps> = ({ children }) => {
-  // Only render the configured provider in the browser.
   if (typeof window === "undefined") {
     return (
       <HiroWalletProviderUnconfigured>

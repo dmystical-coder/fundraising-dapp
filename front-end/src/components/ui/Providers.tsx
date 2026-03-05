@@ -7,11 +7,6 @@ import { ErrorBoundary } from "../ErrorBoundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 
-const ReownAppKitProvider = dynamic(
-  () => import("../ReownAppKitProvider").then((m) => m.ReownAppKitProvider),
-  { ssr: false }
-);
-
 const HiroWalletProvider = dynamic(
   () => import("../HiroWalletProvider").then((m) => m.HiroWalletProvider),
   { ssr: false }
@@ -24,11 +19,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ChakraProvider theme={theme}>
         <ErrorBoundary>
-          <ReownAppKitProvider>
-            <HiroWalletProvider>
-              <DevnetWalletProvider>{children}</DevnetWalletProvider>
-            </HiroWalletProvider>
-          </ReownAppKitProvider>
+          <HiroWalletProvider>
+            <DevnetWalletProvider>{children}</DevnetWalletProvider>
+          </HiroWalletProvider>
         </ErrorBoundary>
       </ChakraProvider>
     </QueryClientProvider>
