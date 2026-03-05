@@ -32,7 +32,7 @@ export interface CampaignInfo {
 /**
  * Fetch campaign info from blockchain by ID.
  */
-async function fetchCampaignFromChain(
+export async function fetchCampaignFromChain(
   campaignId: number,
   currentPrices: PriceData | undefined
 ): Promise<CampaignInfo> {

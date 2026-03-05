@@ -15,8 +15,10 @@ import {
   AlertIcon,
 } from "@chakra-ui/react";
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
+import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { useAddress } from "@/components/ConnectWallet";
 
@@ -80,6 +82,30 @@ export function CampaignGrid({
   const { data: indexerCampaigns, isLoading: indexerLoading, error: fetchError, refetch } =
     useIndexerCampaigns();
   const { data: prices } = useCurrentPrices();
+
+  const campaignIds = useMemo(
+    () => (indexerCampaigns || []).map((c) => c.campaign_id),
+    [indexerCampaigns]
+  );
+
+  const { data: onChainMap } = useQuery<Map<number, CampaignInfo>>({
+    queryKey: ["onChainCampaignStatuses", campaignIds],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        campaignIds.map((id) => fetchCampaignFromChain(id, prices))
+      );
+      const map = new Map<number, CampaignInfo>();
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value) {
+          map.set(campaignIds[i], r.value);
+        }
+      });
+      return map;
+    },
+    enabled: campaignIds.length > 0,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
 
   // Listen for localStorage changes via storage event instead of polling
   const checkPending = useCallback(() => {
@@ -154,19 +180,21 @@ export function CampaignGrid({
       }
     }
 
-    const now = Math.floor(Date.now() / 1000);
-    const enriched: CampaignWithOnChain[] = baseCampaigns.map((c) => ({
-      ...c,
-      endAt: (c as CampaignWithOnChain).endAt || 0,
-      goal: (c as CampaignWithOnChain).goal || 0,
-      isExpired: (c as CampaignWithOnChain).endAt 
-        ? ((c as CampaignWithOnChain).endAt as number) <= now 
-        : false,
-    }));
+    const enriched: CampaignWithOnChain[] = baseCampaigns.map((c) => {
+      const onChain = onChainMap?.get(c.campaign_id);
+      return {
+        ...c,
+        endAt: onChain?.endAt || (c as CampaignWithOnChain).endAt || 0,
+        goal: onChain?.goal || (c as CampaignWithOnChain).goal || 0,
+        is_cancelled: onChain?.isCancelled ?? c.is_cancelled,
+        is_withdrawn: onChain?.isWithdrawn ?? c.is_withdrawn,
+        isExpired: onChain?.isExpired ?? false,
+      };
+    });
 
     const sorted = sortCampaigns(enriched, sortBy);
     return limit ? sorted.slice(0, limit) : sorted;
-  }, [propCampaigns, indexerCampaigns, sortBy, limit, pendingCampaign]);
+  }, [propCampaigns, indexerCampaigns, sortBy, limit, pendingCampaign, onChainMap]);
 
   if (isLoading) {
     return (

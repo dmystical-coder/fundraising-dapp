@@ -24,8 +24,10 @@ import {
 import { AddIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
+import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
 import { useMyCampaigns, useMyDonations } from "@/hooks/indexerQueries";
+import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
@@ -36,6 +38,25 @@ export default function DashboardPage() {
   const { data: prices } = useCurrentPrices();
   const { data: myCampaigns, isLoading: campaignsLoading } = useMyCampaigns(address);
   const { data: myDonations, isLoading: donationsLoading } = useMyDonations(address);
+
+  const campaignIds = (myCampaigns || []).map((c) => c.campaign_id);
+  const { data: onChainMap } = useQuery<Map<number, CampaignInfo>>({
+    queryKey: ["onChainDashboardStatuses", campaignIds],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        campaignIds.map((id) => fetchCampaignFromChain(id, prices))
+      );
+      const map = new Map<number, CampaignInfo>();
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value) {
+          map.set(campaignIds[i], r.value);
+        }
+      });
+      return map;
+    },
+    enabled: campaignIds.length > 0,
+    staleTime: 30_000,
+  });
 
   if (!address) {
     return (
@@ -156,10 +177,11 @@ export default function DashboardPage() {
             ) : (
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                 {myCampaigns.map((campaign) => {
+                  const onChain = onChainMap?.get(campaign.campaign_id);
                   const status = getCampaignStatus({
-                    isCancelled: campaign.is_cancelled,
-                    isWithdrawn: campaign.is_withdrawn,
-                    isExpired: false,
+                    isCancelled: onChain?.isCancelled ?? campaign.is_cancelled,
+                    isWithdrawn: onChain?.isWithdrawn ?? campaign.is_withdrawn,
+                    isExpired: onChain?.isExpired ?? false,
                   });
 
                   return (
