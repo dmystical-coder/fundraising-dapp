@@ -1,6 +1,6 @@
 // Indexer API configuration
 const getIndexerUrl = () => {
-  return process.env.NEXT_PUBLIC_INDEXER_URL || "http://localhost:4001";
+  return process.env.NEXT_PUBLIC_INDEXER_URL || "";
 };
 
 export const INDEXER_CONFIG = {
