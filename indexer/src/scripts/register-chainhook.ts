@@ -6,6 +6,7 @@ import {
   type ChainhookDefinition,
 } from "@hirosystems/chainhooks-client";
 import { z } from "zod";
+import { createDbPool } from "../db";
 
 const EnvSchema = z
   .object({
@@ -19,6 +20,7 @@ const EnvSchema = z
 
     EXPECTED_CONTRACT_IDENTIFIER: z.string().min(1).optional(),
     PORT: z.string().min(1).optional(),
+    DATABASE_URL: z.string().optional(),
 
     CHAINHOOKS_REPLACE_EXISTING: z.enum(["0", "1", "true", "false"]).optional(),
     CHAINHOOKS_START_BLOCK: z.string().regex(/^\d+$/).optional(),
@@ -57,6 +59,8 @@ async function findExistingByName(
 
 async function main() {
   const env = EnvSchema.parse(process.env);
+  const args = process.argv.slice(2);
+  const autoFromDb = args.includes("--auto-from-db");
 
   const network: "mainnet" | "testnet" = env.CHAINHOOKS_NETWORK ?? "mainnet";
   const baseUrl = env.CHAINHOOKS_BASE_URL ?? CHAINHOOKS_BASE_URL[network];
@@ -75,6 +79,39 @@ async function main() {
     env.CHAINHOOKS_REPLACE_EXISTING
   );
 
+  let startBlock = env.CHAINHOOKS_START_BLOCK
+    ? parseInt(env.CHAINHOOKS_START_BLOCK, 10)
+    : undefined;
+
+  if (autoFromDb && !startBlock) {
+    if (!env.DATABASE_URL) {
+       console.warn("⚠️  --auto-from-db flag ignored: DATABASE_URL not set.");
+    } else {
+      console.log("🔍 Auto-detecting LAST indexed block from database...");
+      const pool = createDbPool(env.DATABASE_URL);
+      try {
+        const res = await pool.query<{ max_height: string }>(
+          "SELECT MAX(block_height) as max_height FROM chainhook_deliveries"
+        );
+        const max = res.rows[0]?.max_height;
+        if (max) {
+          const detectedBlock = parseInt(max, 10);
+          console.log(`✅ Found last indexed block: ${detectedBlock}`);
+          // Use last block to ensure we don't miss anything that happened IN that block
+          // (Duplicate events are handled by unique constraints/idempotency)
+          startBlock = detectedBlock;
+        } else {
+          console.log("ℹ️  No history found, starting fresh.");
+        }
+      } catch (err) {
+        console.error("❌ Failed to query database for block height:", err);
+        process.exit(1);
+      } finally {
+        await pool.end();
+      }
+    }
+  }
+
   const client = new ChainhooksClient({
     baseUrl,
     apiKey: env.CHAINHOOKS_API_KEY,
@@ -86,9 +123,7 @@ async function main() {
     version: "1",
     chain: "stacks",
     network,
-    start_block: env.CHAINHOOKS_START_BLOCK
-      ? parseInt(env.CHAINHOOKS_START_BLOCK, 10)
-      : undefined,
+    start_block: startBlock,
     filters: {
       events: [
         {
