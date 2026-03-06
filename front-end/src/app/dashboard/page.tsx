@@ -29,22 +29,27 @@ import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
 import { useMyCampaigns, useMyDonations } from "@/hooks/indexerQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
-import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
+import {
+  StatusBadge,
+  getCampaignStatus,
+} from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { SimpleAddress } from "@/components/common/AddressDisplay";
 
 export default function DashboardPage() {
   const address = useAddress();
   const { data: prices } = useCurrentPrices();
-  const { data: myCampaigns, isLoading: campaignsLoading } = useMyCampaigns(address);
-  const { data: myDonations, isLoading: donationsLoading } = useMyDonations(address);
+  const { data: myCampaigns, isLoading: campaignsLoading } =
+    useMyCampaigns(address);
+  const { data: myDonations, isLoading: donationsLoading } =
+    useMyDonations(address);
 
   const campaignIds = (myCampaigns || []).map((c) => c.campaign_id);
   const { data: onChainMap } = useQuery<Map<number, CampaignInfo>>({
     queryKey: ["onChainDashboardStatuses", campaignIds],
     queryFn: async () => {
       const results = await Promise.allSettled(
-        campaignIds.map((id) => fetchCampaignFromChain(id, prices))
+        campaignIds.map((id) => fetchCampaignFromChain(id, prices)),
       );
       const map = new Map<number, CampaignInfo>();
       results.forEach((r, i) => {
@@ -75,12 +80,10 @@ export default function DashboardPage() {
             <Text fontSize="3xl">👋</Text>
           </Box>
           <VStack spacing={3}>
-            <Heading size="xl">
-              Your Dashboard
-            </Heading>
+            <Heading size="xl">Your Dashboard</Heading>
             <Text color="gray.500" maxW="400px" fontSize="lg">
-              Connect your wallet to view your campaigns, track donations,
-              and manage your fundraising activity.
+              Connect your wallet to view your campaigns, track donations, and
+              manage your fundraising activity.
             </Text>
           </VStack>
           <ConnectWallet />
@@ -89,10 +92,18 @@ export default function DashboardPage() {
               Preview what you can do:
             </Text>
             <HStack spacing={6} flexWrap="wrap" justify="center">
-              {["View your campaigns", "Track donations", "Manage withdrawals"].map((item) => (
+              {[
+                "View your campaigns",
+                "Track donations",
+                "Manage withdrawals",
+              ].map((item) => (
                 <HStack key={item} spacing={1.5}>
-                  <Text color="primary.400" fontSize="sm">✓</Text>
-                  <Text fontSize="sm" color="gray.500">{item}</Text>
+                  <Text color="primary.400" fontSize="sm">
+                    ✓
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    {item}
+                  </Text>
                 </HStack>
               ))}
             </HStack>
@@ -123,7 +134,40 @@ export default function DashboardPage() {
           Create Campaign
         </Button>
       </HStack>
+      {/* Dashboard Stats */}
+      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={8}>
+        <Card borderRadius="xl">
+          <CardBody>
+            <Text fontSize="sm" color="gray.500">
+              Total Campaigns
+            </Text>
+            <Heading size="lg">{myCampaigns?.length || 0}</Heading>
+          </CardBody>
+        </Card>
 
+        <Card borderRadius="xl">
+          <CardBody>
+            <Text fontSize="sm" color="gray.500">
+              Total Donations Made
+            </Text>
+            <Heading size="lg">{myDonations?.length || 0}</Heading>
+          </CardBody>
+        </Card>
+
+        <Card borderRadius="xl">
+          <CardBody>
+            <Text fontSize="sm" color="gray.500">
+              Total Raised
+            </Text>
+            <Heading size="lg">
+              {myCampaigns
+                ?.reduce((acc, c) => acc + Number(c.total_stx || 0), 0)
+                .toLocaleString()}{" "}
+              STX
+            </Heading>
+          </CardBody>
+        </Card>
+      </SimpleGrid>
       <Tabs colorScheme="primary" variant="enclosed">
         <TabList>
           <Tab fontWeight="600">
@@ -153,15 +197,19 @@ export default function DashboardPage() {
                 ))}
               </SimpleGrid>
             ) : !myCampaigns || myCampaigns.length === 0 ? (
-              <Card bg="warm.muted" borderRadius="xl" borderWidth="1px" borderColor="warm.border">
+              <Card
+                bg="warm.muted"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="warm.border"
+              >
                 <CardBody py={12} textAlign="center">
                   <VStack spacing={4}>
                     <Text fontSize="4xl">🎯</Text>
-                    <Heading size="md">
-                      No Campaigns Yet
-                    </Heading>
+                    <Heading size="md">No Campaigns Yet</Heading>
                     <Text color="gray.500" maxW="300px">
-                      You haven&apos;t created any campaigns. Start your first fundraising campaign today!
+                      You haven&apos;t created any campaigns. Start your first
+                      fundraising campaign today!
                     </Text>
                     <Button
                       as={Link}
@@ -200,14 +248,17 @@ export default function DashboardPage() {
                       <CardBody>
                         <HStack justify="space-between" mb={3}>
                           <Heading size="md">
-                            {campaign.title || `Campaign #${campaign.campaign_id}`}
+                            {campaign.title ||
+                              `Campaign #${campaign.campaign_id}`}
                           </Heading>
                           <StatusBadge status={status} size="sm" />
                         </HStack>
 
                         <VStack align="stretch" spacing={3}>
                           <Box>
-                            <Text fontSize="sm" color="gray.500" mb={1}>Raised</Text>
+                            <Text fontSize="sm" color="gray.500" mb={1}>
+                              Raised
+                            </Text>
                             <CombinedAmountDisplay
                               stxAmount={campaign.total_stx}
                               sbtcAmount={campaign.total_sbtc}
@@ -221,7 +272,11 @@ export default function DashboardPage() {
 
                           <HStack justify="space-between">
                             <HStack>
-                              <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
+                              <Text
+                                fontSize="sm"
+                                fontWeight="600"
+                                color="chakra-body-text"
+                              >
                                 {campaign.donation_count}
                               </Text>
                               <Text fontSize="sm" color="gray.500">
@@ -229,7 +284,9 @@ export default function DashboardPage() {
                               </Text>
                             </HStack>
                             <Text fontSize="sm" color="gray.400">
-                              {new Date(campaign.created_at).toLocaleDateString()}
+                              {new Date(
+                                campaign.created_at,
+                              ).toLocaleDateString()}
                             </Text>
                           </HStack>
                         </VStack>
@@ -245,19 +302,28 @@ export default function DashboardPage() {
             {donationsLoading ? (
               <VStack spacing={3}>
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} height="80px" width="100%" borderRadius="xl" />
+                  <Skeleton
+                    key={i}
+                    height="80px"
+                    width="100%"
+                    borderRadius="xl"
+                  />
                 ))}
               </VStack>
             ) : !myDonations || myDonations.length === 0 ? (
-              <Card bg="warm.muted" borderRadius="xl" borderWidth="1px" borderColor="warm.border">
+              <Card
+                bg="warm.muted"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="warm.border"
+              >
                 <CardBody py={12} textAlign="center">
                   <VStack spacing={4}>
                     <Text fontSize="4xl">💝</Text>
-                    <Heading size="md">
-                      No Donations Yet
-                    </Heading>
+                    <Heading size="md">No Donations Yet</Heading>
                     <Text color="gray.500" maxW="300px">
-                      You haven&apos;t made any donations. Browse campaigns and support a cause you believe in!
+                      You haven&apos;t made any donations. Browse campaigns and
+                      support a cause you believe in!
                     </Text>
                     <Button as={Link} href="/" colorScheme="primary">
                       Browse Campaigns
@@ -310,7 +376,9 @@ export default function DashboardPage() {
                                 </ChakraLink>
                               </HStack>
                               <Text fontSize="sm" color="gray.500">
-                                {new Date(donation.inserted_at).toLocaleString()}
+                                {new Date(
+                                  donation.inserted_at,
+                                ).toLocaleString()}
                               </Text>
                             </VStack>
                           </HStack>
