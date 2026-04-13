@@ -52,9 +52,9 @@ function getEventConfig(eventName: string): {
     case "campaign-withdrawn":
       return { label: "Withdrawn", color: "success.500", icon: "✅" };
     case "refunded":
-      return { label: "Refunded", color: "gray.500", icon: "↩️" };
+      return { label: "Refunded", color: "text.secondary", icon: "↩️" };
     default:
-      return { label: eventName, color: "gray.500", icon: "📋" };
+      return { label: eventName, color: "text.secondary", icon: "📋" };
   }
 }
 
@@ -114,11 +114,11 @@ export function ActivityFeedItem({
       spacing={3}
       py={3}
       px={4}
-      bg="warm.surface"
+      bg="bg.surface"
       borderRadius="lg"
       borderWidth="1px"
-      borderColor="warm.border"
-      _hover={{ bg: "warm.muted" }}
+      borderColor="border.default"
+      _hover={{ bg: "bg.surfaceAlt" }}
       transition="background 0.15s"
     >
       {/* Icon/Avatar */}
@@ -126,7 +126,7 @@ export function ActivityFeedItem({
         w={10}
         h={10}
         borderRadius="full"
-        bg="warm.muted"
+        bg="bg.surfaceAlt"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -163,7 +163,7 @@ export function ActivityFeedItem({
 
       {/* Timestamp */}
       <VStack align="end" spacing={0} minW="fit-content">
-        <Text fontSize="xs" color="gray.400">
+        <Text fontSize="xs" color="text.tertiary">
           {format(insertedAt)}
         </Text>
         {txid && (
@@ -210,7 +210,7 @@ export function ActivityFeed({
     return (
       <VStack spacing={3} align="stretch">
         {[1, 2, 3].map((i) => (
-          <HStack key={i} spacing={3} p={4} bg="warm.surface" borderRadius="lg">
+          <HStack key={i} spacing={3} p={4} bg="bg.surface" borderRadius="lg">
             <SkeletonCircle size="10" />
             <VStack align="start" flex={1} spacing={1}>
               <Skeleton height="14px" width="60%" />
@@ -229,12 +229,12 @@ export function ActivityFeed({
         py={8}
         px={4}
         textAlign="center"
-        bg="warm.muted"
+        bg="bg.surfaceAlt"
         borderRadius="lg"
         borderWidth="1px"
-        borderColor="warm.border"
+        borderColor="border.default"
       >
-        <Text color="gray.500">{emptyMessage}</Text>
+        <Text color="text.secondary">{emptyMessage}</Text>
       </Box>
     );
   }

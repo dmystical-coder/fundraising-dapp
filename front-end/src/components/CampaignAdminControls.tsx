@@ -190,7 +190,7 @@ export default function CampaignAdminControls({
                       contributions and will run for about 30 days by default.
                     </Box>
                     <NumberInput
-                      bg="white"
+                      bg="bg.field"
                       min={1}
                       value={goal}
                       onChange={handleGoalChange}
@@ -203,7 +203,7 @@ export default function CampaignAdminControls({
                     </NumberInput>
 
                     <Input
-                      bg="white"
+                      bg="bg.field"
                       type="datetime-local"
                       value={endDateTimeLocal}
                       onChange={(e) => setEndDateTimeLocal(e.target.value)}

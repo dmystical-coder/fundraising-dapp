@@ -78,7 +78,7 @@ export function AddressDisplay({
         <Text
           fontFamily="mono"
           fontSize={styles.fontSize}
-          color="gray.600"
+          color="text.secondary"
           {...props}
         >
           {displayAddress}
@@ -135,7 +135,7 @@ export function SimpleAddress({
 }: SimpleAddressProps) {
   return (
     <Tooltip label={address} hasArrow placement="top">
-      <Text fontFamily="mono" color="gray.600" {...props}>
+      <Text fontFamily="mono" color="text.secondary" {...props}>
         {truncateAddress(address, length)}
       </Text>
     </Tooltip>

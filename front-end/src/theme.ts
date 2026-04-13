@@ -1,4 +1,8 @@
-import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
+import {
+  extendTheme,
+  type ThemeConfig,
+  type StyleFunctionProps,
+} from "@chakra-ui/react";
 
 const colors = {
   primary: {
@@ -87,6 +91,50 @@ const fonts = {
   mono: `'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace`,
 };
 
+const textStyles = {
+  display: {
+    fontSize: { base: "2xl", md: "4xl", lg: "5xl" },
+    lineHeight: "1.1",
+    fontWeight: "800",
+    letterSpacing: "-0.02em",
+  },
+  h1: {
+    fontSize: { base: "2xl", md: "3xl" },
+    lineHeight: "1.2",
+    fontWeight: "700",
+    letterSpacing: "-0.01em",
+  },
+  h2: {
+    fontSize: { base: "xl", md: "2xl" },
+    lineHeight: "1.25",
+    fontWeight: "700",
+  },
+  h3: {
+    fontSize: { base: "lg", md: "xl" },
+    lineHeight: "1.3",
+    fontWeight: "700",
+  },
+  body: {
+    fontSize: { base: "md", md: "lg" },
+    lineHeight: "1.6",
+  },
+  bodySm: {
+    fontSize: "sm",
+    lineHeight: "1.5",
+  },
+  caption: {
+    fontSize: "xs",
+    lineHeight: "1.4",
+    letterSpacing: "0.01em",
+  },
+  label: {
+    fontSize: "sm",
+    lineHeight: "1.4",
+    fontWeight: "600",
+    letterSpacing: "0.01em",
+  },
+};
+
 const styles = {
   global: {
     "html, body": {
@@ -101,10 +149,9 @@ const styles = {
       },
     },
     "*:focus-visible": {
-      outline: "2px solid",
-      outlineColor: "primary.400",
-      outlineOffset: "2px",
-      borderRadius: "sm",
+      outline: "none",
+      boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)",
+      borderRadius: "var(--chakra-radii-md)",
     },
   },
 };
@@ -116,28 +163,28 @@ const components = {
       borderRadius: "lg",
     },
     variants: {
-      solid: (props: { colorScheme: string }) => {
+      solid: (props: StyleFunctionProps) => {
         const { colorScheme: c } = props;
         if (["primary", "secondary", "warning", "success", "error", "brand"].includes(c)) {
           return {
             bg: `${c}.500`,
-            color: "white",
+            color: "text.inverse",
             _hover: {
               bg: `${c}.600`,
-              color: "white",
+              color: "text.inverse",
               _disabled: {
                 bg: `${c}.500`,
               },
             },
             _active: {
               bg: `${c}.700`,
-              color: "white",
+              color: "text.inverse",
             },
           };
         }
         return {
           bg: `${c}.500`,
-          color: "white",
+          color: "text.inverse",
           _hover: {
             bg: `${c}.600`,
           },
@@ -146,7 +193,7 @@ const components = {
           },
         };
       },
-      outline: (props: { colorScheme: string }) => {
+      outline: (props: StyleFunctionProps) => {
         const { colorScheme: c } = props;
         return {
           borderColor: `${c}.500`,
@@ -163,13 +210,13 @@ const components = {
         };
       },
       ghost: {
-        color: "chakra-body-text",
+        color: "text.primary",
         _hover: {
-          bg: "mutedBg",
-          color: "chakra-body-text",
+          bg: "bg.surfaceAlt",
+          color: "text.primary",
         },
         _active: {
-          bg: "chakra-border-color",
+          bg: "border.default",
         },
       },
     },
@@ -183,7 +230,7 @@ const components = {
       container: {
         bg: "surfaceBg",
         borderRadius: "xl",
-        boxShadow: "0 1px 3px 0 rgba(124, 58, 237, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.06)",
+        boxShadow: "card",
         border: "1px solid",
         borderColor: "chakra-border-color",
       },
@@ -249,8 +296,15 @@ const components = {
   Text: {
     variants: {
       muted: {
-        color: "gray.500",
+        color: "text.secondary",
         fontSize: "sm",
+      },
+      caption: {
+        color: "text.tertiary",
+        fontSize: "xs",
+      },
+      body: {
+        color: "text.primary",
       },
       amount: {
         fontFamily: "mono",
@@ -268,7 +322,7 @@ const components = {
         borderColor: "chakra-border-color",
       },
       label: {
-        color: "gray.500",
+        color: "text.secondary",
         fontSize: "sm",
         fontWeight: "500",
       },
@@ -283,7 +337,7 @@ const components = {
       outline: {
         field: {
           borderColor: "chakra-border-color",
-          bg: "surfaceBg",
+          bg: "bg.field",
           _hover: {
             borderColor: "primary.300",
           },
@@ -319,6 +373,7 @@ const components = {
           _selected: {
             color: "primary.600",
             borderColor: "primary.500",
+            bg: "bg.surface",
           },
         },
       },
@@ -334,19 +389,64 @@ const config: ThemeConfig = {
 const theme = extendTheme({
   colors,
   fonts,
+  textStyles,
   styles,
   components,
+  radii: {
+    input: "lg",
+    surface: "xl",
+  },
+  shadows: {
+    card: "0 10px 30px -18px rgba(124, 58, 237, 0.35)",
+    focusRing: "0 0 0 3px var(--chakra-colors-focus-ring)",
+  },
   config,
   semanticTokens: {
     colors: {
-      "chakra-body-bg": { _light: "warm.bg", _dark: "gray.900" },
-      "chakra-body-text": { _light: "gray.800", _dark: "gray.50" },
+      "chakra-body-bg": { _light: "warm.bg", _dark: "gray.950" },
+      "chakra-body-text": { _light: "gray.800", _dark: "gray.100" },
       "chakra-border-color": { _light: "warm.border", _dark: "gray.700" },
-      surfaceBg: { _light: "warm.surface", _dark: "gray.800" },
-      mutedBg: { _light: "warm.muted", _dark: "gray.700" },
+      surfaceBg: { _light: "warm.surface", _dark: "gray.900" },
+      mutedBg: { _light: "warm.muted", _dark: "gray.800" },
       linkColor: { _light: "primary.600", _dark: "primary.300" },
       linkHoverColor: { _light: "primary.700", _dark: "primary.200" },
-      heroBg: { _light: "linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%)", _dark: "gray.900" },
+      heroBg: {
+        _light: "linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%)",
+        _dark: "linear-gradient(180deg, #111827 0%, #1f2937 100%)",
+      },
+      "bg.canvas": { _light: "warm.bg", _dark: "gray.950" },
+      "bg.surface": { _light: "warm.surface", _dark: "gray.900" },
+      "bg.surfaceAlt": { _light: "warm.muted", _dark: "gray.800" },
+      "bg.accentSubtle": { _light: "primary.50", _dark: "primary.900" },
+      "bg.field": { _light: "warm.surface", _dark: "gray.900" },
+      "bg.nav": { _light: "whiteAlpha.900", _dark: "blackAlpha.500" },
+      "bg.overlay": { _light: "blackAlpha.300", _dark: "blackAlpha.600" },
+      "text.primary": { _light: "gray.800", _dark: "gray.100" },
+      "text.secondary": { _light: "gray.600", _dark: "gray.300" },
+      "text.tertiary": { _light: "gray.500", _dark: "gray.400" },
+      "text.accent": { _light: "primary.600", _dark: "primary.300" },
+      "text.inverse": { _light: "white", _dark: "white" },
+      "text.success": { _light: "success.700", _dark: "success.300" },
+      "text.warning": { _light: "warning.700", _dark: "warning.300" },
+      "text.danger": { _light: "error.700", _dark: "error.300" },
+      "border.default": { _light: "warm.border", _dark: "gray.700" },
+      "border.subtle": { _light: "gray.100", _dark: "gray.800" },
+      "border.accent": { _light: "primary.300", _dark: "primary.500" },
+      "focus.ring": { _light: "primary.300", _dark: "primary.500" },
+      "scrollbar.track": { _light: "warm.muted", _dark: "gray.800" },
+      "scrollbar.thumb": { _light: "primary.500", _dark: "primary.400" },
+      "scrollbar.thumbHover": { _light: "primary.600", _dark: "primary.300" },
+    },
+    radii: {
+      surface: { default: "xl" },
+      interactive: { default: "lg" },
+    },
+    shadows: {
+      surface: { default: "card" },
+      focus: { default: "0 0 0 3px var(--chakra-colors-focus-ring)" },
+    },
+    space: {
+      "layout.gutter": { default: "6" },
     },
   },
 });

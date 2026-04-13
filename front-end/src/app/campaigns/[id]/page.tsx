@@ -23,6 +23,7 @@ import {
   AlertDescription,
   Divider,
   useDisclosure,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -50,6 +51,7 @@ export default function CampaignDetailPage() {
   const { data: indexedCampaign } = useIndexerCampaign(campaignId);
   const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
+  const topDonorBg = useColorModeValue("primary.50", "primary.900");
   
   const currentAddress = useAddress();
   const isOwner = currentAddress && campaign?.owner && 
@@ -162,27 +164,27 @@ export default function CampaignDetailPage() {
                 {indexedCampaign?.title || `Campaign #${campaign.id}`}
               </Heading>
               {indexedCampaign?.description && (
-                <Text color="gray.600" mb={4} whiteSpace="pre-wrap">
+                <Text color="text.secondary" mb={4} whiteSpace="pre-wrap">
                   {indexedCampaign.description}
                 </Text>
               )}
               <HStack spacing={4} flexWrap="wrap">
                 <HStack>
-                  <Text color="gray.500" fontSize="sm">Owner:</Text>
+                  <Text color="text.secondary" fontSize="sm">Owner:</Text>
                   <AddressDisplay address={campaign.owner} size="sm" />
                 </HStack>
                 <HStack>
-                  <Text color="gray.500" fontSize="sm">Beneficiary:</Text>
+                  <Text color="text.secondary" fontSize="sm">Beneficiary:</Text>
                   <AddressDisplay address={campaign.beneficiary} size="sm" />
                 </HStack>
               </HStack>
             </Box>
 
-            <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
+            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
               <CardBody>
                 <VStack spacing={4} align="stretch">
                   <HStack justify="space-between">
-                    <Text fontWeight="600" color="gray.600">Amount Raised</Text>
+                    <Text fontWeight="600" color="text.secondary">Amount Raised</Text>
                     <Text fontWeight="700" color="primary.600" fontSize="lg">
                       ${totalUsd.toFixed(2)} USD
                     </Text>
@@ -199,10 +201,10 @@ export default function CampaignDetailPage() {
                   {campaign.goal > 0 && (
                     <Box>
                       <HStack justify="space-between" mb={2}>
-                        <Text fontSize="sm" color="gray.500">
+                        <Text fontSize="sm" color="text.secondary">
                           Goal: ${campaign.goal.toLocaleString()}
                         </Text>
-                        <Text fontSize="sm" fontWeight="600" color="gray.600">
+                        <Text fontSize="sm" fontWeight="600" color="text.secondary">
                           {progress.toFixed(0)}%
                         </Text>
                       </HStack>
@@ -210,7 +212,7 @@ export default function CampaignDetailPage() {
                         value={progress}
                         size="md"
                         borderRadius="full"
-                        bg="warm.muted"
+                        bg="bg.surfaceAlt"
                         sx={{
                           "& > div": {
                             bg: progress >= 100 ? "success.500" : "primary.500",
@@ -220,12 +222,12 @@ export default function CampaignDetailPage() {
                     </Box>
                   )}
 
-                  <HStack justify="space-around" pt={4} borderTop="1px" borderColor="warm.border">
+                  <HStack justify="space-around" pt={4} borderTop="1px" borderColor="border.default">
                     <VStack spacing={0}>
                       <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
                         {campaign.donationCount}
                       </Text>
-                      <Text fontSize="sm" color="gray.500">Donations</Text>
+                      <Text fontSize="sm" color="text.secondary">Donations</Text>
                     </VStack>
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
@@ -242,7 +244,7 @@ export default function CampaignDetailPage() {
                           return "< 1 min";
                         })()}
                       </Text>
-                      <Text fontSize="sm" color="gray.500">Duration</Text>
+                      <Text fontSize="sm" color="text.secondary">Duration</Text>
                     </VStack>
                   </HStack>
                 </VStack>
@@ -261,7 +263,7 @@ export default function CampaignDetailPage() {
               />
             )}
 
-            <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
+            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
               <CardHeader pb={0}>
                 <Heading size="md">Recent Activity</Heading>
               </CardHeader>
@@ -281,7 +283,7 @@ export default function CampaignDetailPage() {
         <GridItem>
           <VStack spacing={6} align="stretch" position="sticky" top={6}>
             {status === "active" && !isOwner && (
-              <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
+              <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
                 <CardHeader>
                   <Heading size="md">Support This Campaign</Heading>
                 </CardHeader>
@@ -311,7 +313,7 @@ export default function CampaignDetailPage() {
               />
             )}
 
-            <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
+            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
               <CardHeader pb={2}>
                 <Heading size="md">Top Donors</Heading>
               </CardHeader>
@@ -323,7 +325,7 @@ export default function CampaignDetailPage() {
                     ))}
                   </VStack>
                 ) : !leaderboard || leaderboard.length === 0 ? (
-                  <Text color="gray.500" textAlign="center" py={4}>
+                  <Text color="text.secondary" textAlign="center" py={4}>
                     No donors yet
                   </Text>
                 ) : (
@@ -333,13 +335,13 @@ export default function CampaignDetailPage() {
                         key={entry.donor}
                         justify="space-between"
                         p={2}
-                        bg={index === 0 ? "primary.50" : "warm.muted"}
+                        bg={index === 0 ? topDonorBg : "bg.surfaceAlt"}
                         borderRadius="md"
                       >
                         <HStack>
                           <Text
                             fontWeight="700"
-                            color={index === 0 ? "primary.600" : "gray.600"}
+                            color={index === 0 ? "primary.600" : "text.secondary"}
                             minW="24px"
                           >
                             #{index + 1}

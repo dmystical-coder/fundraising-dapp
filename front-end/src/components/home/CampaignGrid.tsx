@@ -231,7 +231,7 @@ export function CampaignGrid({
               <Text fontWeight="600" color="chakra-body-text">
                 Could not load campaigns
               </Text>
-              <Text fontSize="sm" color="gray.500">
+              <Text fontSize="sm" color="text.secondary">
                 Check your connection or try again.
               </Text>
             </Box>
@@ -258,7 +258,7 @@ export function CampaignGrid({
             <Heading size="lg">
               No Campaigns Yet
             </Heading>
-            <Text color="gray.500" maxW="400px">
+            <Text color="text.secondary" maxW="400px">
               Be the first to create a fundraising campaign and start accepting
               donations in STX and sBTC.
             </Text>
@@ -288,8 +288,8 @@ export function CampaignGrid({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               maxW="200px"
-              bg="warm.surface"
-              borderColor="warm.border"
+              bg="bg.surface"
+              borderColor="border.default"
               _hover={{ borderColor: "primary.300" }}
             >
               <option value="newest">Newest First</option>

@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Box minH="100vh" bg="warm.bg">
+          <Box minH="100vh" bg="bg.canvas">
             <Navbar />
             <Box as="main" py={{ base: 6, md: 10 }}>
               {children}

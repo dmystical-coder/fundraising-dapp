@@ -22,8 +22,7 @@ export function HeroSection() {
     <Box
       position="relative"
       overflow="hidden"
-      bg="linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%)"
-      _dark={{ bg: "gray.900" }}
+      bg="heroBg"
       py={{ base: 10, md: 16, lg: 20 }}
       px={{ base: 4, md: 0 }}
     >
@@ -34,14 +33,14 @@ export function HeroSection() {
             display="inline-flex"
             alignItems="center"
             gap={2}
-            bg="white"
+            bg="bg.surface"
             border="1px solid"
-            borderColor="primary.200"
+            borderColor="border.accent"
             borderRadius="full"
             px={4}
             py={1.5}
             fontSize="sm"
-            color="primary.700"
+            color="text.accent"
             fontWeight="500"
           >
             <Text as="span" role="img" aria-label="lock">🔐</Text>
@@ -52,7 +51,8 @@ export function HeroSection() {
           <Heading
             as="h1"
             size={headingSize}
-            color="chakra-body-text"
+            color="text.primary"
+            textStyle="display"
             fontWeight="800"
             lineHeight="1.2"
             maxW="600px"
@@ -71,8 +71,7 @@ export function HeroSection() {
           {/* Subheadline */}
           <Text
             fontSize={{ base: "md", md: "lg", lg: "xl" }}
-            color="gray.600"
-            _dark={{ color: "gray.300" }}
+            color="text.secondary"
             maxW="480px"
             lineHeight="1.6"
             px={{ base: 2, md: 0 }}
@@ -109,7 +108,7 @@ export function HeroSection() {
               size={buttonSize}
               variant="outline"
               colorScheme="primary"
-              bg="white"
+              bg="bg.surface"
               w={{ base: "100%", sm: "auto" }}
             >
               Explore Campaigns
@@ -132,7 +131,7 @@ export function HeroSection() {
                 <Text color="success.500" fontWeight="bold" fontSize="sm">
                   {item.icon}
                 </Text>
-              <Text fontSize="sm" color="gray.500" _dark={{ color: "gray.400" }}>
+              <Text fontSize="sm" color="text.secondary">
                   {item.label}
                 </Text>
               </HStack>

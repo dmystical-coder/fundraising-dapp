@@ -238,7 +238,7 @@ export default function DonationModal({
                 p={6}
                 borderWidth="1px"
                 borderRadius="lg"
-                borderColor="warm.border"
+                borderColor="border.default"
                 align="center"
                 justify="center"
                 direction="column"
@@ -278,10 +278,10 @@ export default function DonationModal({
                   <Text fontSize="2xl" fontWeight="bold" color="chakra-body-text">
                     Thank You!
                   </Text>
-                  <Text color="gray.600">
+                  <Text color="text.secondary">
                     Your donation of ${selectedAmount || customAmount} has been submitted.
                   </Text>
-                  <Text fontSize="xs" color="gray.400">
+                  <Text fontSize="xs" color="text.tertiary">
                     TxID: {successTxId.slice(0, 8)}...{successTxId.slice(-8)}
                   </Text>
                 </VStack>
@@ -323,7 +323,7 @@ export default function DonationModal({
                     </Box>
                   </Alert>
                 ) : null}
-                <Box mx="auto" w="100%" p={6} borderWidth="1px" borderRadius="lg" borderColor="warm.border">
+                <Box mx="auto" w="100%" p={6} borderWidth="1px" borderRadius="lg" borderColor="border.default">
                   <VStack spacing={6} align="stretch">
                     <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
                       Choose Payment Method
@@ -363,7 +363,7 @@ export default function DonationModal({
                       ))}
                     </HStack>
 
-                    <Text fontSize="md" color="gray.500" _dark={{ color: "gray.400" }}>Or enter custom amount:</Text>
+                    <Text fontSize="md" color="text.secondary">Or enter custom amount:</Text>
 
                     <NumberInput
                       min={1}
@@ -389,7 +389,7 @@ export default function DonationModal({
                       >
                         Donate ${selectedAmount || customAmount || "0"}
                       </Button>
-                      <Box mx="auto" fontSize="sm" fontWeight="bold" color="gray.500" _dark={{ color: "gray.400" }}>
+                      <Box mx="auto" fontSize="sm" fontWeight="bold" color="text.secondary">
                         (≈
                         {paymentMethod === "stx"
                           ? `${usdToStx(
