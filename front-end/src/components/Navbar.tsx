@@ -17,6 +17,7 @@ import {
   VStack,
   Text,
   useDisclosure,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { AddIcon, HamburgerIcon } from "@chakra-ui/icons";
 import NextLink from "next/link";
@@ -29,14 +30,14 @@ export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
   const address = useAddress();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const navBg = useColorModeValue("rgba(255,255,255,0.9)", "rgba(10,12,18,0.92)");
 
   return (
     <Box
       as="nav"
-      bg="rgba(255, 255, 255, 0.9)"
-      _dark={{ bg: "rgba(26, 32, 44, 0.9)" }}
+      bg={navBg}
       borderBottomWidth="1px"
-      borderColor="chakra-border-color"
+      borderColor="border.default"
       position="sticky"
       top={0}
       zIndex={100}
@@ -76,7 +77,7 @@ export const Navbar = () => {
                   >
                     FundStacks
                   </Text>
-                  <Text fontSize="xs" color="gray.500" lineHeight="1">
+                  <Text fontSize="xs" color="text.secondary" lineHeight="1">
                     Crowdfunding on Stacks
                   </Text>
                 </Box>
@@ -88,8 +89,7 @@ export const Navbar = () => {
               <Link
                 as={NextLink}
                 href="/"
-                color="gray.600"
-                _dark={{ color: "gray.400" }}
+                color="text.secondary"
                 fontWeight="500"
                 _hover={{ color: "primary.600" }}
               >
@@ -99,8 +99,7 @@ export const Navbar = () => {
                 <Link
                   as={NextLink}
                   href="/dashboard"
-                  color="gray.600"
-                  _dark={{ color: "gray.400" }}
+                  color="text.secondary"
                   fontWeight="500"
                   _hover={{ color: "primary.600" }}
                 >

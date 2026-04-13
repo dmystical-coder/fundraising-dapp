@@ -83,11 +83,11 @@ export function CampaignCard({
       _hover={!isPending ? {
         transform: "translateY(-4px)",
         boxShadow: "lg",
-        borderColor: "primary.200",
+        borderColor: "border.accent",
       } : undefined}
-      bg="warm.surface"
+      bg="bg.surface"
       borderWidth="1px"
-      borderColor="warm.border"
+      borderColor="border.default"
       borderRadius="xl"
       overflow="hidden"
       opacity={isPending ? 0.7 : 1}
@@ -114,7 +114,7 @@ export function CampaignCard({
 
           {beneficiary && (
             <HStack spacing={2}>
-              <Text fontSize="sm" color="gray.500">
+              <Text fontSize="sm" color="text.secondary">
                 Beneficiary:
               </Text>
               <SimpleAddress address={beneficiary} length={4} fontSize="sm" />
@@ -122,7 +122,7 @@ export function CampaignCard({
           )}
 
           <Box>
-            <Text fontSize="sm" color="gray.500" mb={1}>
+            <Text fontSize="sm" color="text.secondary" mb={1}>
               Raised
             </Text>
             <CombinedAmountDisplay
@@ -137,10 +137,10 @@ export function CampaignCard({
           {goal && goal > 0 && (
             <Box>
               <HStack justify="space-between" mb={1}>
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="text.secondary">
                   Progress
                 </Text>
-                <Text fontSize="xs" color="gray.600" fontWeight="600">
+                <Text fontSize="xs" color="text.secondary" fontWeight="600">
                   {progress.toFixed(0)}%
                 </Text>
               </HStack>
@@ -148,7 +148,7 @@ export function CampaignCard({
                 value={progress}
                 size="sm"
                 borderRadius="full"
-                bg="warm.muted"
+                bg="bg.surfaceAlt"
                 sx={{
                   "& > div": {
                     bg:
@@ -163,12 +163,12 @@ export function CampaignCard({
             </Box>
           )}
 
-          <HStack justify="space-between" pt={2} borderTop="1px" borderColor="warm.border">
+          <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default">
             <HStack spacing={1}>
               <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
                 {donationCount}
               </Text>
-              <Text fontSize="sm" color="gray.500">
+              <Text fontSize="sm" color="text.secondary">
                 {donationCount === 1 ? "donor" : "donors"}
               </Text>
             </HStack>

@@ -83,7 +83,7 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
   const whatsappUrl = `https://wa.me/?text=${shareText}%20${shareUrl}`;
 
   return (
-    <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl">
+    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
       <CardHeader pb={2}>
         <Heading size="md">
           Share Campaign

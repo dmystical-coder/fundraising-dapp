@@ -78,21 +78,21 @@ export default function DashboardPage() {
             <Heading size="xl">
               Your Dashboard
             </Heading>
-            <Text color="gray.500" maxW="400px" fontSize="lg">
+            <Text color="text.secondary" maxW="400px" fontSize="lg">
               Connect your wallet to view your campaigns, track donations,
               and manage your fundraising activity.
             </Text>
           </VStack>
           <ConnectWallet />
           <VStack spacing={2} pt={4}>
-            <Text fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color="text.tertiary">
               Preview what you can do:
             </Text>
             <HStack spacing={6} flexWrap="wrap" justify="center">
               {["View your campaigns", "Track donations", "Manage withdrawals"].map((item) => (
                 <HStack key={item} spacing={1.5}>
                   <Text color="primary.400" fontSize="sm">✓</Text>
-                  <Text fontSize="sm" color="gray.500">{item}</Text>
+                  <Text fontSize="sm" color="text.secondary">{item}</Text>
                 </HStack>
               ))}
             </HStack>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
             Dashboard
           </Heading>
           <HStack>
-            <Text color="gray.500">Connected:</Text>
+            <Text color="text.secondary">Connected:</Text>
             <SimpleAddress address={address} length={6} fontWeight="500" />
           </HStack>
         </Box>
@@ -153,14 +153,14 @@ export default function DashboardPage() {
                 ))}
               </SimpleGrid>
             ) : !myCampaigns || myCampaigns.length === 0 ? (
-              <Card bg="warm.muted" borderRadius="xl" borderWidth="1px" borderColor="warm.border">
+              <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                 <CardBody py={12} textAlign="center">
                   <VStack spacing={4}>
                     <Text fontSize="4xl">🎯</Text>
                     <Heading size="md">
                       No Campaigns Yet
                     </Heading>
-                    <Text color="gray.500" maxW="300px">
+                    <Text color="text.secondary" maxW="300px">
                       You haven&apos;t created any campaigns. Start your first fundraising campaign today!
                     </Text>
                     <Button
@@ -189,11 +189,11 @@ export default function DashboardPage() {
                       key={campaign.campaign_id}
                       as={Link}
                       href={`/campaigns/${campaign.campaign_id}`}
-                      bg="warm.surface"
+                      bg="bg.surface"
                       borderWidth="1px"
-                      borderColor="warm.border"
+                      borderColor="border.default"
                       borderRadius="xl"
-                      _hover={{ boxShadow: "md", borderColor: "primary.200" }}
+                      _hover={{ boxShadow: "md", borderColor: "border.accent" }}
                       transition="all 0.2s"
                       cursor="pointer"
                     >
@@ -207,7 +207,7 @@ export default function DashboardPage() {
 
                         <VStack align="stretch" spacing={3}>
                           <Box>
-                            <Text fontSize="sm" color="gray.500" mb={1}>Raised</Text>
+                            <Text fontSize="sm" color="text.secondary" mb={1}>Raised</Text>
                             <CombinedAmountDisplay
                               stxAmount={campaign.total_stx}
                               sbtcAmount={campaign.total_sbtc}
@@ -217,18 +217,18 @@ export default function DashboardPage() {
                             />
                           </Box>
 
-                          <Divider borderColor="warm.border" />
+                          <Divider borderColor="border.default" />
 
                           <HStack justify="space-between">
                             <HStack>
                               <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
                                 {campaign.donation_count}
                               </Text>
-                              <Text fontSize="sm" color="gray.500">
+                              <Text fontSize="sm" color="text.secondary">
                                 donations
                               </Text>
                             </HStack>
-                            <Text fontSize="sm" color="gray.400">
+                            <Text fontSize="sm" color="text.tertiary">
                               {new Date(campaign.created_at).toLocaleDateString()}
                             </Text>
                           </HStack>
@@ -249,14 +249,14 @@ export default function DashboardPage() {
                 ))}
               </VStack>
             ) : !myDonations || myDonations.length === 0 ? (
-              <Card bg="warm.muted" borderRadius="xl" borderWidth="1px" borderColor="warm.border">
+              <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                 <CardBody py={12} textAlign="center">
                   <VStack spacing={4}>
                     <Text fontSize="4xl">💝</Text>
                     <Heading size="md">
                       No Donations Yet
                     </Heading>
-                    <Text color="gray.500" maxW="300px">
+                    <Text color="text.secondary" maxW="300px">
                       You haven&apos;t made any donations. Browse campaigns and support a cause you believe in!
                     </Text>
                     <Button as={Link} href="/" colorScheme="primary">
@@ -276,9 +276,9 @@ export default function DashboardPage() {
                   return (
                     <Card
                       key={`${donation.txid}-${index}`}
-                      bg="warm.surface"
+                      bg="bg.surface"
                       borderWidth="1px"
-                      borderColor="warm.border"
+                      borderColor="border.default"
                       borderRadius="xl"
                     >
                       <CardBody py={4}>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                                   View →
                                 </ChakraLink>
                               </HStack>
-                              <Text fontSize="sm" color="gray.500">
+                              <Text fontSize="sm" color="text.secondary">
                                 {new Date(donation.inserted_at).toLocaleString()}
                               </Text>
                             </VStack>

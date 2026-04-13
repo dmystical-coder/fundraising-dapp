@@ -118,13 +118,13 @@ export function AmountDisplay({
           <Text
             fontSize={styles.usdFontSize}
             fontWeight="500"
-            color="gray.500"
+            color="text.secondary"
           >
             {config.symbol}
           </Text>
         )}
         {showUsd && formattedUsd && (
-          <Text fontSize={styles.usdFontSize} color="gray.400">
+          <Text fontSize={styles.usdFontSize} color="text.tertiary">
             ({formattedUsd})
           </Text>
         )}
@@ -166,7 +166,7 @@ export function CombinedAmountDisplay({
   // Zero state: nothing raised yet
   if (stxRaw === 0 && sbtcRaw === 0) {
     return (
-      <Text fontSize={styles.fontSize} color="gray.400" fontWeight="500">
+      <Text fontSize={styles.fontSize} color="text.tertiary" fontWeight="500">
         No donations yet
       </Text>
     );
@@ -191,7 +191,7 @@ export function CombinedAmountDisplay({
         />
       )}
       {totalUsd > 0 && (
-        <Text fontSize={styles.usdFontSize} color="gray.400" fontWeight="500">
+        <Text fontSize={styles.usdFontSize} color="text.tertiary" fontWeight="500">
           (${formatAmount(totalUsd, 2)} USD)
         </Text>
       )}

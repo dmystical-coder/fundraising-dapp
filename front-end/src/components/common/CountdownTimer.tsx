@@ -70,11 +70,11 @@ function pad(num: number): string {
  * Gets urgency color based on time remaining.
  */
 function getUrgencyColor(remaining: TimeRemaining): string {
-  if (remaining.isExpired) return "gray.500";
+  if (remaining.isExpired) return "text.secondary";
   if (remaining.totalSeconds < 3600) return "error.500"; // < 1 hour
   if (remaining.totalSeconds < 86400) return "warning.500"; // < 1 day
   if (remaining.days < 3) return "warning.400"; // < 3 days
-  return "gray.600";
+  return "text.secondary";
 }
 
 /**
@@ -114,11 +114,11 @@ export function CountdownTimer({
     return (
       <HStack spacing={styles.spacing} aria-label="Campaign has ended">
         {showIcon && (
-          <Icon as={TimeIcon} boxSize={styles.iconSize} color="gray.400" />
+          <Icon as={TimeIcon} boxSize={styles.iconSize} color="text.tertiary" />
         )}
         <Text
           fontSize={styles.fontSize}
-          color="gray.500"
+          color="text.secondary"
           fontWeight="500"
           {...props}
         >
@@ -179,7 +179,7 @@ export function TimeRemainingDisplay({
 
   if (remaining.isExpired) {
     return (
-      <Text fontSize={styles.fontSize} color="gray.500" aria-label="Campaign has ended" {...props}>
+      <Text fontSize={styles.fontSize} color="text.secondary" aria-label="Campaign has ended" {...props}>
         Ended
       </Text>
     );

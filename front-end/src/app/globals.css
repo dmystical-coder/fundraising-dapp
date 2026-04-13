@@ -43,20 +43,21 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0eef8;
+  background: var(--chakra-colors-scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #7c3aed;
+  background: var(--chakra-colors-scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6d28d9;
+  background: var(--chakra-colors-scrollbar-thumbHover);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #7c3aed #f0eef8;
+  scrollbar-color: var(--chakra-colors-scrollbar-thumb)
+    var(--chakra-colors-scrollbar-track);
 }

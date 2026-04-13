@@ -55,7 +55,7 @@ const highlights = [
 
 export function HowItWorksSection() {
   return (
-    <Box py={{ base: 12, md: 16 }} bg="warm.bg" _dark={{ bg: "gray.900" }}>
+    <Box py={{ base: 12, md: 16 }} bg="bg.canvas">
       <Container maxW="container.xl">
         {/* Header */}
         <VStack spacing={3} textAlign="center" mb={{ base: 8, md: 12 }}>
@@ -63,30 +63,29 @@ export function HowItWorksSection() {
             display="inline-flex"
             alignItems="center"
             gap={2}
-            bg="primary.50"
+            bg="bg.accentSubtle"
             border="1px solid"
-            borderColor="primary.200"
+            borderColor="border.accent"
             borderRadius="full"
             px={4}
             py={1}
             fontSize="sm"
-            color="primary.700"
+            color="text.accent"
             fontWeight="500"
-            _dark={{ bg: "primary.900", color: "primary.300", borderColor: "primary.700" }}
           >
             How it works
           </Box>
           <Heading
             as="h2"
             size={{ base: "lg", md: "xl" }}
-            color="chakra-body-text"
+            color="text.primary"
+            textStyle="h2"
             fontWeight="800"
           >
             Fundraising powered by Bitcoin
           </Heading>
           <Text
-            color="gray.600"
-            _dark={{ color: "gray.400" }}
+            color="text.secondary"
             maxW="480px"
             fontSize={{ base: "sm", md: "md" }}
           >
@@ -115,8 +114,7 @@ export function HowItWorksSection() {
                 right={5}
                 fontSize="xs"
                 fontWeight="700"
-                color="gray.300"
-                _dark={{ color: "gray.600" }}
+                color="text.tertiary"
                 fontFamily="mono"
                 letterSpacing="wider"
               >
@@ -130,7 +128,7 @@ export function HowItWorksSection() {
                 <Heading size="sm" color="chakra-body-text" fontWeight="700">
                   {item.title}
                 </Heading>
-                <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }} lineHeight="1.7">
+                <Text fontSize="sm" color="text.secondary" lineHeight="1.7">
                   {item.description}
                 </Text>
               </VStack>
@@ -140,11 +138,10 @@ export function HowItWorksSection() {
 
         {/* Highlights strip */}
         <Box
-          bg="primary.50"
-          _dark={{ bg: "gray.800" }}
+          bg="bg.accentSubtle"
           borderRadius="xl"
           border="1px solid"
-          borderColor="primary.100"
+          borderColor="border.accent"
           px={{ base: 6, md: 10 }}
           py={6}
         >
@@ -155,8 +152,7 @@ export function HowItWorksSection() {
                   w={9}
                   h={9}
                   borderRadius="lg"
-                  bg="white"
-                  _dark={{ bg: "gray.700" }}
+                  bg="bg.surface"
                   align="center"
                   justify="center"
                   fontSize="lg"
@@ -169,7 +165,7 @@ export function HowItWorksSection() {
                   <Text fontSize="sm" fontWeight="700" color="chakra-body-text">
                     {h.label}
                   </Text>
-                  <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }}>
+                  <Text fontSize="xs" color="text.secondary">
                     {h.detail}
                   </Text>
                 </VStack>

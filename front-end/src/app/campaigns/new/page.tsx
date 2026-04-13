@@ -233,7 +233,7 @@ export default function CreateCampaignPage() {
                 value={formData.title}
                 onChange={(e) => updateField("title", e.target.value)}
                 size="lg"
-                bg="warm.surface"
+                bg="bg.field"
               />
               <FormHelperText>A clear, compelling title helps attract donors</FormHelperText>
               <FormErrorMessage>{errors.title}</FormErrorMessage>
@@ -246,7 +246,7 @@ export default function CreateCampaignPage() {
                 value={formData.description}
                 onChange={(e) => updateField("description", e.target.value)}
                 rows={6}
-                bg="warm.surface"
+                bg="bg.field"
               />
               <FormHelperText>
                 {formData.description.length}/500 characters (20 minimum)
@@ -270,7 +270,7 @@ export default function CreateCampaignPage() {
                   max={10000000}
                   w="100%"
                 >
-                  <NumberInputField bg="warm.surface" borderLeftRadius={0} />
+                  <NumberInputField bg="bg.field" borderLeftRadius={0} />
                 </NumberInput>
                 <InputRightAddon>USD</InputRightAddon>
               </InputGroup>
@@ -287,7 +287,7 @@ export default function CreateCampaignPage() {
                 value={formData.endDate || ""}
                 onChange={(e) => updateField("endDate", e.target.value)}
                 size="lg"
-                bg="warm.surface"
+                bg="bg.field"
                 min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
               />
               <FormHelperText>
@@ -316,7 +316,7 @@ export default function CreateCampaignPage() {
                 value={formData.beneficiary}
                 onChange={(e) => updateField("beneficiary", e.target.value)}
                 size="lg"
-                bg="warm.surface"
+                bg="bg.field"
                 fontFamily="mono"
               />
               <FormHelperText>
@@ -343,26 +343,26 @@ export default function CreateCampaignPage() {
           <VStack spacing={6} align="stretch">
             <Heading size="md">Review Your Campaign</Heading>
             
-            <Card bg="warm.muted" borderRadius="lg">
+            <Card bg="bg.surfaceAlt" borderRadius="lg">
               <CardBody>
                 <VStack spacing={4} align="stretch">
                   <Box>
-                    <Text fontSize="sm" color="gray.500">Title</Text>
+                    <Text fontSize="sm" color="text.secondary">Title</Text>
                     <Text fontWeight="600" color="chakra-body-text">{formData.title || "Untitled Campaign"}</Text>
                   </Box>
                   <Box>
-                    <Text fontSize="sm" color="gray.500">Description</Text>
+                    <Text fontSize="sm" color="text.secondary">Description</Text>
                     <Text noOfLines={3} color="chakra-body-text">{formData.description || "No description"}</Text>
                   </Box>
                   <HStack justify="space-between">
                     <Box>
-                      <Text fontSize="sm" color="gray.500">Goal</Text>
+                      <Text fontSize="sm" color="text.secondary">Goal</Text>
                       <Text fontWeight="600" color="primary.600">
                         ${formData.goal.toLocaleString()} USD
                       </Text>
                     </Box>
                     <Box textAlign="right">
-                      <Text fontSize="sm" color="gray.500">End Date</Text>
+                      <Text fontSize="sm" color="text.secondary">End Date</Text>
                       <Text fontWeight="600" color="chakra-body-text">
                         {formData.endDate 
                           ? new Date(formData.endDate).toLocaleString() 
@@ -371,7 +371,7 @@ export default function CreateCampaignPage() {
                     </Box>
                   </HStack>
                   <Box>
-                    <Text fontSize="sm" color="gray.500">Beneficiary</Text>
+                    <Text fontSize="sm" color="text.secondary">Beneficiary</Text>
                     <Text fontFamily="mono" fontSize="sm" color="chakra-body-text">
                       {formData.beneficiary || address || "Not set"}
                     </Text>
@@ -410,7 +410,7 @@ export default function CreateCampaignPage() {
       <Heading size="xl" mb={2}>
         Create a Campaign
       </Heading>
-      <Text color="gray.600" mb={8}>
+      <Text color="text.secondary" mb={8}>
         Start raising funds in STX and sBTC on the Stacks blockchain.
       </Text>
 
@@ -443,7 +443,7 @@ export default function CreateCampaignPage() {
                   display={{ base: "block", md: "none" }}
                   fontSize="xs"
                   fontWeight={index === activeStep ? "bold" : "normal"}
-                  color={index <= activeStep ? "primary.600" : "gray.400"}
+                  color={index <= activeStep ? "primary.600" : "text.tertiary"}
                 >
                   {step.title}
                 </Text>
@@ -455,11 +455,11 @@ export default function CreateCampaignPage() {
         </Stepper>
       </Box>
 
-      <Card bg="warm.surface" borderColor="warm.border" borderWidth="1px" borderRadius="xl" mb={6}>
+      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl" mb={6}>
         <CardBody py={8}>
           {!address ? (
             <VStack spacing={4} py={8} textAlign="center">
-              <Text color="gray.600" mb={4}>
+              <Text color="text.secondary" mb={4}>
                 Connect your wallet to create a campaign
               </Text>
               <ConnectWallet />

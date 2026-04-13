@@ -51,15 +51,15 @@ function StatCard({
     <Stat
       px={5}
       py={4}
-      bg="warm.surface"
+      bg="bg.surface"
       borderRadius="xl"
       borderWidth="1px"
-      borderColor="warm.border"
+      borderColor="border.default"
       boxShadow="sm"
     >
       <HStack mb={2}>
         {icon && <Box fontSize="xl">{icon}</Box>}
-        <StatLabel fontSize="sm" color="gray.500" fontWeight="500">
+        <StatLabel fontSize="sm" color="text.secondary" fontWeight="500">
           {label}
         </StatLabel>
       </HStack>
@@ -71,7 +71,7 @@ function StatCard({
             {typeof value === "number" ? formatNumber(value) : value}
           </StatNumber>
           {helpText && (
-            <StatHelpText fontSize="xs" color="gray.400" mb={0}>
+            <StatHelpText fontSize="xs" color="text.tertiary" mb={0}>
               {helpText}
             </StatHelpText>
           )}
