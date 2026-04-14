@@ -9,9 +9,11 @@ import {
   StatNumber,
   StatHelpText,
   Skeleton,
-  HStack,
+  VStack,
   Alert,
   AlertIcon,
+  AlertTitle,
+  AlertDescription,
   Text,
   Button,
 } from "@chakra-ui/react";
@@ -32,10 +34,10 @@ function formatCurrency(amount: number): string {
 
 interface StatCardProps {
   label: string;
-  value: string | number;
+  value?: string | number;
   helpText?: string;
   isLoading?: boolean;
-  icon?: string;
+  isError?: boolean;
   color?: string;
 }
 
@@ -44,34 +46,74 @@ function StatCard({
   value,
   helpText,
   isLoading = false,
-  icon,
+  isError = false,
   color = "chakra-body-text",
 }: StatCardProps) {
+  const cardMinHeight = { base: "118px", md: "124px" };
+
   return (
     <Stat
-      px={5}
-      py={4}
+      px={4}
+      py={3.5}
       bg="bg.surface"
-      borderRadius="xl"
+      borderRadius="lg"
       borderWidth="1px"
       borderColor="border.default"
-      boxShadow="sm"
+      boxShadow="0 12px 20px -20px rgba(15, 23, 42, 0.55)"
+      minH={cardMinHeight}
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
+      aria-live="polite"
     >
-      <HStack mb={2}>
-        {icon && <Box fontSize="xl">{icon}</Box>}
-        <StatLabel fontSize="sm" color="text.secondary" fontWeight="500">
-          {label}
-        </StatLabel>
-      </HStack>
-      {isLoading ? (
-        <Skeleton height="32px" width="80%" />
-      ) : (
+      <StatLabel
+        fontSize="xs"
+        color="text.secondary"
+        fontWeight="600"
+        lineHeight="1.35"
+        letterSpacing="0.01em"
+        mb={1.5}
+      >
+        {label}
+      </StatLabel>
+
+      {isLoading && (
+        <VStack align="stretch" spacing={1.5} flex="1" justify="center">
+          <Skeleton height="30px" width="68%" borderRadius="md" />
+          <Skeleton height="10px" width="56%" borderRadius="sm" />
+        </VStack>
+      )}
+
+      {!isLoading && isError && (
         <>
-          <StatNumber fontSize="2xl" fontWeight="700" color={color}>
+          <StatNumber
+            fontSize={{ base: "2xl", md: "2xl", lg: "3xl" }}
+            fontWeight="700"
+            color="text.tertiary"
+            lineHeight="1.1"
+            sx={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            --
+          </StatNumber>
+          <StatHelpText fontSize="11px" lineHeight="1.35" mt={1} color="text.tertiary" mb={0}>
+            Data unavailable
+          </StatHelpText>
+        </>
+      )}
+
+      {!isLoading && !isError && (
+        <>
+          <StatNumber
+            fontSize={{ base: "2xl", md: "2xl", lg: "3xl" }}
+            fontWeight="700"
+            color={color}
+            lineHeight="1.1"
+            sx={{ fontVariantNumeric: "tabular-nums" }}
+          >
             {typeof value === "number" ? formatNumber(value) : value}
           </StatNumber>
           {helpText && (
-            <StatHelpText fontSize="xs" color="text.tertiary" mb={0}>
+            <StatHelpText fontSize="11px" lineHeight="1.35" mt={1} color="text.tertiary" mb={0}>
               {helpText}
             </StatHelpText>
           )}
@@ -82,10 +124,23 @@ function StatCard({
 }
 
 export function QuickStatsBar() {
-  const { data: stats, isLoading: statsLoading, error: statsError, refetch } = usePlatformStats();
-  const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: hasStatsError,
+    error: statsError,
+    refetch,
+    isRefetching,
+  } = usePlatformStats();
+  const {
+    data: prices,
+    isLoading: pricesLoading,
+    isError: hasPricesError,
+  } = useCurrentPrices();
 
-  const isLoading = statsLoading || pricesLoading;
+  const isLoading = statsLoading;
+  const isError = hasStatsError || !stats;
+  const totalRaisedLoading = statsLoading || (pricesLoading && !hasStatsError);
 
   const totalStxRaised = stats ? parseInt(stats.total_stx_raised, 10) : 0;
   const totalSbtcRaised = stats ? parseInt(stats.total_sbtc_raised, 10) : 0;
@@ -98,55 +153,72 @@ export function QuickStatsBar() {
     : 0;
   const totalUsd = stxUsd + sbtcUsd;
 
-  if (statsError) {
-    return (
-      <Box py={6}>
-        <Container maxW="container.xl">
-          <Alert status="warning" borderRadius="xl" py={3}>
-            <AlertIcon />
-            <Text fontSize="sm" flex="1">Could not load platform stats.</Text>
-            <Button size="xs" variant="outline" colorScheme="primary" onClick={() => refetch()}>
+  return (
+    <Box py={{ base: 4, md: 6 }}>
+      <Container maxW="container.xl">
+        {isError && (
+          <Alert
+            status="warning"
+            borderRadius="lg"
+            alignItems={{ base: "flex-start", md: "center" }}
+            flexDirection={{ base: "column", md: "row" }}
+            gap={{ base: 3, md: 2 }}
+            mb={4}
+          >
+            <AlertIcon mt={{ base: "2px", md: 0 }} />
+            <Box flex="1">
+              <AlertTitle fontSize="sm">Unable to load platform metrics.</AlertTitle>
+              <AlertDescription fontSize="sm">
+                Stats could not be fetched from the indexer. Try again.
+              </AlertDescription>
+              {statsError ? (
+                <Text fontSize="xs" color="text.tertiary" mt={1}>
+                  {String(statsError)}
+                </Text>
+              ) : null}
+            </Box>
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="primary"
+              onClick={() => refetch()}
+              isLoading={isRefetching}
+            >
               Retry
             </Button>
           </Alert>
-        </Container>
-      </Box>
-    );
-  }
+        )}
 
-  return (
-    <Box py={6}>
-      <Container maxW="container.xl">
-        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={3}>
           <StatCard
             label="Total Raised"
-            value={formatCurrency(totalUsd)}
-            helpText="All campaigns combined"
-            isLoading={isLoading}
-            icon="💰"
+            value={hasPricesError ? "$--" : formatCurrency(totalUsd)}
+            helpText={hasPricesError ? "Price feed unavailable" : "All campaigns combined"}
+            isLoading={totalRaisedLoading}
+            isError={isError}
             color="primary.600"
           />
           <StatCard
             label="Campaigns"
-            value={stats?.total_campaigns || 0}
-            helpText={`${stats?.campaigns_funded || 0} successfully funded`}
+            value={stats?.total_campaigns ?? 0}
+            helpText={`${stats?.campaigns_funded ?? 0} successfully funded`}
             isLoading={isLoading}
-            icon="🎯"
+            isError={isError}
           />
           <StatCard
             label="Unique Donors"
-            value={stats?.unique_donors || 0}
+            value={stats?.unique_donors ?? 0}
             helpText="Community supporters"
             isLoading={isLoading}
-            icon="👥"
+            isError={isError}
             color="secondary.600"
           />
           <StatCard
             label="Donations"
-            value={stats?.total_donations || 0}
+            value={stats?.total_donations ?? 0}
             helpText="Total contributions"
             isLoading={isLoading}
-            icon="🎁"
+            isError={isError}
             color="success.600"
           />
         </SimpleGrid>

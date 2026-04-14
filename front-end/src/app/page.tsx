@@ -13,12 +13,12 @@ export default function HomePage() {
     <>
       {/* Hero Section */}
       <HeroSection />
+      {/* Platform Stats */}
+      <QuickStatsBar />
 
       {/* Campaign Grid */}
       <CampaignGrid title="Explore Campaigns" showSort />
 
-      {/* Platform Stats */}
-      <QuickStatsBar />
 
       {/* How It Works */}
       <HowItWorksSection />
