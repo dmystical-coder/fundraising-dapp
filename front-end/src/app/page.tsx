@@ -16,12 +16,11 @@ export default function HomePage() {
       {/* Platform Stats */}
       <QuickStatsBar />
 
-      {/* Campaign Grid */}
-      <CampaignGrid title="Explore Campaigns" showSort />
-
-
       {/* How It Works */}
       <HowItWorksSection />
+
+      {/* Campaign Grid */}
+      <CampaignGrid title="Explore Campaigns" showSort />
     </>
   );
 }
