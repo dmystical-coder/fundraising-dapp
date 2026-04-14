@@ -1,6 +1,4 @@
 "use client";
-
-import { Container } from "@chakra-ui/react";
 import { HeroSection, QuickStatsBar, CampaignGrid, HowItWorksSection } from "@/components/home";
 import { useSyncPendingMetadata } from "@/hooks/useSyncPendingMetadata";
 
@@ -14,18 +12,16 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
-        <HeroSection />
-      </Container>
+      <HeroSection />
+
+      {/* Campaign Grid */}
+      <CampaignGrid title="Explore Campaigns" showSort />
 
       {/* Platform Stats */}
       <QuickStatsBar />
 
       {/* How It Works */}
       <HowItWorksSection />
-
-      {/* Campaign Grid */}
-      <CampaignGrid title="Explore Campaigns" showSort />
     </>
   );
 }
