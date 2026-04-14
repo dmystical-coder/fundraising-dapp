@@ -30,7 +30,7 @@ export default function RootLayout({
         <Providers>
           <Box minH="100vh" bg="bg.canvas">
             <Navbar />
-            <Box as="main" py={{ base: 6, md: 10 }}>
+            <Box as="main" pt={0} pb={{ base: 6, md: 10 }}>
               {children}
             </Box>
           </Box>

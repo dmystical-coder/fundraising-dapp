@@ -198,7 +198,7 @@ export function CampaignGrid({
 
   if (isLoading) {
     return (
-      <Box id="campaigns" py={8}>
+      <Box id="campaigns" py={{ base: 6, md: 8 }} scrollMarginTop={{ base: "88px", md: "112px" }}>
         <Container maxW="container.xl">
           <HStack justify="space-between" mb={6}>
             <Skeleton height="32px" width="200px" />
@@ -216,7 +216,7 @@ export function CampaignGrid({
 
   if (fetchError) {
     return (
-      <Box id="campaigns" py={8}>
+      <Box id="campaigns" py={{ base: 6, md: 8 }} scrollMarginTop={{ base: "88px", md: "112px" }}>
         <Container maxW="container.xl">
           <Alert
             status="warning"
@@ -251,7 +251,7 @@ export function CampaignGrid({
 
   if (!displayCampaigns || displayCampaigns.length === 0) {
     return (
-      <Box id="campaigns" py={8}>
+      <Box id="campaigns" py={{ base: 6, md: 8 }} scrollMarginTop={{ base: "88px", md: "112px" }}>
         <Container maxW="container.xl">
           <VStack spacing={6} py={12} textAlign="center">
             <Text fontSize="6xl">🎯</Text>
@@ -277,7 +277,7 @@ export function CampaignGrid({
   }
 
   return (
-    <Box id="campaigns" py={8}>
+    <Box id="campaigns" py={{ base: 6, md: 8 }} scrollMarginTop={{ base: "88px", md: "112px" }}>
       <Container maxW="container.xl">
         <HStack justify="space-between" mb={6} flexWrap="wrap" gap={4}>
           <Heading size="lg">
