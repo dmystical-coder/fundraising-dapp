@@ -1,12 +1,12 @@
 "use client";
 
+import { Fragment } from "react";
 import {
   Box,
   Container,
   Flex,
   Link,
   HStack,
-  Button,
   IconButton,
   Drawer,
   DrawerOverlay,
@@ -17,9 +17,8 @@ import {
   VStack,
   Text,
   useDisclosure,
-  useColorModeValue,
 } from "@chakra-ui/react";
-import { AddIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { HamburgerIcon } from "@chakra-ui/icons";
 import NextLink from "next/link";
 import { isDevnetEnvironment } from "@/lib/contract-utils";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
@@ -30,12 +29,16 @@ export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
   const address = useAddress();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const navBg = useColorModeValue("rgba(255,255,255,0.9)", "rgba(10,12,18,0.92)");
+  const navigationLinks = [
+    { href: "/", label: "Campaigns" },
+    ...(address ? [{ href: "/dashboard", label: "Dashboard" }] : []),
+  ];
 
   return (
     <Box
       as="nav"
-      bg={navBg}
+      aria-label="Global"
+      bg="bg.nav"
       borderBottomWidth="1px"
       borderColor="border.default"
       position="sticky"
@@ -43,147 +46,125 @@ export const Navbar = () => {
       zIndex={100}
       backdropFilter="blur(8px)"
     >
-      <Container maxW="container.xl">
-        <Flex justify="space-between" h={16} align="center">
-          {/* Logo */}
-          <HStack spacing={6}>
+      <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
+        <Flex h={{ base: 16, md: 20 }} align="center" gap={3}>
+          <Flex flex="1" minW={0}>
             <Link
               as={NextLink}
               href="/"
               _hover={{ textDecoration: "none" }}
-              aria-label="FundStacks — Go to homepage"
+              aria-label="FundStacks home page"
+              px={2}
+              py={1.5}
+              borderRadius="interactive"
+              _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
             >
-              <HStack spacing={3}>
-                <Flex
-                  bg="primary.500"
-                  borderRadius="lg"
-                  fontSize="lg"
-                  fontWeight="bold"
-                  w="44px"
-                  h="44px"
-                  justify="center"
-                  align="center"
-                  color="white"
-                  shrink={0}
-                >
-                  FS
-                </Flex>
-                <Box display={{ base: "none", sm: "block" }}>
-                  <Text
-                    fontSize="lg"
-                    fontWeight="bold"
-                    color="chakra-body-text"
-                    lineHeight="1.2"
-                  >
-                    FundStacks
-                  </Text>
-                  <Text fontSize="xs" color="text.secondary" lineHeight="1">
-                    Crowdfunding on Stacks
-                  </Text>
-                </Box>
-              </HStack>
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <HStack spacing={4} display={{ base: "none", md: "flex" }}>
-              <Link
-                as={NextLink}
-                href="/"
-                color="text.secondary"
-                fontWeight="500"
-                _hover={{ color: "primary.600" }}
+              <Text
+                fontSize={{ base: "lg", md: "xl" }}
+                fontFamily="mono"
+                fontWeight="900"
+                letterSpacing="0.08em"
+                textTransform="uppercase"
+                color="text.primary"
+                lineHeight="1"
               >
-                Campaigns
-              </Link>
-              {address && (
+                FundStacks
+              </Text>
+            </Link>
+          </Flex>
+
+          <HStack spacing={0} hideBelow="md" flex="1" justify="center">
+            {navigationLinks.map((link, index) => (
+              <Fragment key={link.href}>
                 <Link
                   as={NextLink}
-                  href="/dashboard"
+                  href={link.href}
                   color="text.secondary"
-                  fontWeight="500"
-                  _hover={{ color: "primary.600" }}
+                  fontWeight="600"
+                  fontSize="sm"
+                  px={4}
+                  py={2.5}
+                  rounded="interactive"
+                  _hover={{ color: "text.accent", bg: "bg.surfaceAlt", textDecoration: "none" }}
+                  _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
                 >
-                  Dashboard
+                  {link.label}
                 </Link>
-              )}
-            </HStack>
+                {index < navigationLinks.length - 1 ? (
+                  <Box w="1px" h="4" bg="border.default" aria-hidden="true" />
+                ) : null}
+              </Fragment>
+            ))}
           </HStack>
 
-          {/* Right side */}
-          <HStack spacing={3}>
-            <Button
-              as={NextLink}
-              href="/campaigns/new"
-              size="sm"
-              leftIcon={<AddIcon />}
-              colorScheme="primary"
-              display={{ base: "none", sm: "flex" }}
-            >
-              Create
-            </Button>
-            {isDevnetEnvironment() ? (
-              <DevnetWalletButton
-                currentWallet={currentWallet}
-                wallets={wallets}
-                onWalletSelect={setCurrentWallet}
-              />
-            ) : (
-              <ConnectWalletButton />
-            )}
-            
-            {/* Mobile hamburger menu */}
+          <Flex flex="1" justify="flex-end" align="center" gap={{ base: 2, md: 3 }}>
+            <Box hideBelow="md">
+              {isDevnetEnvironment() ? (
+                <DevnetWalletButton
+                  currentWallet={currentWallet}
+                  wallets={wallets}
+                  onWalletSelect={setCurrentWallet}
+                />
+              ) : (
+                <ConnectWalletButton />
+              )}
+            </Box>
+
             <IconButton
-              aria-label="Open menu"
+              aria-label="Open navigation menu"
               icon={<HamburgerIcon />}
               variant="ghost"
-              display={{ base: "flex", md: "none" }}
+              hideFrom="md"
               onClick={onOpen}
+              size="md"
             />
-          </HStack>
+          </Flex>
         </Flex>
       </Container>
 
-      {/* Mobile drawer menu */}
       <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent maxW="xs">
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Menu</DrawerHeader>
+          <DrawerHeader borderBottomWidth="1px" borderColor="border.default">
+            Menu
+          </DrawerHeader>
           <DrawerBody>
-            <VStack spacing={4} align="stretch" pt={4}>
-              <Link
-                as={NextLink}
-                href="/"
-                color="chakra-body-text"
-                fontWeight="500"
-                fontSize="lg"
-                _hover={{ color: "primary.600" }}
-                onClick={onClose}
-              >
-                Campaigns
-              </Link>
-              {address && (
-                <Link
-                  as={NextLink}
-                  href="/dashboard"
-                  color="chakra-body-text"
-                  fontWeight="500"
-                  fontSize="lg"
-                  _hover={{ color: "primary.600" }}
-                  onClick={onClose}
-                >
-                  Dashboard
-                </Link>
+            <VStack spacing={4} align="stretch" pt={6}>
+              {isDevnetEnvironment() ? (
+                <DevnetWalletButton
+                  currentWallet={currentWallet}
+                  wallets={wallets}
+                  onWalletSelect={setCurrentWallet}
+                  size="md"
+                  w="100%"
+                />
+              ) : (
+                <ConnectWalletButton size="md" w="100%">
+                  Connect Wallet
+                </ConnectWalletButton>
               )}
-              <Button
-                as={NextLink}
-                href="/campaigns/new"
-                leftIcon={<AddIcon />}
-                colorScheme="primary"
-                onClick={onClose}
-              >
-                Create Campaign
-              </Button>
+
+              <VStack as="nav" aria-label="Mobile" spacing={2} align="stretch">
+                {navigationLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    as={NextLink}
+                    href={link.href}
+                    color="text.primary"
+                    fontWeight="600"
+                    fontSize="md"
+                    rounded="interactive"
+                    px={3}
+                    py={3}
+                    _hover={{ color: "text.accent", bg: "bg.surfaceAlt", textDecoration: "none" }}
+                    _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
+                    onClick={onClose}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </VStack>
             </VStack>
           </DrawerBody>
         </DrawerContent>
