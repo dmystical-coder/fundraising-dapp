@@ -20,6 +20,7 @@ import {
 } from "@chakra-ui/react";
 import { HamburgerIcon } from "@chakra-ui/icons";
 import NextLink from "next/link";
+import { usePathname } from "next/navigation";
 import { isDevnetEnvironment } from "@/lib/contract-utils";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { DevnetWalletButton } from "./DevnetWalletButton";
@@ -28,11 +29,14 @@ import { ConnectWalletButton, useAddress } from "./ConnectWallet";
 export const Navbar = () => {
   const { currentWallet, wallets, setCurrentWallet } = useDevnetWallet();
   const address = useAddress();
+  const pathname = usePathname();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigationLinks = [
-    { href: "/", label: "Campaigns" },
+    { href: "/", label: "Home" },
     ...(address ? [{ href: "/dashboard", label: "Dashboard" }] : []),
   ];
+  const isActiveLink = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <Box
@@ -79,19 +83,43 @@ export const Navbar = () => {
                 <Link
                   as={NextLink}
                   href={link.href}
-                  color="text.secondary"
-                  fontWeight="600"
+                  color={isActiveLink(link.href) ? "text.accent" : "text.secondary"}
+                  fontWeight={isActiveLink(link.href) ? "700" : "600"}
                   fontSize="sm"
-                  px={4}
+                  px={3}
                   py={2.5}
                   rounded="interactive"
+                  aria-current={isActiveLink(link.href) ? "page" : undefined}
+                  bg={isActiveLink(link.href) ? "bg.surfaceAlt" : "transparent"}
+                  position="relative"
+                  _after={
+                    isActiveLink(link.href)
+                      ? {
+                          content: '""',
+                          position: "absolute",
+                          left: 3,
+                          right: 3,
+                          bottom: "4px",
+                          height: "2px",
+                          borderRadius: "full",
+                          bg: "primary.500",
+                        }
+                      : undefined
+                  }
                   _hover={{ color: "text.accent", bg: "bg.surfaceAlt", textDecoration: "none" }}
                   _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
                 >
                   {link.label}
                 </Link>
                 {index < navigationLinks.length - 1 ? (
-                  <Box w="1px" h="4" bg="border.default" aria-hidden="true" />
+                  <Box
+                    w="1px"
+                    h="4"
+                    mx={2}
+                    bg="border.default"
+                    opacity={0.9}
+                    aria-hidden="true"
+                  />
                 ) : null}
               </Fragment>
             ))}
@@ -151,12 +179,16 @@ export const Navbar = () => {
                     key={link.href}
                     as={NextLink}
                     href={link.href}
-                    color="text.primary"
-                    fontWeight="600"
+                    color={isActiveLink(link.href) ? "text.accent" : "text.primary"}
+                    fontWeight={isActiveLink(link.href) ? "700" : "600"}
                     fontSize="md"
                     rounded="interactive"
                     px={3}
                     py={3}
+                    aria-current={isActiveLink(link.href) ? "page" : undefined}
+                    bg={isActiveLink(link.href) ? "bg.accentSubtle" : "transparent"}
+                    borderWidth={isActiveLink(link.href) ? "1px" : "0"}
+                    borderColor={isActiveLink(link.href) ? "border.accent" : "transparent"}
                     _hover={{ color: "text.accent", bg: "bg.surfaceAlt", textDecoration: "none" }}
                     _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
                     onClick={onClose}
