@@ -240,7 +240,7 @@ export function CampaignGrid({
 
   // ── Build sorted campaign list ───────────────────────────────────────────
   const allCampaigns = useMemo(() => {
-    const base: CampaignWithOnChain[] = propCampaigns ?? indexerCampaigns ?? [];
+    const base = propCampaigns ?? indexerCampaigns ?? [];
 
     const withPending =
       pendingCampaign &&
