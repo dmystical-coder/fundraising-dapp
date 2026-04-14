@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/ui/Providers";
 import { Navbar } from "@/components/Navbar";
+import { AppFooter } from "@/components/AppFooter";
 import { Box } from "@chakra-ui/react";
 
 export const metadata: Metadata = {
@@ -28,11 +29,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Box minH="100vh" bg="bg.canvas">
+          <Box minH="100vh" bg="bg.canvas" display="flex" flexDirection="column">
             <Navbar />
-            <Box as="main" pt={0} pb={{ base: 6, md: 10 }}>
+            <Box as="main" pt={0} pb={{ base: 6, md: 10 }} flex="1">
               {children}
             </Box>
+            <AppFooter />
           </Box>
         </Providers>
       </body>
