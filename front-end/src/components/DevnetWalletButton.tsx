@@ -1,17 +1,15 @@
 "use client";
 
 import {
-  Box,
   Button,
+  ButtonProps,
   Flex,
-  Tooltip,
   Tag,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
-  IconButton,
-  Link,
+  Text,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
@@ -22,75 +20,76 @@ interface DevnetWalletButtonProps {
   currentWallet: DevnetWallet | null;
   wallets: DevnetWallet[];
   onWalletSelect: (wallet: DevnetWallet) => void;
+  size?: ButtonProps["size"];
+  w?: ButtonProps["w"];
 }
 
 export const DevnetWalletButton = ({
   currentWallet,
   wallets,
   onWalletSelect,
+  size = "sm",
+  w,
 }: DevnetWalletButtonProps) => {
+  const currentAddress = currentWallet?.stxAddress || "";
+  const explorerLink = `https://explorer.hiro.so/address/${currentAddress}?chain=testnet&api=${DEVNET_STACKS_BLOCKCHAIN_API_URL}`;
+
   return (
-    <Menu>
-      <Flex align="center">
-        <Link
-          href={`https://explorer.hiro.so/address/${currentWallet?.stxAddress}?chain=testnet&api=${DEVNET_STACKS_BLOCKCHAIN_API_URL}`}
-          target="_blank"
-          _hover={{ textDecoration: "none" }}
-        >
-          <Button
-            variant="ghost"
-            rightIcon={<ChevronDownIcon visibility="hidden" />}
+    <Menu placement="bottom-end">
+      <MenuButton
+        as={Button}
+        size={size}
+        w={w}
+        justifyContent="space-between"
+        rightIcon={<ChevronDownIcon />}
+        data-testid="wallet-connect-button"
+        aria-label="Open devnet wallet menu"
+      >
+        <Flex align="center" gap={2} minW={0}>
+          <Text
+            fontSize="sm"
+            fontFamily="mono"
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
           >
-            <Tooltip
-              label="Devnet connection detected, click to view in explorer"
-              bg="gray.800"
-            >
-              <Flex align="center" gap={2}>
-                <Box
-                  fontSize="sm"
-                  fontFamily="mono"
-                  width="140px"
-                  overflow="hidden"
-                  textOverflow="ellipsis"
-                >
-                  {formatStxAddress(currentWallet?.stxAddress || "")}
-                </Box>
-                <Tag size="sm" colorScheme="purple" borderRadius="full">
-                  devnet
-                </Tag>
-              </Flex>
-            </Tooltip>
-          </Button>
-        </Link>
-        <MenuButton
-          as={IconButton}
-          variant="ghost"
-          icon={<ChevronDownIcon />}
-          aria-label="Select wallet"
-          size="md"
-        />
-      </Flex>
-      <MenuList width={"100%"}>
+            {formatStxAddress(currentAddress)}
+          </Text>
+          <Tag size="sm" borderRadius="full" bg="whiteAlpha.300" color="text.inverse">
+            devnet
+          </Tag>
+        </Flex>
+      </MenuButton>
+      <MenuList minW="240px">
+        <MenuItem
+          as="a"
+          href={explorerLink}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View in Explorer
+        </MenuItem>
         {wallets.map((wallet) => (
           <MenuItem
             key={wallet.stxAddress}
             onClick={() => onWalletSelect(wallet)}
             bg={
               wallet.stxAddress === currentWallet?.stxAddress
-                ? "gray.300"
+                ? "bg.accentSubtle"
                 : "none"
             }
           >
             <Flex align="center" gap={2}>
-              <Box
+              <Text
                 fontSize="sm"
                 fontFamily="mono"
-                width="140px"
+                width="150px"
                 overflow="hidden"
                 textOverflow="ellipsis"
+                whiteSpace="nowrap"
               >
                 {formatStxAddress(wallet.stxAddress)}
-              </Box>
+              </Text>
               {wallet.label && (
                 <Tag size="sm" colorScheme="gray" borderRadius="full">
                   {wallet.label}
