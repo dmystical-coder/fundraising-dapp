@@ -12,7 +12,6 @@ import {
   Badge,
   SimpleGrid,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
 export function HeroSection() {
@@ -123,7 +122,7 @@ export function HeroSection() {
                 fontWeight="700"
                 w={{ base: "100%", sm: "auto" }}
                 minH={{ base: "46px", md: "48px" }}
-                leftIcon={<AddIcon />}
+               
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
                 Start a Campaign
