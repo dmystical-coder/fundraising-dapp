@@ -179,7 +179,7 @@ export function TimeRemainingDisplay({
 
   if (remaining.isExpired) {
     return (
-      <Text fontSize={styles.fontSize} color="text.secondary" aria-label="Campaign has ended" {...props}>
+      <Text fontSize={styles.fontSize} color="text.secondary" aria-label="Campaign has ended" role="status" {...props}>
         Ended
       </Text>
     );
@@ -197,7 +197,7 @@ export function TimeRemainingDisplay({
   }
 
   return (
-    <Text fontSize={styles.fontSize} color={urgencyColor} fontWeight="500" aria-label={`Time remaining: ${text}`} {...props}>
+    <Text fontSize={styles.fontSize} color={urgencyColor} fontWeight="500" aria-label={`Time remaining: ${text}`} role="timer" {...props}>
       {text}
     </Text>
   );
