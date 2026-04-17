@@ -150,36 +150,92 @@ export default function CampaignDetailPage() {
         Back to Campaigns
       </Button>
 
-      <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
-        <GridItem>
-          <VStack spacing={6} align="stretch">
-            <Box>
-              <HStack spacing={3} mb={2}>
-                <StatusBadge status={status} size="md" />
-                {status === "active" && campaign.endAt && (
-                  <CountdownTimer endAt={campaign.endAt} size="md" />
-                )}
-              </HStack>
-              <Heading size="xl" mb={2}>
-                {indexedCampaign?.title || `Campaign #${campaign.id}`}
-              </Heading>
-              {indexedCampaign?.description && (
-                <Text color="text.secondary" mb={4} whiteSpace="pre-wrap">
-                  {indexedCampaign.description}
-                </Text>
+      <Grid 
+        templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
+        templateAreas={{
+          base: `
+            "header"
+            "sidebar"
+            "content"
+          `,
+          lg: `
+            "header sidebar"
+            "content sidebar"
+          `
+        }}
+        gap={8}
+        alignItems="start"
+      >
+        {/* Header Area */}
+        <GridItem area="header">
+          <VStack spacing={4} align="stretch">
+            <HStack spacing={3}>
+              <StatusBadge status={status} size="md" />
+              {status === "active" && campaign.endAt && (
+                <CountdownTimer endAt={campaign.endAt} size="md" />
               )}
-              <HStack spacing={4} flexWrap="wrap">
-                <HStack>
-                  <Text color="text.secondary" fontSize="sm">Owner:</Text>
-                  <AddressDisplay address={campaign.owner} size="sm" />
-                </HStack>
-                <HStack>
-                  <Text color="text.secondary" fontSize="sm">Beneficiary:</Text>
-                  <AddressDisplay address={campaign.beneficiary} size="sm" />
-                </HStack>
+            </HStack>
+            <Heading size="xl">
+              {indexedCampaign?.title || "Community Fundraiser"}
+            </Heading>
+            <HStack spacing={4} flexWrap="wrap">
+              <HStack>
+                <Text color="text.secondary" fontSize="sm">Owner:</Text>
+                <AddressDisplay address={campaign.owner} size="sm" />
               </HStack>
-            </Box>
+              <HStack>
+                <Text color="text.secondary" fontSize="sm">Beneficiary:</Text>
+                <AddressDisplay address={campaign.beneficiary} size="sm" />
+              </HStack>
+            </HStack>
+          </VStack>
+        </GridItem>
 
+        {/* Content Area */}
+        <GridItem area="content">
+          <VStack spacing={6} align="stretch">
+            {indexedCampaign?.description && (
+              <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+                <CardBody>
+                  <Text color="text.secondary" whiteSpace="pre-wrap">
+                    {indexedCampaign.description}
+                  </Text>
+                </CardBody>
+              </Card>
+            )}
+
+            {isOwner && (
+              <CampaignAdminControls
+                campaignId={campaign.id}
+                campaignIsUninitialized={false}
+                campaignIsCancelled={campaign.isCancelled}
+                campaignIsExpired={campaign.isExpired}
+                campaignIsWithdrawn={campaign.isWithdrawn}
+                totalStx={campaign.totalStx}
+                totalSbtc={campaign.totalSbtc}
+              />
+            )}
+
+            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+              <CardHeader pb={0}>
+                <Heading size="md">Recent Activity</Heading>
+              </CardHeader>
+              <CardBody>
+                <ActivityFeed
+                  events={activity || []}
+                  isLoading={activityLoading}
+                  stxPrice={prices?.stx}
+                  sbtcPrice={prices?.sbtc}
+                  emptyMessage="No donations yet. Be the first to contribute!"
+                />
+              </CardBody>
+            </Card>
+          </VStack>
+        </GridItem>
+
+        {/* Sidebar Area */}
+        <GridItem area="sidebar" position={{ lg: "sticky" }} top={{ lg: 6 }}>
+          <VStack spacing={6} align="stretch">
             <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
               <CardBody>
                 <VStack spacing={4} align="stretch">
@@ -247,68 +303,32 @@ export default function CampaignDetailPage() {
                       <Text fontSize="sm" color="text.secondary">Duration</Text>
                     </VStack>
                   </HStack>
+
+                  {status === "active" && !isOwner && (
+                    <Box pt={4}>
+                      <Button
+                        colorScheme="primary"
+                        size="lg"
+                        width="100%"
+                        onClick={onDonateOpen}
+                      >
+                        Donate Now
+                      </Button>
+                      <DonationModal
+                        isOpen={isDonateOpen}
+                        campaignId={campaign.id}
+                        campaignTitle={indexedCampaign?.title || "Community Fundraiser"}
+                        onClose={onDonateClose}
+                      />
+                    </Box>
+                  )}
                 </VStack>
               </CardBody>
             </Card>
 
-            {isOwner && (
-              <CampaignAdminControls
-                campaignId={campaign.id}
-                campaignIsUninitialized={false}
-                campaignIsCancelled={campaign.isCancelled}
-                campaignIsExpired={campaign.isExpired}
-                campaignIsWithdrawn={campaign.isWithdrawn}
-                totalStx={campaign.totalStx}
-                totalSbtc={campaign.totalSbtc}
-              />
-            )}
-
-            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
-              <CardHeader pb={0}>
-                <Heading size="md">Recent Activity</Heading>
-              </CardHeader>
-              <CardBody>
-                <ActivityFeed
-                  events={activity || []}
-                  isLoading={activityLoading}
-                  stxPrice={prices?.stx}
-                  sbtcPrice={prices?.sbtc}
-                  emptyMessage="No donations yet. Be the first to contribute!"
-                />
-              </CardBody>
-            </Card>
-          </VStack>
-        </GridItem>
-
-        <GridItem>
-          <VStack spacing={6} align="stretch" position="sticky" top={6}>
-            {status === "active" && !isOwner && (
-              <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
-                <CardHeader>
-                  <Heading size="md">Support This Campaign</Heading>
-                </CardHeader>
-                <CardBody pt={0}>
-                  <Button
-                    colorScheme="primary"
-                    size="lg"
-                    width="100%"
-                    onClick={onDonateOpen}
-                  >
-                    Donate Now
-                  </Button>
-                  <DonationModal
-                    isOpen={isDonateOpen}
-                    campaignId={campaign.id}
-                    campaignTitle={indexedCampaign?.title || `Campaign #${campaign.id}`}
-                    onClose={onDonateClose}
-                  />
-                </CardBody>
-              </Card>
-            )}
-
             {campaign && (
               <ShareCard 
-                title={indexedCampaign?.title || `Campaign #${campaign.id}`} 
+                title={indexedCampaign?.title || "Community Fundraiser"} 
                 campaignId={campaign.id} 
               />
             )}
