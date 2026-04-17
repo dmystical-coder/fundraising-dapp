@@ -89,7 +89,7 @@ function CampaignCardSkeleton() {
       bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
-      borderRadius="xl"
+      borderRadius="2xl"
       overflow="hidden"
     >
       <AspectRatio ratio={16 / 9} w="100%">
@@ -103,20 +103,31 @@ function CampaignCardSkeleton() {
         {/* Beneficiary */}
         <Skeleton height="16px" width="65%" borderRadius="md" />
 
-        {/* Amount raised */}
-        <Box>
-          <Skeleton height="12px" width="40px" borderRadius="sm" mb={1.5} />
-          <Skeleton height="26px" width="70%" borderRadius="md" />
-        </Box>
+        {/* Block Container for Status */}
+        <VStack
+          spacing={4}
+          align="stretch"
+          p={4}
+          bg="bg.accentSubtle"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor="border.accent"
+        >
+          {/* Amount raised */}
+          <Box>
+            <Skeleton height="12px" width="40px" borderRadius="sm" mb={1.5} />
+            <Skeleton height="26px" width="70%" borderRadius="md" />
+          </Box>
 
-        {/* Progress bar */}
-        <Box>
-          <HStack justify="space-between" mb={1}>
-            <Skeleton height="11px" width="50px" borderRadius="sm" />
-            <Skeleton height="11px" width="30px" borderRadius="sm" />
-          </HStack>
-          <Skeleton height="6px" borderRadius="full" />
-        </Box>
+          {/* Progress bar */}
+          <Box>
+            <HStack justify="space-between" mb={1.5}>
+              <Skeleton height="11px" width="50px" borderRadius="sm" />
+              <Skeleton height="11px" width="30px" borderRadius="sm" />
+            </HStack>
+            <Skeleton height="6px" borderRadius="full" />
+          </Box>
+        </VStack>
 
         {/* Footer row */}
         <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default">
