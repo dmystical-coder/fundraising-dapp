@@ -21,6 +21,9 @@ import {
   RadioGroup,
   Radio,
   ModalFooter,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useContext } from "react";
@@ -84,6 +87,7 @@ export default function DonationModal({
   const [customAmount, setCustomAmount] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [successTxId, setSuccessTxId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const toast = useToast();
 
   const presetAmounts = [10, 25, 50, 100];
@@ -91,15 +95,18 @@ export default function DonationModal({
   const handlePresetClick = (amount: number) => {
     setSelectedAmount(amount);
     setCustomAmount("");
+    setErrorMsg(null);
   };
 
   const handleCustomAmountChange = (value: string) => {
     setCustomAmount(value);
     setSelectedAmount(null);
+    setErrorMsg(null);
   };
 
   const handleSubmit = async () => {
     setIsLoading(true);
+    setErrorMsg(null);
 
     if (!campaignId) {
       toast({
@@ -116,13 +123,8 @@ export default function DonationModal({
     const amount = selectedAmount || Number(customAmount);
 
     if (!amount || amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid donation amount",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      setErrorMsg("Please enter a valid donation amount");
+      setIsLoading(false);
       return;
     }
 
@@ -226,7 +228,7 @@ export default function DonationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} size={{ base: "full", md: "md" }} isCentered returnFocusOnClose>
       <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
       <ModalContent mx={4}>
         <ModalHeader>Make a Contribution</ModalHeader>
@@ -303,7 +305,7 @@ export default function DonationModal({
             ) : (
               <>
                 {hasMadePreviousDonation ? (
-                  <Alert mb="4" status="info" borderRadius="lg">
+                  <Alert mb="4" status="success" borderRadius="lg">
                     <Box>
                       <AlertTitle>
                         Heads up: you&apos;ve contributed before. Thank you!
@@ -325,23 +327,24 @@ export default function DonationModal({
                 ) : null}
                 <Box mx="auto" w="100%" p={6} borderWidth="1px" borderRadius="lg" borderColor="border.default">
                   <VStack spacing={6} align="stretch">
-                    <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
-                      Choose Payment Method
-                    </Text>
-
-                    <RadioGroup
-                      value={paymentMethod}
-                      onChange={setPaymentMethod}
-                    >
-                      <HStack spacing={6}>
-                        <Radio value="stx" colorScheme="primary">
-                          STX
-                        </Radio>
-                        <Radio value="sbtc" colorScheme="primary">
-                          sBTC
-                        </Radio>
-                      </HStack>
-                    </RadioGroup>
+                    <FormControl as="fieldset">
+                      <FormLabel as="legend" fontSize="lg" fontWeight="bold" color="chakra-body-text">
+                        Choose Payment Method
+                      </FormLabel>
+                      <RadioGroup
+                        value={paymentMethod}
+                        onChange={setPaymentMethod}
+                      >
+                        <HStack spacing={6}>
+                          <Radio value="stx" colorScheme="primary">
+                            STX
+                          </Radio>
+                          <Radio value="sbtc" colorScheme="primary">
+                            sBTC
+                          </Radio>
+                        </HStack>
+                      </RadioGroup>
+                    </FormControl>
 
                     <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
                       Choose Contribution Amount
@@ -363,19 +366,26 @@ export default function DonationModal({
                       ))}
                     </HStack>
 
-                    <Text fontSize="md" color="text.secondary">Or enter custom amount:</Text>
-
-                    <NumberInput
-                      min={1}
-                      value={customAmount}
-                      onChange={handleCustomAmountChange}
-                    >
-                      <NumberInputField
-                        placeholder="Enter amount"
-                        textAlign="center"
-                        fontSize="lg"
-                      />
-                    </NumberInput>
+                    <FormControl isInvalid={!!errorMsg}>
+                      <FormLabel htmlFor="custom-amount" fontSize="md" color="text.secondary">
+                        Or enter custom amount:
+                      </FormLabel>
+                      <NumberInput
+                        id="custom-amount"
+                        min={1}
+                        value={customAmount}
+                        onChange={handleCustomAmountChange}
+                      >
+                        <NumberInputField
+                          placeholder="Enter amount"
+                          textAlign="center"
+                          fontSize="lg"
+                        />
+                      </NumberInput>
+                      {errorMsg && (
+                        <FormErrorMessage>{errorMsg}</FormErrorMessage>
+                      )}
+                    </FormControl>
 
                     <Flex direction="column" gap="1">
                       <Button
