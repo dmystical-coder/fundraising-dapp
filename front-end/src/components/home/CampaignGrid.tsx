@@ -16,6 +16,7 @@ import {
   Skeleton,
   Text,
   VStack,
+  AspectRatio,
 } from "@chakra-ui/react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
