@@ -9,6 +9,8 @@ import {
   Progress,
   HStack,
   VStack,
+  AspectRatio,
+  Image,
 } from "@chakra-ui/react";
 import Link from "next/link";
 import { StatusBadge, getCampaignStatus } from "../common/StatusBadge";
@@ -31,6 +33,7 @@ interface CampaignCardProps {
   sbtcPrice?: number;
   title?: string;
   isPending?: boolean;
+  coverUrl?: string;
 }
 
 function calculateProgress(
@@ -65,6 +68,7 @@ export function CampaignCard({
   sbtcPrice,
   title,
   isPending,
+  coverUrl,
 }: CampaignCardProps) {
   const status = getCampaignStatus({ isCancelled, isWithdrawn, isExpired });
 
@@ -94,13 +98,30 @@ export function CampaignCard({
       opacity={isPending ? 0.7 : 1}
     >
       {/* Status badge */}
-      <Box position="absolute" top={3} right={3} zIndex={1}>
+      <Box position="absolute" top={3} right={3} zIndex={2}>
         {isPending ? (
           <StatusBadge status="active" size="sm" overrides={{ label: "Pending", colorScheme: "yellow" }} />
         ) : (
           <StatusBadge status={status} size="sm" />
         )}
       </Box>
+
+      {/* Media Cover */}
+      <AspectRatio ratio={16 / 9} w="100%" borderBottomWidth="1px" borderColor="border.default">
+        {coverUrl ? (
+          <Image src={coverUrl} alt={`Cover for ${displayTitle}`} objectFit="cover" />
+        ) : (
+          <Box
+            bg="bg.surfaceAlt"
+            backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
+            backgroundSize="20px 20px"
+            opacity={0.8}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          />
+        )}
+      </AspectRatio>
 
       <CardBody p={5}>
         <VStack align="stretch" spacing={4}>
@@ -147,7 +168,7 @@ export function CampaignCard({
               />
             </Box>
 
-            {goal && goal > 0 && (
+            {goal && goal > 0 ? (
               <Box>
                 <HStack justify="space-between" mb={1.5}>
                   <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em">
@@ -173,6 +194,15 @@ export function CampaignCard({
                     },
                   }}
                 />
+              </Box>
+            ) : (
+              <Box>
+                <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em" mb={1.5}>
+                  Goal
+                </Text>
+                <Text fontSize="sm" color="text.tertiary" fontWeight="500">
+                  Open-ended
+                </Text>
               </Box>
             )}
           </VStack>

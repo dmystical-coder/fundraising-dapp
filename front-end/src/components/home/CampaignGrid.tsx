@@ -16,6 +16,7 @@ import {
   Skeleton,
   Text,
   VStack,
+  AspectRatio,
 } from "@chakra-ui/react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -90,9 +91,11 @@ function CampaignCardSkeleton() {
       borderColor="border.default"
       borderRadius="2xl"
       overflow="hidden"
-      p={5}
     >
-      <VStack align="stretch" spacing={4}>
+      <AspectRatio ratio={16 / 9} w="100%">
+        <Skeleton w="100%" h="100%" />
+      </AspectRatio>
+      <VStack align="stretch" spacing={4} p={5}>
         {/* Title */}
         <Skeleton height="22px" width="80%" borderRadius="md" />
         <Skeleton height="16px" width="55%" borderRadius="md" mt="-2" />

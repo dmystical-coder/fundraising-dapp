@@ -104,7 +104,7 @@ export function AmountDisplay({
 
   return (
     <Tooltip label={fullAmount} hasArrow placement="top">
-      <HStack spacing={1} align="baseline">
+      <HStack spacing={1} align="baseline" role="text" aria-label={fullAmount}>
         <Text
           fontFamily="mono"
           fontWeight="600"
@@ -166,7 +166,7 @@ export function CombinedAmountDisplay({
   // Zero state: nothing raised yet
   if (stxRaw === 0 && sbtcRaw === 0) {
     return (
-      <Text fontSize={styles.fontSize} color="text.tertiary" fontWeight="500">
+      <Text fontSize={styles.fontSize} color="text.tertiary" fontWeight="500" role="status" aria-label="No donations yet">
         No donations yet
       </Text>
     );
