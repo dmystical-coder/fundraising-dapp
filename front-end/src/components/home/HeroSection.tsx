@@ -12,7 +12,6 @@ import {
   Badge,
   SimpleGrid,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
 export function HeroSection() {
