@@ -77,18 +77,19 @@ export function CampaignCard({
 
   const CardContent = (
     <Card
+      role="group"
       position="relative"
       cursor={isPending ? "default" : "pointer"}
-      transition="all 0.2s"
+      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
       _hover={!isPending ? {
-        transform: "translateY(-4px)",
-        boxShadow: "lg",
-        borderColor: "border.accent",
+        transform: "translateY(-6px) scale(1.02)",
+        boxShadow: "0 12px 40px -15px var(--chakra-colors-primary-400)",
+        borderColor: "primary.400",
       } : undefined}
       bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
-      borderRadius="xl"
+      borderRadius="2xl"
       overflow="hidden"
       opacity={isPending ? 0.7 : 1}
     >
@@ -105,63 +106,76 @@ export function CampaignCard({
         <VStack align="stretch" spacing={4}>
           <Heading
             size="md"
+            lineHeight="1.4"
             noOfLines={2}
             color="chakra-body-text"
             pr={16}
+            _groupHover={{ color: "primary.500" }}
+            transition="color 0.2s"
           >
             {displayTitle}
           </Heading>
 
           {beneficiary && (
             <HStack spacing={2}>
-              <Text fontSize="sm" color="text.secondary">
-                Beneficiary:
+              <Text fontSize="xs" fontWeight="600" color="text.tertiary" textTransform="uppercase" letterSpacing="wider">
+                Beneficiary
               </Text>
               <SimpleAddress address={beneficiary} length={4} fontSize="sm" />
             </HStack>
           )}
 
-          <Box>
-            <Text fontSize="sm" color="text.secondary" mb={1}>
-              Raised
-            </Text>
-            <CombinedAmountDisplay
-              stxAmount={stxNum}
-              sbtcAmount={sbtcNum}
-              stxPrice={stxPrice}
-              sbtcPrice={sbtcPrice}
-              size="md"
-            />
-          </Box>
-
-          {goal && goal > 0 && (
+          <VStack 
+            spacing={4} 
+            align="stretch" 
+            p={4} 
+            bg="bg.accentSubtle" 
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.accent"
+          >
             <Box>
-              <HStack justify="space-between" mb={1}>
-                <Text fontSize="xs" color="text.secondary">
-                  Progress
-                </Text>
-                <Text fontSize="xs" color="text.secondary" fontWeight="600">
-                  {progress.toFixed(0)}%
-                </Text>
-              </HStack>
-              <Progress
-                value={progress}
-                size="sm"
-                borderRadius="full"
-                bg="bg.surfaceAlt"
-                sx={{
-                  "& > div": {
-                    bg:
-                      progress >= 100
-                        ? "success.500"
-                        : progress >= 75
-                        ? "success.400"
-                        : "primary.500",
-                  },
-                }}
+              <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em" mb={1}>
+                Raised
+              </Text>
+              <CombinedAmountDisplay
+                stxAmount={stxNum}
+                sbtcAmount={sbtcNum}
+                stxPrice={stxPrice}
+                sbtcPrice={sbtcPrice}
+                size="md"
               />
             </Box>
-          )}
+
+            {goal && goal > 0 && (
+              <Box>
+                <HStack justify="space-between" mb={1.5}>
+                  <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em">
+                    Progress
+                  </Text>
+                  <Text fontSize="xs" color="primary.600" fontWeight="700">
+                    {progress.toFixed(0)}%
+                  </Text>
+                </HStack>
+                <Progress
+                  value={progress}
+                  size="sm"
+                  borderRadius="full"
+                  bg="whiteAlpha.400"
+                  sx={{
+                    "& > div": {
+                      bgGradient:
+                        progress >= 100
+                          ? "linear(to-r, success.400, success.500)"
+                          : progress >= 75
+                          ? "linear(to-r, primary.400, success.400)"
+                          : "linear(to-r, primary.500, secondary.400)",
+                    },
+                  }}
+                />
+              </Box>
+            )}
+          </VStack>
 
           <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default">
             <HStack spacing={1}>
