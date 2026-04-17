@@ -123,7 +123,7 @@ export function HeroSection() {
                 fontWeight="700"
                 w={{ base: "100%", sm: "auto" }}
                 minH={{ base: "46px", md: "48px" }}
-                leftIcon={<AddIcon />}
+               
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
                 Start a Campaign
