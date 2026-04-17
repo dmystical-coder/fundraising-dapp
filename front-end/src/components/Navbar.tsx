@@ -57,7 +57,7 @@ export const Navbar = () => {
               as={NextLink}
               href="/"
               _hover={{ textDecoration: "none" }}
-              aria-label="FundStacks home page"
+              aria-label="Home - FundStacks"
               px={2}
               py={1.5}
               borderRadius="interactive"
@@ -69,7 +69,8 @@ export const Navbar = () => {
                 fontWeight="900"
                 letterSpacing="0.08em"
                 textTransform="uppercase"
-                color="text.primary"
+                bgGradient="linear(to-r, primary.600, secondary.500)"
+                bgClip="text"
                 lineHeight="1"
               >
                 FundStacks
@@ -132,9 +133,10 @@ export const Navbar = () => {
                   currentWallet={currentWallet}
                   wallets={wallets}
                   onWalletSelect={setCurrentWallet}
+                  size={{ base: "md", md: "lg" }}
                 />
               ) : (
-                <ConnectWalletButton />
+                <ConnectWalletButton size={{ base: "md", md: "lg" }} />
               )}
             </Box>
 
@@ -144,7 +146,7 @@ export const Navbar = () => {
               variant="ghost"
               hideFrom="md"
               onClick={onOpen}
-              size="md"
+              size="lg"
             />
           </Flex>
         </Flex>
@@ -164,11 +166,11 @@ export const Navbar = () => {
                   currentWallet={currentWallet}
                   wallets={wallets}
                   onWalletSelect={setCurrentWallet}
-                  size="md"
+                  size="lg"
                   w="100%"
                 />
               ) : (
-                <ConnectWalletButton size="md" w="100%">
+                <ConnectWalletButton size="lg" w="100%">
                   Connect Wallet
                 </ConnectWalletButton>
               )}
