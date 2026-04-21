@@ -5,145 +5,107 @@
 <h1 align="center">FundStacks</h1>
 
 <p align="center">
-  <strong>Decentralized crowdfunding on Stacks — powered by STX and sBTC</strong>
-</p>
-
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#how-it-works">How It Works</a> •
-  <a href="#getting-started">Getting Started</a> •
-  <a href="#for-developers">For Developers</a> •
-  <a href="#contributing">Contributing</a>
+  <strong>Professional, transparent crowdfunding on Stacks</strong>
 </p>
 
 ---
 
-## 🚀 What is FundStacks?
+## Overview
 
-FundStacks is an open-source, decentralized crowdfunding platform built on the [Stacks](https://stacks.co) blockchain. Create campaigns, accept donations in **STX** or **sBTC**, and manage funds transparently — all secured by Bitcoin.
+FundStacks is a decentralized crowdfunding app on [Stacks](https://stacks.co).
+Creators launch campaigns with USD goals, donors contribute in STX or sBTC, and campaign outcomes are enforced on-chain.
 
-Whether you're raising funds for a community project, supporting a cause, or launching your next big idea, FundStacks makes it simple and trustless.
+## Why FundStacks
 
-## ✨ Features
+- **Transparent by default**: donations and campaign state changes are recorded on-chain
+- **Dual-asset support**: accept both STX and sBTC
+- **Creator + donor dashboard**: track campaigns, donations, and status in one place
+- **Fast discovery UX**: indexed activity, campaign metadata, and leaderboard/stat endpoints
 
-- **Create Campaigns** — Set a funding goal and start accepting donations in minutes
-- **Dual Currency Support** — Accept both STX and sBTC donations
-- **Transparent & Trustless** — All transactions are recorded on-chain
-- **Real-time Updates** — See donations and progress as they happen
-- **Mobile Friendly** — Fully responsive design works on any device
-- **Wallet Integration** — Connect with Hiro Wallet, Xverse, or Leather
+## For Creators and Donors
 
-## 🔄 How It Works
+1. Connect a Stacks wallet
+2. Create or browse campaigns
+3. Donate in STX/sBTC or manage your active campaigns
+4. Withdraw/refund based on contract state
 
-1. **Connect Your Wallet** — Use any Stacks-compatible wallet
-2. **Create a Campaign** — Set your goal, add a description, and launch
-3. **Share & Collect Donations** — Donors contribute STX or sBTC directly to your campaign
-4. **Withdraw Funds** — Once funded, withdraw directly to your wallet
+## Product + Technical Snapshot
 
-All campaign logic is handled by smart contracts on the Stacks blockchain, ensuring transparency and security.
+- **On-chain (Clarity)**: campaign lifecycle (`create`, `cancel`, `donate`, `withdraw`, `refund`)
+- **Off-chain metadata**: campaign title/description in `campaign_metadata`
+- **Event indexing**: chainhook deliveries + parsed events in PostgreSQL for feeds and analytics
+- **Frontend**: Next.js + React + Chakra UI + React Query
 
-## 🏁 Getting Started
-
-### For Campaign Creators
-
-1. Visit the live app at **[https://front-end-production-e422.up.railway.app/]**
-2. Connect your Stacks wallet
-3. Click "Create Campaign"
-4. Fill in your campaign details and funding goal
-5. Share your campaign and start collecting donations!
-
-### For Donors
-
-1. Browse campaigns on the homepage
-2. Click on a campaign to view details
-3. Connect your wallet and click "Donate"
-4. Choose your amount in STX or sBTC
-5. Confirm the transaction in your wallet
-
-## 👩‍💻 For Developers
+## Local Development
 
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- A Stacks wallet (for testing)
+- npm
+- PostgreSQL (local or hosted)
+- Stacks-compatible wallet for manual testing
 
-### Local Development
+### 1) Frontend
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/fundraising-dapp.git
-cd fundraising-dapp
-
-# Install dependencies
+cd front-end
 npm install
+cp .env.example .env.local
+```
 
-# Set up environment variables
-cp front-end/.env.example front-end/.env.local
+Set in `.env.local`:
+- `NEXT_PUBLIC_STACKS_NETWORK` (`devnet`, `testnet`, `mainnet`)
+- `DATABASE_URL`
+- optional deployer and chainhook filter values
 
-# Start the development server
+### 2) Database + Indexer
+
+```bash
+cd indexer
+npm install
+cp .env.example .env
+npm run db:migrate
+```
+
+### 3) Run
+
+```bash
 cd front-end
 npm run dev
 ```
 
-Visit `http://localhost:3000` to see the app.
+Open `http://localhost:3000`.
 
-### Project Structure
+## Chainhook Integration
 
-```
-fundraising-dapp/
-├── clarity/           # Smart contracts (Clarity)
-├── front-end/         # Next.js frontend
-├── indexer/           # Event indexer (Node + PostgreSQL)
-└── chainhooks/        # Chainhook configuration
-```
+For production-style event ingestion:
 
-### Smart Contracts
+- configure `EXPECTED_CONTRACT_IDENTIFIER` and webhook URL
+- register with Hiro Chainhooks API from `indexer/`
+- ingest payloads via `front-end/src/app/api/chainhook/route.ts`
 
-The fundraising logic is powered by Clarity smart contracts:
+Detailed setup: [`chainhooks/README.md`](./chainhooks/README.md)
 
-- **Campaign Creation** — Initialize campaigns with funding goals
-- **Donations** — Accept and track contributions in STX/sBTC
-- **Withdrawals** — Campaign owners withdraw funds upon completion
-- **Refunds** — Donors can be refunded if campaign is cancelled
+## Testing
 
-### Indexer Setup
-
-For production deployments, the indexer tracks blockchain events:
+Run contract tests:
 
 ```bash
-cd indexer
-cp .env.example .env
+cd clarity
 npm install
-npm run build
-npm run db:migrate
-npm run dev
+npm run test
 ```
 
-See the [Indexer README](./indexer/README.md) for detailed configuration.
+## License
 
-## 🤝 Contributing
+This project is available under the [MIT License](LICENSE).
 
-We welcome contributions! Here's how you can help:
+## Security
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-Please read our contributing guidelines before submitting PRs.
-
-## 📜 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## ⚠️ Disclaimer
-
-This software is provided for educational and demonstration purposes. The smart contracts have not been professionally audited. Use at your own risk when deploying to mainnet with real funds.
+Audit and operational hardening are recommended before deploying to mainnet with significant funds.
 
 ---
 
 <p align="center">
-  Built with ❤️ on <a href="https://stacks.co">Stacks</a>
+  Built on <a href="https://stacks.co">Stacks</a>
 </p>
