@@ -9,6 +9,7 @@ import {
   MenuList,
   Tag,
   useClipboard,
+  useToast,
 } from "@chakra-ui/react";
 import { useContext } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
@@ -70,6 +71,26 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
     : undefined;
 
   const { onCopy } = useClipboard(currentAddress || "");
+  const toast = useToast();
+
+  const handleAuthenticate = async () => {
+    try {
+      await authenticate();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isProviderConflict =
+        /Cannot redefine property:\s*StacksProvider/i.test(message);
+      toast({
+        title: "Wallet connection failed",
+        description: isProviderConflict
+          ? "Multiple Stacks wallet extensions are conflicting. Disable one of Leather/Xverse and try again."
+          : "Unable to connect wallet. Ensure a Stacks wallet extension is installed and unlocked, then retry.",
+        status: "error",
+        duration: 7000,
+        isClosable: true,
+      });
+    }
+  };
 
   if (isWalletConnected && currentAddress) {
     const restButtonProps = { ...buttonProps };
@@ -104,7 +125,7 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
     <Button
       size="sm"
       data-testid="wallet-connect-button"
-      onClick={authenticate}
+      onClick={handleAuthenticate}
       {...buttonProps}
     >
       <Flex gap="2" align="center">

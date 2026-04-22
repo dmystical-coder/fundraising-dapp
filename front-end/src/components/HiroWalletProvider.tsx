@@ -23,7 +23,7 @@ interface HiroWallet {
   isWalletConnected: boolean;
   testnetAddress: string | null;
   mainnetAddress: string | null;
-  authenticate: () => void;
+  authenticate: () => Promise<void>;
   disconnect: () => void;
 }
 
@@ -32,7 +32,7 @@ const HiroWalletContext = createContext<HiroWallet>({
   isWalletConnected: false,
   testnetAddress: null,
   mainnetAddress: null,
-  authenticate: () => {},
+  authenticate: async () => {},
   disconnect: () => {},
 });
 export default HiroWalletContext;
@@ -44,7 +44,7 @@ interface ProviderProps {
 const HiroWalletProviderUnconfigured: FC<ProviderProps> = ({ children }) => {
   const hiroWalletContext: HiroWallet = useMemo(
     () => ({
-      authenticate: () => {},
+      authenticate: async () => {},
       disconnect: () => {},
       isWalletOpen: false,
       isWalletConnected: false,
@@ -75,15 +75,31 @@ const HiroWalletProviderConfigured: FC<ProviderProps> = ({ children }) => {
   }, [refreshFromStorage]);
 
   const authenticate = useCallback(async () => {
+    const connectOptions = {
+      forceWalletSelect: true,
+      persistWalletSelect: true,
+    };
+
     try {
-      await stacksConnect({});
+      await stacksConnect(connectOptions);
       // Small delay to let @stacks/connect persist session to localStorage
       await new Promise((r) => setTimeout(r, 200));
       refreshFromStorage();
     } catch (err) {
-      // User cancelled or wallet extension not found — refresh state anyway
-      console.warn("Wallet connection failed or was cancelled:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      const isProviderConflict =
+        /Cannot redefine property:\s*StacksProvider/i.test(message);
+
+      if (isProviderConflict) {
+        console.error(
+          "Stacks wallet provider conflict detected. Multiple wallet extensions may be trying to inject StacksProvider.",
+          err
+        );
+      } else {
+        console.warn("Wallet connection failed or was cancelled:", err);
+      }
       refreshFromStorage();
+      throw err;
     }
   }, [refreshFromStorage]);
 
