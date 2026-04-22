@@ -40,9 +40,9 @@ const statusConfig: Record<
 };
 
 const sizeStyles = {
-  sm: { px: 2, py: 0.5, fontSize: "2xs" },
-  md: { px: 3, py: 1, fontSize: "xs" },
-  lg: { px: 4, py: 1.5, fontSize: "sm" },
+  sm: { px: 2, py: 0.5, fontSize: "2xs", maxW: "96px" },
+  md: { px: 3, py: 1, fontSize: "xs", maxW: "128px" },
+  lg: { px: 4, py: 1.5, fontSize: "sm", maxW: "160px" },
 };
 
 /**
@@ -70,18 +70,25 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   const config = statusConfig[status];
   const sizeStyle = sizeStyles[size];
+  const label = overrides?.label || config.label;
 
   return (
     <Badge
       colorScheme={overrides?.colorScheme || config.colorScheme}
+      variant="subtle"
       borderRadius="full"
       textTransform="uppercase"
       fontWeight="600"
       letterSpacing="0.05em"
+      whiteSpace="nowrap"
+      overflow="hidden"
+      textOverflow="ellipsis"
+      title={label}
+      aria-label={`Campaign status: ${label}`}
       {...sizeStyle}
       {...props}
     >
-      {overrides?.label || config.label}
+      {label}
     </Badge>
   );
 }

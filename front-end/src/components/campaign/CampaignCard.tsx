@@ -82,7 +82,6 @@ export function CampaignCard({
   const CardContent = (
     <Card
       role="group"
-      position="relative"
       cursor={isPending ? "default" : "pointer"}
       transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
       _hover={!isPending ? {
@@ -97,15 +96,6 @@ export function CampaignCard({
       overflow="hidden"
       opacity={isPending ? 0.7 : 1}
     >
-      {/* Status badge */}
-      <Box position="absolute" top={3} right={3} zIndex={2}>
-        {isPending ? (
-          <StatusBadge status="active" size="sm" overrides={{ label: "Pending", colorScheme: "yellow" }} />
-        ) : (
-          <StatusBadge status={status} size="sm" />
-        )}
-      </Box>
-
       {/* Media Cover */}
       <AspectRatio ratio={16 / 9} w="100%" borderBottomWidth="1px" borderColor="border.default">
         {coverUrl ? (
@@ -125,12 +115,22 @@ export function CampaignCard({
 
       <CardBody p={5}>
         <VStack align="stretch" spacing={4}>
+          <HStack justify="space-between" align="start" spacing={3}>
+            {isPending ? (
+              <StatusBadge status="active" size="sm" overrides={{ label: "Pending", colorScheme: "yellow" }} />
+            ) : (
+              <StatusBadge status={status} size="sm" />
+            )}
+            {endAt && status === "active" && !isPending && (
+              <TimeRemainingDisplay endAt={endAt} size="sm" />
+            )}
+          </HStack>
+
           <Heading
             size="md"
             lineHeight="1.4"
             noOfLines={2}
             color="chakra-body-text"
-            pr={16}
             _groupHover={{ color: "primary.500" }}
             transition="color 0.2s"
           >
@@ -216,10 +216,6 @@ export function CampaignCard({
                 {donationCount === 1 ? "donor" : "donors"}
               </Text>
             </HStack>
-
-            {endAt && status === "active" && !isPending && (
-              <TimeRemainingDisplay endAt={endAt} size="sm" />
-            )}
             {isPending && (
               <Text fontSize="xs" color="warning.500" fontWeight="bold">
                 Confirming...
