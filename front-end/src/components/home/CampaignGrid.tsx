@@ -345,7 +345,7 @@ export function CampaignGrid({
 
     const windowSize = 3;
     let start = Math.max(1, currentPage - 1);
-    let end = Math.min(totalPages, start + windowSize - 1);
+    const end = Math.min(totalPages, start + windowSize - 1);
     start = Math.max(1, end - windowSize + 1);
 
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
