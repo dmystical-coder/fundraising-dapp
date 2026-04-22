@@ -49,7 +49,14 @@ export default function CampaignDetailPage() {
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
   const { data: indexedCampaign } = useIndexerCampaign(campaignId);
-  const { data: activity, isLoading: activityLoading } = useCampaignActivity(campaignId, 20);
+  const {
+    data: activity,
+    isLoading: activityLoading,
+    isError: activityError,
+    error: activityFetchError,
+    refetch: refetchActivity,
+    isFetching: activityRefetching,
+  } = useCampaignActivity(campaignId, 20);
   const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
   const topDonorBg = useColorModeValue("primary.50", "primary.900");
   
@@ -224,6 +231,15 @@ export default function CampaignDetailPage() {
                 <ActivityFeed
                   events={activity || []}
                   isLoading={activityLoading}
+                  isError={activityError}
+                  errorMessage={
+                    activityFetchError instanceof Error
+                      ? activityFetchError.message
+                      : "The indexer could not be reached. Check your connection and try again."
+                  }
+                  onRetry={() => refetchActivity()}
+                  isRetrying={activityRefetching}
+                  ariaLabel="Recent campaign activity"
                   stxPrice={prices?.stx}
                   sbtcPrice={prices?.sbtc}
                   emptyMessage="No donations yet. Be the first to contribute!"
