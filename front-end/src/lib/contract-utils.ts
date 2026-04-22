@@ -32,16 +32,32 @@ interface DirectCallResponse {
   txid: string;
 }
 
+export type Network = "mainnet" | "testnet" | "devnet";
+
+/**
+ * Resolve the configured Stacks network with a production-safe fallback.
+ * In hosted environments the public env var may be missing at runtime/build time.
+ */
+export const getConfiguredStacksNetwork = (): Network => {
+  const rawNetwork = process.env.NEXT_PUBLIC_STACKS_NETWORK;
+  if (
+    rawNetwork === "devnet" ||
+    rawNetwork === "testnet" ||
+    rawNetwork === "mainnet"
+  ) {
+    return rawNetwork;
+  }
+  return "mainnet";
+};
+
 export const isDevnetEnvironment = () =>
-  process.env.NEXT_PUBLIC_STACKS_NETWORK === "devnet";
+  getConfiguredStacksNetwork() === "devnet";
 
 export const isTestnetEnvironment = () =>
-  process.env.NEXT_PUBLIC_STACKS_NETWORK === "testnet";
+  getConfiguredStacksNetwork() === "testnet";
 
 export const isMainnetEnvironment = () =>
-  process.env.NEXT_PUBLIC_STACKS_NETWORK === "mainnet";
-
-export type Network = "mainnet" | "testnet" | "devnet";
+  getConfiguredStacksNetwork() === "mainnet";
 
 export const executeContractCall = async (
   txOptions: ContractCallOptions,

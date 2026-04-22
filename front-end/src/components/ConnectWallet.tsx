@@ -14,9 +14,8 @@ import {
 import { useContext } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
 import {
+  getConfiguredStacksNetwork,
   isDevnetEnvironment,
-  isMainnetEnvironment,
-  isTestnetEnvironment,
 } from "@/lib/contract-utils";
 import { formatStxAddress } from "@/lib/address-utils";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
@@ -28,16 +27,17 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 export const useAddress = (): string | null => {
   const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
   const { currentWallet } = useDevnetWallet();
+  const network = getConfiguredStacksNetwork();
 
   if (isDevnetEnvironment()) {
     return currentWallet?.stxAddress || null;
   }
 
-  if (isTestnetEnvironment()) {
+  if (network === "testnet") {
     return testnetAddress || null;
   }
 
-  if (isMainnetEnvironment()) {
+  if (network === "mainnet") {
     return mainnetAddress || null;
   }
 
@@ -58,17 +58,16 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
     testnetAddress,
   } = useContext(HiroWalletContext);
 
-  const currentAddress = isTestnetEnvironment()
-    ? testnetAddress
-    : isMainnetEnvironment()
-    ? mainnetAddress
-    : null;
+  const network = getConfiguredStacksNetwork();
+  const currentAddress =
+    network === "testnet"
+      ? testnetAddress
+      : network === "mainnet"
+      ? mainnetAddress
+      : null;
 
-  const networkLabel = isTestnetEnvironment()
-    ? "testnet"
-    : isMainnetEnvironment()
-    ? "mainnet"
-    : undefined;
+  const networkLabel =
+    network === "testnet" || network === "mainnet" ? network : undefined;
 
   const { onCopy } = useClipboard(currentAddress || "");
   const toast = useToast();
