@@ -139,6 +139,9 @@ export default function DonationModal({
         asset: paymentMethod === "sbtc" ? "sbtc" : "stx",
         senderAddress: currentWalletAddress || "",
       });
+      const resolvedNetwork = txOptions.network;
+      const useDevnetExecution =
+        resolvedNetwork === "devnet" || isDevnetEnvironment();
 
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
@@ -159,7 +162,7 @@ export default function DonationModal({
         });
       };
 
-      if (isDevnetEnvironment()) {
+      if (useDevnetExecution) {
         const { txid } = await executeContractCall(txOptions, devnetWallet);
         doSuccess(txid);
       } else {
