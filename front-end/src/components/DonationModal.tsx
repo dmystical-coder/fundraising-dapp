@@ -37,8 +37,7 @@ import {
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { ConnectWalletButton } from "./ConnectWallet";
 import { DevnetWalletButton } from "./DevnetWalletButton";
-import { getContributeSbtcTx, getContributeStxTx } from "@/lib/campaign-utils";
-import { getStacksNetworkString } from "@/lib/stacks-api";
+import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
 import {
   btcToSats,
   satsToSbtc,
@@ -129,22 +128,17 @@ export default function DonationModal({
     }
 
     try {
-      const txOptions =
+      const txAmount =
         paymentMethod === "sbtc"
-          ? getContributeSbtcTx(getStacksNetworkString(), {
-              address: currentWalletAddress || "",
-              campaignId,
-              amount: Math.round(
-                btcToSats(usdToSbtc(amount, prices?.sbtc || 0))
-              ),
-            })
-          : getContributeStxTx(getStacksNetworkString(), {
-              address: currentWalletAddress || "",
-              campaignId,
-              amount: Math.round(
-                Number(stxToUstx(usdToStx(amount, prices?.stx || 0)))
-              ),
-            });
+          ? Math.round(btcToSats(usdToSbtc(amount, prices?.sbtc || 0)))
+          : Math.round(Number(stxToUstx(usdToStx(amount, prices?.stx || 0))));
+
+      const txOptions = buildFundstacksDonateTx({
+        campaignId: BigInt(campaignId),
+        amount: BigInt(txAmount),
+        asset: paymentMethod === "sbtc" ? "sbtc" : "stx",
+        senderAddress: currentWalletAddress || "",
+      });
 
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
