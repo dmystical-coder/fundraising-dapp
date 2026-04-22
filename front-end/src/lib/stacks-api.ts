@@ -34,7 +34,17 @@ export function getStacksUrl() {
 }
 
 export function getStacksNetworkString(): Network {
-  return (process.env.NEXT_PUBLIC_STACKS_NETWORK || "devnet") as Network;
+  const rawNetwork = process.env.NEXT_PUBLIC_STACKS_NETWORK;
+  if (
+    rawNetwork === "devnet" ||
+    rawNetwork === "testnet" ||
+    rawNetwork === "mainnet"
+  ) {
+    return rawNetwork;
+  }
+
+  // In hosted environments missing NEXT_PUBLIC_STACKS_NETWORK, default to mainnet.
+  return "mainnet";
 }
 
 export function getStacksNetwork() {
