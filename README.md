@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./screenshot.png" alt="FundStacks Banner" width="600" />
+  <img width="1892" height="851" alt="image" src="https://github.com/user-attachments/assets/76585ede-498e-4266-a23e-7ce252b3ab55" />
 </p>
 
 <h1 align="center">FundStacks</h1>
