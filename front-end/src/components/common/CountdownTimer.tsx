@@ -77,6 +77,14 @@ function getUrgencyColor(remaining: TimeRemaining): string {
   return "text.secondary";
 }
 
+function formatEndDateLabel(endAt: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZoneName: "short",
+  }).format(new Date(endAt * 1000));
+}
+
 /**
  * Live countdown timer component.
  */
@@ -89,6 +97,7 @@ export function CountdownTimer({
 }: CountdownTimerProps) {
   const [remaining, setRemaining] = useState(() => calculateTimeRemaining(endAt));
   const styles = sizeStyles[size];
+  const endDateLabel = formatEndDateLabel(endAt);
 
   useEffect(() => {
     // Initial calculation
@@ -112,7 +121,7 @@ export function CountdownTimer({
 
   if (remaining.isExpired) {
     return (
-      <HStack spacing={styles.spacing} aria-label="Campaign has ended">
+      <HStack spacing={styles.spacing} aria-label={`Campaign ended on ${endDateLabel}`} title={`Campaign ended on ${endDateLabel}`}>
         {showIcon && (
           <Icon as={TimeIcon} boxSize={styles.iconSize} color="text.tertiary" />
         )}
@@ -120,6 +129,7 @@ export function CountdownTimer({
           fontSize={styles.fontSize}
           color="text.secondary"
           fontWeight="500"
+          aria-live="off"
           {...props}
         >
           Campaign Ended
@@ -139,7 +149,13 @@ export function CountdownTimer({
   }
 
   return (
-    <HStack spacing={styles.spacing} aria-label={`Time remaining: ${timeDisplay}`} role="timer">
+    <HStack
+      spacing={styles.spacing}
+      aria-label={`Time remaining: ${timeDisplay}. Ends on ${endDateLabel}`}
+      title={`Ends on ${endDateLabel}`}
+      role="status"
+      aria-live="off"
+    >
       {showIcon && (
         <Icon
           as={TimeIcon}
@@ -176,10 +192,18 @@ export function TimeRemainingDisplay({
   const remaining = calculateTimeRemaining(endAt);
   const styles = sizeStyles[size];
   const urgencyColor = getUrgencyColor(remaining);
+  const endDateLabel = formatEndDateLabel(endAt);
 
   if (remaining.isExpired) {
     return (
-      <Text fontSize={styles.fontSize} color="text.secondary" aria-label="Campaign has ended" role="status" {...props}>
+      <Text
+        fontSize={styles.fontSize}
+        color="text.secondary"
+        aria-label={`Campaign ended on ${endDateLabel}`}
+        title={`Campaign ended on ${endDateLabel}`}
+        role="status"
+        {...props}
+      >
         Ended
       </Text>
     );
@@ -197,7 +221,16 @@ export function TimeRemainingDisplay({
   }
 
   return (
-    <Text fontSize={styles.fontSize} color={urgencyColor} fontWeight="500" aria-label={`Time remaining: ${text}`} role="timer" {...props}>
+    <Text
+      fontSize={styles.fontSize}
+      color={urgencyColor}
+      fontWeight="500"
+      aria-label={`Time remaining: ${text}. Ends on ${endDateLabel}`}
+      title={`Ends on ${endDateLabel}`}
+      role="status"
+      aria-live="off"
+      {...props}
+    >
       {text}
     </Text>
   );

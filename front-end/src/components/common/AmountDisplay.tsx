@@ -1,6 +1,6 @@
 "use client";
 
-import { HStack, Text, TextProps, Tooltip } from "@chakra-ui/react";
+import { HStack, Skeleton, Text, TextProps, Tooltip } from "@chakra-ui/react";
 import { ustxToStx, satsToSbtc } from "@/lib/currency-utils";
 
 interface AmountDisplayProps extends Omit<TextProps, "children"> {
@@ -9,13 +9,14 @@ interface AmountDisplayProps extends Omit<TextProps, "children"> {
   usdPrice?: number;
   showUsd?: boolean;
   showSymbol?: boolean;
+  isLoading?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
 const sizeStyles = {
-  sm: { fontSize: "sm", usdFontSize: "xs" },
-  md: { fontSize: "md", usdFontSize: "sm" },
-  lg: { fontSize: "xl", usdFontSize: "md" },
+  sm: { fontSize: "sm", usdFontSize: "xs", minH: "20px" },
+  md: { fontSize: "md", usdFontSize: "sm", minH: "24px" },
+  lg: { fontSize: "xl", usdFontSize: "md", minH: "32px" },
 };
 
 const tokenConfig = {
@@ -72,6 +73,14 @@ function formatAmount(value: number, maxDecimals: number = 6): string {
   });
 }
 
+function parseRawAmount(amount: number | string): number {
+  if (typeof amount === "number") {
+    return Number.isFinite(amount) ? amount : 0;
+  }
+  const parsed = Number.parseInt(amount, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 /**
  * Displays token amounts with proper formatting, symbol, and optional USD conversion.
  */
@@ -81,6 +90,7 @@ export function AmountDisplay({
   usdPrice,
   showUsd = true,
   showSymbol = true,
+  isLoading = false,
   size = "md",
   ...props
 }: AmountDisplayProps) {
@@ -88,7 +98,7 @@ export function AmountDisplay({
   const styles = sizeStyles[size];
 
   // Convert raw amount to display value
-  const rawAmount = typeof amount === "string" ? parseInt(amount, 10) : amount;
+  const rawAmount = parseRawAmount(amount);
   const displayAmount = Number(config.convert(rawAmount));
   const formattedAmount = formatAmount(displayAmount);
 
@@ -102,9 +112,13 @@ export function AmountDisplay({
     maximumFractionDigits: 8,
   })} ${config.symbol}`;
 
+  if (isLoading) {
+    return <Skeleton height={styles.minH} width="132px" borderRadius="md" />;
+  }
+
   return (
     <Tooltip label={fullAmount} hasArrow placement="top">
-      <HStack spacing={1} align="baseline" role="text" aria-label={fullAmount}>
+      <HStack spacing={1} align="baseline" role="text" aria-label={fullAmount} title={fullAmount} minH={styles.minH}>
         <Text
           fontFamily="mono"
           fontWeight="600"
@@ -141,6 +155,7 @@ interface CombinedAmountDisplayProps {
   sbtcAmount: number | string;
   stxPrice?: number;
   sbtcPrice?: number;
+  isLoading?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
@@ -149,10 +164,11 @@ export function CombinedAmountDisplay({
   sbtcAmount,
   stxPrice,
   sbtcPrice,
+  isLoading = false,
   size = "md",
 }: CombinedAmountDisplayProps) {
-  const stxRaw = typeof stxAmount === "string" ? parseInt(stxAmount, 10) : stxAmount;
-  const sbtcRaw = typeof sbtcAmount === "string" ? parseInt(sbtcAmount, 10) : sbtcAmount;
+  const stxRaw = parseRawAmount(stxAmount);
+  const sbtcRaw = parseRawAmount(sbtcAmount);
 
   const stxDisplay = Number(ustxToStx(stxRaw));
   const sbtcDisplay = Number(satsToSbtc(sbtcRaw));
@@ -163,11 +179,15 @@ export function CombinedAmountDisplay({
 
   const styles = sizeStyles[size];
 
+  if (isLoading) {
+    return <Skeleton height={styles.minH} width="160px" borderRadius="md" />;
+  }
+
   // Zero state: nothing raised yet
   if (stxRaw === 0 && sbtcRaw === 0) {
     return (
-      <Text fontSize={styles.fontSize} color="text.tertiary" fontWeight="500" role="status" aria-label="No donations yet">
-        No donations yet
+      <Text fontSize={styles.fontSize} color="text.tertiary" fontWeight="500" role="status" aria-label="No funds raised yet">
+        No funds raised yet
       </Text>
     );
   }

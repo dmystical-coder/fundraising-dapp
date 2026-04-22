@@ -1,6 +1,6 @@
 "use client";
 
-import { HStack, Text, TextProps, IconButton, Tooltip, Link } from "@chakra-ui/react";
+import { HStack, Text, TextProps, IconButton, Tooltip, Link, VisuallyHidden } from "@chakra-ui/react";
 import { CopyIcon, ExternalLinkIcon, CheckIcon } from "@chakra-ui/icons";
 import { useState, useCallback } from "react";
 
@@ -75,20 +75,18 @@ export function AddressDisplay({
   return (
     <HStack spacing={1} align="center">
       <Tooltip label={address} hasArrow placement="top">
-        <Text
-          fontFamily="mono"
+        <BoxWithAccessibleAddress
+          address={address}
+          displayAddress={displayAddress}
           fontSize={styles.fontSize}
-          color="text.secondary"
           {...props}
-        >
-          {displayAddress}
-        </Text>
+        />
       </Tooltip>
 
       {showCopy && (
         <Tooltip label={copied ? "Copied!" : "Copy address"} hasArrow>
           <IconButton
-            aria-label="Copy address"
+            aria-label={`Copy full address ${address}`}
             icon={copied ? <CheckIcon color="success.500" /> : <CopyIcon />}
             size={styles.buttonSize}
             variant="ghost"
@@ -96,6 +94,7 @@ export function AddressDisplay({
             minW="auto"
             h="auto"
             p={1}
+            _focusVisible={{ boxShadow: "0 0 0 2px var(--chakra-colors-primary-400)" }}
           />
         </Tooltip>
       )}
@@ -113,6 +112,7 @@ export function AddressDisplay({
             minW="auto"
             h="auto"
             p={1}
+            _focusVisible={{ boxShadow: "0 0 0 2px var(--chakra-colors-primary-400)" }}
           />
         </Tooltip>
       )}
@@ -135,10 +135,35 @@ export function SimpleAddress({
 }: SimpleAddressProps) {
   return (
     <Tooltip label={address} hasArrow placement="top">
-      <Text fontFamily="mono" color="text.secondary" {...props}>
-        {truncateAddress(address, length)}
-      </Text>
+      <BoxWithAccessibleAddress
+        address={address}
+        displayAddress={truncateAddress(address, length)}
+        color="text.secondary"
+        {...props}
+      />
     </Tooltip>
+  );
+}
+
+function BoxWithAccessibleAddress({
+  address,
+  displayAddress,
+  ...props
+}: Omit<TextProps, "children"> & { address: string; displayAddress: string }) {
+  return (
+    <Text
+      as="span"
+      fontFamily="mono"
+      color="text.secondary"
+      title={address}
+      aria-label={`Address ${address}`}
+      {...props}
+    >
+      <Text as="span" aria-hidden="true">
+        {displayAddress}
+      </Text>
+      <VisuallyHidden>{address}</VisuallyHidden>
+    </Text>
   );
 }
 
