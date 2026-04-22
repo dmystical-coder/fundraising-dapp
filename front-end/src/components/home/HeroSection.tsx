@@ -103,7 +103,7 @@ export function HeroSection() {
             >
               <Button
                 as={Link}
-                href="#campaigns"
+                href="/campaigns"
                 size={{ base: "md", md: "lg" }}
                 colorScheme="primary"
                 fontWeight="700"

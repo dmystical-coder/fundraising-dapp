@@ -139,7 +139,7 @@ export function HowItWorksSection() {
               {/* CTA */}
               <Button
                 as={NextLink}
-                href="#campaigns"
+                href="/campaigns"
                 size="lg"
                 colorScheme="primary"
                 rightIcon={<ArrowForwardIcon />}
