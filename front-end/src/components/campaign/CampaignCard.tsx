@@ -2,17 +2,19 @@
 
 import {
   Box,
+  Button,
   Card,
   CardBody,
   Heading,
   Text,
-  Progress,
   HStack,
   VStack,
   AspectRatio,
   Image,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import Link from "next/link";
+import { ArrowForwardIcon } from "@chakra-ui/icons";
+import { useRouter } from "next/navigation";
 import { StatusBadge, getCampaignStatus } from "../common/StatusBadge";
 import { CombinedAmountDisplay } from "../common/AmountDisplay";
 import { TimeRemainingDisplay } from "../common/CountdownTimer";
@@ -70,22 +72,26 @@ export function CampaignCard({
   isPending,
   coverUrl,
 }: CampaignCardProps) {
+  const router = useRouter();
   const status = getCampaignStatus({ isCancelled, isWithdrawn, isExpired });
+  const progressTrackBg = useColorModeValue("gray.300", "whiteAlpha.300");
+  const progressTrackBorder = useColorModeValue("gray.400", "whiteAlpha.400");
 
   const stxNum = typeof totalStx === "string" ? parseInt(totalStx, 10) : totalStx;
   const sbtcNum = typeof totalSbtc === "string" ? parseInt(totalSbtc, 10) : totalSbtc;
 
   const progress = calculateProgress(stxNum, sbtcNum, goal, stxPrice, sbtcPrice);
+  const canDonate = status === "active" && !isPending;
 
   const displayTitle = title || `Campaign #${campaignId}`;
 
   const CardContent = (
     <Card
       role="group"
-      cursor={isPending ? "default" : "pointer"}
+      cursor="default"
       transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
       _hover={!isPending ? {
-        transform: "translateY(-6px) scale(1.02)",
+        transform: "translateY(-4px)",
         boxShadow: "0 12px 40px -15px var(--chakra-colors-primary-400)",
         borderColor: "primary.400",
       } : undefined}
@@ -178,22 +184,29 @@ export function CampaignCard({
                     {progress.toFixed(0)}%
                   </Text>
                 </HStack>
-                <Progress
-                  value={progress}
-                  size="sm"
+                <Box
+                  w="100%"
+                  h="8px"
                   borderRadius="full"
-                  bg="whiteAlpha.400"
-                  sx={{
-                    "& > div": {
-                      bgGradient:
-                        progress >= 100
-                          ? "linear(to-r, success.400, success.500)"
-                          : progress >= 75
-                          ? "linear(to-r, primary.400, success.400)"
-                          : "linear(to-r, primary.500, secondary.400)",
-                    },
-                  }}
-                />
+                  bg={progressTrackBg}
+                  borderWidth="1px"
+                  borderColor={progressTrackBorder}
+                  overflow="hidden"
+                >
+                  <Box
+                    h="100%"
+                    w={`${progress}%`}
+                    minW={progress > 0 ? "10px" : "0"}
+                    borderRadius="full"
+                    bgGradient={
+                      progress >= 100
+                        ? "linear(to-r, success.500, success.600)"
+                        : progress >= 75
+                        ? "linear(to-r, primary.600, success.500)"
+                        : "linear(to-r, primary.700, secondary.500)"
+                    }
+                  />
+                </Box>
               </Box>
             ) : (
               <Box>
@@ -207,8 +220,8 @@ export function CampaignCard({
             )}
           </VStack>
 
-          <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default">
-            <HStack spacing={1}>
+          <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default" align="center">
+            <HStack spacing={1} minW={0}>
               <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
                 {donationCount}
               </Text>
@@ -222,6 +235,48 @@ export function CampaignCard({
               </Text>
             )}
           </HStack>
+
+          {!isPending && (
+            <HStack spacing={2} justify="stretch">
+              {canDonate && (
+                <Button
+                  onClick={() => router.push(`/campaigns/${campaignId}`)}
+                  size="sm"
+                  flex={1}
+                  variant="solid"
+                  bg={{ _light: "gray.800", _dark: "gray.100" }}
+                  color={{ _light: "white", _dark: "gray.900" }}
+                  borderWidth="1px"
+                  borderColor={{ _light: "gray.900", _dark: "gray.300" }}
+                  boxShadow="sm"
+                  _hover={{
+                    bg: { _light: "gray.900", _dark: "white" },
+                    borderColor: { _light: "black", _dark: "gray.200" },
+                    transform: "translateY(-1px)",
+                    boxShadow: "md",
+                  }}
+                  _active={{
+                    bg: { _light: "black", _dark: "gray.300" },
+                    borderColor: { _light: "black", _dark: "gray.400" },
+                    transform: "translateY(0)",
+                  }}
+                >
+                  Donate
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push(`/campaigns/${campaignId}`)}
+                size="sm"
+                variant="outline"
+                colorScheme="primary"
+                rightIcon={<ArrowForwardIcon boxSize={3.5} />}
+                flex={canDonate ? 1 : undefined}
+                w={canDonate ? "auto" : "100%"}
+              >
+                {canDonate ? "View" : "View Campaign"}
+              </Button>
+            </HStack>
+          )}
         </VStack>
       </CardBody>
     </Card>
@@ -231,11 +286,7 @@ export function CampaignCard({
     return CardContent;
   }
 
-  return (
-    <Link href={`/campaigns/${campaignId}`} passHref style={{ textDecoration: "none" }}>
-      {CardContent}
-    </Link>
-  );
+  return CardContent;
 }
 
 export default CampaignCard;
