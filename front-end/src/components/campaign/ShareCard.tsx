@@ -5,16 +5,17 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Divider,
   Heading,
-  HStack,
+  Input,
   Icon,
-  IconButton,
-  Tooltip,
+  Link,
+  Text,
   useClipboard,
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import { LinkIcon } from "@chakra-ui/icons";
+import { CheckIcon, CopyIcon, ExternalLinkIcon, LinkIcon } from "@chakra-ui/icons";
 import { useState, useEffect } from "react";
 
 interface ShareCardProps {
@@ -65,8 +66,8 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
     } else {
       onCopy();
       toast({
-        title: "Link Copied",
-        description: "Share the link with your friends!",
+        title: "Link copied",
+        description: "Share it with your network.",
         status: "success",
         duration: 2000,
         isClosable: true,
@@ -82,62 +83,100 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
   const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
   const whatsappUrl = `https://wa.me/?text=${shareText}%20${shareUrl}`;
 
+  const handleCopyLink = () => {
+    onCopy();
+    toast({
+      title: "Copied to clipboard",
+      status: "success",
+      duration: 1800,
+      isClosable: true,
+    });
+  };
+
   return (
     <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
       <CardHeader pb={2}>
-        <Heading size="md">
-          Share Campaign
-        </Heading>
+        <Heading size="md">Share Campaign</Heading>
       </CardHeader>
       <CardBody pt={0}>
         <VStack spacing={4} align="stretch">
+          <VStack spacing={1} align="stretch">
+            <Text fontSize="sm" fontWeight="600" color="chakra-body-text" whiteSpace="normal" wordBreak="break-word">
+              {title}
+            </Text>
+            <Text fontSize="xs" color="text.tertiary">
+              Campaign link preview
+            </Text>
+            <Input value={url} isReadOnly size="sm" bg="bg.surfaceAlt" borderColor="border.default" />
+          </VStack>
+
           <Button
             onClick={handleNativeShare}
-            colorScheme="primary"
             size="lg"
-            rightIcon={<Icon as={LinkIcon} />}
+            variant="solid"
+            colorScheme="primary"
+            leftIcon={<ExternalLinkIcon />}
           >
-            Share Now
+            Share now
           </Button>
 
-          <HStack justify="center" spacing={4}>
-            <Tooltip label="Share on X">
-              <IconButton
-                as="a"
-                href={twitterUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Share on X"
-                icon={<XIcon boxSize={5} />}
-                variant="ghost"
-                size="lg"
-              />
-            </Tooltip>
-            
-            <Tooltip label="Share on WhatsApp">
-              <IconButton
-                as="a"
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Share on WhatsApp"
-                icon={<WhatsAppIcon boxSize={6} />}
-                variant="ghost"
-                size="lg"
-                color="green.500"
-              />
-            </Tooltip>
+          <Button
+            onClick={handleCopyLink}
+            size="md"
+            variant="outline"
+            colorScheme="primary"
+            leftIcon={hasCopied ? <CheckIcon /> : <CopyIcon />}
+          >
+            {hasCopied ? "Copied link" : "Copy campaign link"}
+          </Button>
 
-            <Tooltip label={hasCopied ? "Copied!" : "Copy Link"}>
-              <IconButton
-                onClick={onCopy}
-                aria-label="Copy Link"
-                icon={<LinkIcon />}
-                variant="ghost"
-                size="lg"
-              />
-            </Tooltip>
-          </HStack>
+          <Divider borderColor="border.default" />
+
+          <Text fontSize="xs" fontWeight="600" color="text.secondary" textTransform="uppercase" letterSpacing="0.06em">
+            Share on
+          </Text>
+
+          <VStack spacing={2} align="stretch">
+            <Button
+              as={Link}
+              href={twitterUrl}
+              isExternal
+              rel="noopener noreferrer"
+              size="md"
+              variant="outline"
+              colorScheme="primary"
+              justifyContent="flex-start"
+              leftIcon={<XIcon boxSize={4} />}
+              rightIcon={<ExternalLinkIcon boxSize={3} />}
+            >
+              Share on X
+            </Button>
+
+            <Button
+              as={Link}
+              href={whatsappUrl}
+              isExternal
+              rel="noopener noreferrer"
+              size="md"
+              variant="outline"
+              colorScheme="primary"
+              justifyContent="flex-start"
+              leftIcon={<WhatsAppIcon boxSize={4} />}
+              rightIcon={<ExternalLinkIcon boxSize={3} />}
+            >
+              Share on WhatsApp
+            </Button>
+          </VStack>
+
+          <Button
+            onClick={handleCopyLink}
+            variant="ghost"
+            size="sm"
+            alignSelf="flex-start"
+            leftIcon={<LinkIcon />}
+          >
+            {hasCopied ? "Link copied" : "Quick copy"}
+          </Button>
         </VStack>
       </CardBody>
     </Card>
