@@ -17,6 +17,8 @@ import {
   Text,
   VStack,
   AspectRatio,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +36,7 @@ const PAGE_SIZE = 9;
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
+type FilterOption = "all" | "active" | "ending-soon" | "fully-funded";
 
 interface CampaignWithOnChain extends IndexedCampaign {
   endAt?: number;
@@ -48,6 +51,9 @@ interface CampaignGridProps {
   showSort?: boolean;
   title?: string;
   limit?: number;
+  actionLabel?: string;
+  actionHref?: string;
+  showFilters?: boolean;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -147,9 +153,13 @@ export function CampaignGrid({
   showSort = true,
   title = "Explore Campaigns",
   limit,
+  actionLabel,
+  actionHref,
+  showFilters = false,
 }: CampaignGridProps) {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [filterBy, setFilterBy] = useState<FilterOption>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
   const address = useAddress();
 
@@ -247,10 +257,10 @@ export function CampaignGrid({
     if (confirmed) setPendingCampaign(null);
   }, [indexerCampaigns, pendingCampaign]);
 
-  // ── Reset pagination when sort changes ───────────────────────────────────
+  // ── Reset pagination when sort or filter changes ─────────────────────────
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [sortBy]);
+    setCurrentPage(1);
+  }, [sortBy, filterBy]);
 
   // ── Build sorted campaign list ───────────────────────────────────────────
   const allCampaigns = useMemo(() => {
@@ -281,13 +291,73 @@ export function CampaignGrid({
     return sortCampaigns(enriched, sortBy);
   }, [propCampaigns, indexerCampaigns, sortBy, pendingCampaign, onChainMap]);
 
+  const filteredCampaigns = useMemo(() => {
+    if (!showFilters || filterBy === "all") return allCampaigns;
+
+    const now = Math.floor(Date.now() / 1000);
+    const endingSoonThreshold = now + 7 * 24 * 60 * 60;
+
+    return allCampaigns.filter((campaign) => {
+      const isActive =
+        !campaign.is_cancelled &&
+        !campaign.is_withdrawn &&
+        !campaign.isExpired &&
+        (campaign.endAt ?? 0) > now;
+
+      if (filterBy === "active") {
+        return isActive;
+      }
+
+      if (filterBy === "ending-soon") {
+        return (
+          isActive &&
+          !!campaign.endAt &&
+          campaign.endAt > now &&
+          campaign.endAt <= endingSoonThreshold
+        );
+      }
+
+      if (filterBy === "fully-funded") {
+        if (!campaign.goal || campaign.goal <= 0 || !prices?.stx || !prices?.sbtc) {
+          return false;
+        }
+
+        const stxValue = (parseInt(campaign.total_stx, 10) / 1_000_000) * prices.stx;
+        const sbtcValue = (parseInt(campaign.total_sbtc, 10) / 100_000_000) * prices.sbtc;
+        return stxValue + sbtcValue >= campaign.goal;
+      }
+
+      return true;
+    });
+  }, [allCampaigns, filterBy, prices, showFilters]);
+
+  const totalPages = limit ? 1 : Math.max(1, Math.ceil(filteredCampaigns.length / PAGE_SIZE));
+  const paginatedCampaigns = useMemo(() => {
+    if (limit) return filteredCampaigns.slice(0, limit);
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return filteredCampaigns.slice(start, end);
+  }, [filteredCampaigns, currentPage, limit]);
+
+  const paginationPages = useMemo(() => {
+    if (limit || totalPages <= 1) return [];
+
+    const windowSize = 3;
+    let start = Math.max(1, currentPage - 1);
+    let end = Math.min(totalPages, start + windowSize - 1);
+    start = Math.max(1, end - windowSize + 1);
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [currentPage, totalPages, limit]);
+
   const visibleCampaigns = useMemo(
-    () => (limit ? allCampaigns.slice(0, limit) : allCampaigns.slice(0, visibleCount)),
-    [allCampaigns, visibleCount, limit]
+    () => paginatedCampaigns,
+    [paginatedCampaigns]
   );
 
-  const hasMore = !limit && allCampaigns.length > visibleCount;
   const isLoading = propIsLoading !== undefined ? propIsLoading : indexerLoading;
+  const skeletonCount = limit ? Math.min(limit, 6) : 6;
 
   // ─── Loading: initial skeleton ───────────────────────────────────────────
   if (isLoading) {
@@ -300,10 +370,10 @@ export function CampaignGrid({
         <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
           <HStack justify="space-between" mb={6} flexWrap="wrap" gap={4}>
             <Skeleton height="32px" width="180px" borderRadius="md" />
-            {showSort && <Skeleton height="40px" width="180px" borderRadius="md" />}
+            {(showSort || actionHref) && <Skeleton height="40px" width="180px" borderRadius="md" />}
           </HStack>
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: skeletonCount }).map((_, i) => (
               <CampaignCardSkeleton key={i} />
             ))}
           </SimpleGrid>
@@ -420,36 +490,164 @@ export function CampaignGrid({
               {title}
             </Heading>
             <Text fontSize="sm" color="text.secondary" mt={0.5}>
-              {allCampaigns.length === 1
+              {filteredCampaigns.length === 1
                 ? "1 campaign"
-                : `${allCampaigns.length} campaigns`}
-              {!limit && allCampaigns.length > PAGE_SIZE && (
-                <>, showing {Math.min(visibleCount, allCampaigns.length)}</>
+                : `${filteredCampaigns.length} campaigns`}
+              {!limit && totalPages > 1 && (
+                <> · page {currentPage} of {totalPages}</>
               )}
             </Text>
           </Box>
 
-          {showSort && (
-            <Select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              aria-label="Sort campaigns"
-              size="sm"
-              maxW={{ base: "100%", sm: "200px" }}
-              bg="bg.surface"
-              borderColor="border.default"
-              borderRadius="lg"
-              minH="40px"
-              _hover={{ borderColor: "primary.300" }}
-              _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
-            >
-              <option value="newest">Newest First</option>
-              <option value="most-funded">Most Funded</option>
-              <option value="ending-soon">Ending Soon</option>
-              <option value="most-donors">Most Donors</option>
-            </Select>
+          {((showSort && !showFilters) || actionHref) && (
+            <HStack spacing={3} w={{ base: "100%", sm: "auto" }}>
+              {showSort && !showFilters && (
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  aria-label="Sort campaigns"
+                  size="sm"
+                  maxW={{ base: "100%", sm: "200px" }}
+                  bg="bg.surface"
+                  borderColor="border.default"
+                  borderRadius="lg"
+                  minH="40px"
+                  _hover={{ borderColor: "primary.300" }}
+                  _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="most-funded">Most Funded</option>
+                  <option value="ending-soon">Ending Soon</option>
+                  <option value="most-donors">Most Donors</option>
+                </Select>
+              )}
+              {actionHref && actionLabel && (
+                <Button
+                  as={NextLink}
+                  href={actionHref}
+                  size="sm"
+                  variant="outline"
+                  colorScheme="primary"
+                  minH="40px"
+                  _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
+                >
+                  {actionLabel}
+                </Button>
+              )}
+            </HStack>
           )}
         </Flex>
+
+        {/* Filter bar */}
+        {showFilters && !limit && (
+          <Flex
+            mb={6}
+            justify="space-between"
+            align={{ base: "stretch", md: "center" }}
+            direction={{ base: "column", md: "row" }}
+            gap={3}
+          >
+            <Wrap spacing={2}>
+              <WrapItem>
+                <Button
+                  size="sm"
+                  borderRadius="full"
+                  px={4}
+                  minH="36px"
+                  bg={filterBy === "all" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
+                  color={filterBy === "all" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  borderWidth="1px"
+                  borderColor={filterBy === "all" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  onClick={() => setFilterBy("all")}
+                  _hover={{
+                    bg: filterBy === "all" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
+                    color: filterBy === "all" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                  }}
+                >
+                  All
+                </Button>
+              </WrapItem>
+              <WrapItem>
+                <Button
+                  size="sm"
+                  borderRadius="full"
+                  px={4}
+                  minH="36px"
+                  bg={filterBy === "active" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
+                  color={filterBy === "active" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  borderWidth="1px"
+                  borderColor={filterBy === "active" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  onClick={() => setFilterBy("active")}
+                  _hover={{
+                    bg: filterBy === "active" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
+                    color: filterBy === "active" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                  }}
+                >
+                  Active
+                </Button>
+              </WrapItem>
+              <WrapItem>
+                <Button
+                  size="sm"
+                  borderRadius="full"
+                  px={4}
+                  minH="36px"
+                  bg={filterBy === "ending-soon" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
+                  color={filterBy === "ending-soon" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  borderWidth="1px"
+                  borderColor={filterBy === "ending-soon" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  onClick={() => setFilterBy("ending-soon")}
+                  _hover={{
+                    bg: filterBy === "ending-soon" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
+                    color: filterBy === "ending-soon" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                  }}
+                >
+                  Ending Soon
+                </Button>
+              </WrapItem>
+              <WrapItem>
+                <Button
+                  size="sm"
+                  borderRadius="full"
+                  px={4}
+                  minH="36px"
+                  bg={filterBy === "fully-funded" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
+                  color={filterBy === "fully-funded" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  borderWidth="1px"
+                  borderColor={filterBy === "fully-funded" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  onClick={() => setFilterBy("fully-funded")}
+                  _hover={{
+                    bg: filterBy === "fully-funded" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
+                    color: filterBy === "fully-funded" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                  }}
+                >
+                  Fully Funded
+                </Button>
+              </WrapItem>
+            </Wrap>
+
+            {showSort && (
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                aria-label="Sort campaigns"
+                size="sm"
+                maxW={{ base: "100%", md: "220px" }}
+                bg="bg.surface"
+                borderColor="border.default"
+                borderRadius="lg"
+                minH="40px"
+                _hover={{ borderColor: "primary.300" }}
+                _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
+              >
+                <option value="newest">Sort: Newest First</option>
+                <option value="most-funded">Sort: Most Funded</option>
+                <option value="ending-soon">Sort: Ending Soon</option>
+                <option value="most-donors">Sort: Most Donors</option>
+              </Select>
+            )}
+          </Flex>
+        )}
 
         {/* Background refetch indicator */}
         {isFetching && !isLoading && (
@@ -468,45 +666,86 @@ export function CampaignGrid({
         )}
 
         {/* Grid */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-          {visibleCampaigns.map((campaign) => (
-            <CampaignCard
-              key={campaign.campaign_id === -1 ? `pending-${campaign.owner}` : campaign.campaign_id}
-              campaignId={campaign.campaign_id}
-              beneficiary={campaign.beneficiary}
-              totalStx={campaign.total_stx}
-              totalSbtc={campaign.total_sbtc}
-              goal={campaign.goal}
-              endAt={campaign.endAt}
-              donationCount={campaign.donation_count}
-              isCancelled={campaign.is_cancelled}
-              isWithdrawn={campaign.is_withdrawn}
-              isExpired={campaign.isExpired}
-              stxPrice={prices?.stx}
-              sbtcPrice={prices?.sbtc}
-              title={campaign.title ?? undefined}
-              isPending={campaign.isPending}
-            />
-          ))}
-        </SimpleGrid>
-
-        {/* Load more */}
-        {hasMore && (
-          <Flex justify="center" mt={8} direction="column" align="center" gap={2}>
+        {visibleCampaigns.length === 0 ? (
+          <VStack spacing={4} py={10} borderWidth="1px" borderColor="border.default" borderRadius="xl">
+            <Heading size="sm" color="text.primary">
+              No campaigns match this filter
+            </Heading>
+            <Text fontSize="sm" color="text.secondary" textAlign="center" maxW="42ch">
+              Try a different filter or reset to view all campaigns.
+            </Text>
             <Button
+              size="sm"
               variant="outline"
               colorScheme="primary"
-              size="md"
-              onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-              minW="160px"
-              _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
+              onClick={() => setFilterBy("all")}
             >
-              Load more
+              Reset filters
             </Button>
-            <Text fontSize="xs" color="text.tertiary">
-              {allCampaigns.length - visibleCount} more campaign
-              {allCampaigns.length - visibleCount === 1 ? "" : "s"}
-            </Text>
+          </VStack>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {visibleCampaigns.map((campaign) => (
+              <CampaignCard
+                key={campaign.campaign_id === -1 ? `pending-${campaign.owner}` : campaign.campaign_id}
+                campaignId={campaign.campaign_id}
+                beneficiary={campaign.beneficiary}
+                totalStx={campaign.total_stx}
+                totalSbtc={campaign.total_sbtc}
+                goal={campaign.goal}
+                endAt={campaign.endAt}
+                donationCount={campaign.donation_count}
+                isCancelled={campaign.is_cancelled}
+                isWithdrawn={campaign.is_withdrawn}
+                isExpired={campaign.isExpired}
+                stxPrice={prices?.stx}
+                sbtcPrice={prices?.sbtc}
+                title={campaign.title ?? undefined}
+                isPending={campaign.isPending}
+              />
+            ))}
+          </SimpleGrid>
+        )}
+
+        {/* Pagination */}
+        {!limit && totalPages > 1 && (
+          <Flex justify="center" mt={8} align="center" gap={2} flexWrap="wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="gray"
+              borderColor="border.default"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              isDisabled={currentPage === 1}
+            >
+              ← Prev
+            </Button>
+            {paginationPages.map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                borderRadius="full"
+                colorScheme="gray"
+                variant={currentPage === page ? "solid" : "outline"}
+                bg={currentPage === page ? { _light: "gray.800", _dark: "gray.100" } : undefined}
+                color={currentPage === page ? { _light: "white", _dark: "gray.900" } : undefined}
+                borderColor="border.default"
+                onClick={() => setCurrentPage(page)}
+                minW="34px"
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="gray"
+              borderColor="border.default"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              isDisabled={currentPage === totalPages}
+            >
+              Next →
+            </Button>
           </Flex>
         )}
       </Container>

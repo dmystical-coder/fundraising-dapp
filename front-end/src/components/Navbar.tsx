@@ -33,6 +33,7 @@ export const Navbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigationLinks = [
     { href: "/", label: "Home" },
+    { href: "/campaigns", label: "Campaigns" },
     ...(address ? [{ href: "/dashboard", label: "Dashboard" }] : []),
   ];
   const isActiveLink = (href: string) =>

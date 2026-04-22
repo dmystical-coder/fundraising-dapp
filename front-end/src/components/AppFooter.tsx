@@ -15,7 +15,7 @@ import NextLink from "next/link";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Explore Campaigns", href: "/#campaigns" },
+  { label: "Explore Campaigns", href: "/campaigns" },
   { label: "Create Campaign", href: "/campaigns/new" },
 ];
 

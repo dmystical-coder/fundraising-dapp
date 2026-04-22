@@ -20,7 +20,13 @@ export default function HomePage() {
       <HowItWorksSection />
 
       {/* Campaign Grid */}
-      <CampaignGrid title="Explore Campaigns" showSort />
+      <CampaignGrid
+        title="Explore Campaigns"
+        showSort={false}
+        limit={3}
+        actionLabel="View all campaigns"
+        actionHref="/campaigns"
+      />
     </>
   );
 }
