@@ -25,6 +25,7 @@ import {
   FormLabel,
   FormErrorMessage,
 } from "@chakra-ui/react";
+import { CheckIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import React, { useState } from "react";
 import { useContext } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
@@ -288,9 +289,11 @@ export default function DonationModal({
                 <Button
                   onClick={handleShare}
                   size="lg"
+                  variant="solid"
                   colorScheme="primary"
                   width="100%"
-                  leftIcon={<span>📣</span>}
+                  leftIcon={<ExternalLinkIcon />}
+                  rightIcon={<CheckIcon />}
                 >
                   Share Contribution
                 </Button>
