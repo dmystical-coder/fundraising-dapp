@@ -77,6 +77,23 @@ Start the service with your predicate:
 
 - `chainhook service start --config-path ./Chainhook.toml --predicate-path ./chainhooks/predicates/fundraising-print-events.json`
 
+## 6) Repair `fundraising_events` from raw deliveries
+
+If `fundraising_events` is missing rows (e.g. after an `event_uid` dedup bug), you can **rebuild** it from `chainhook_deliveries` using the current extraction and UID logic (same as `front-end/src/lib/chainhook.ts` and `POST /api/chainhook`):
+
+```bash
+cd front-end
+npm install
+# Preview counts only
+npm run db:replay-fundraising-events -- --dry-run
+# Applies: TRUNCATE fundraising_events, then re-inserts from all stored payloads
+npm run db:replay-fundraising-events
+```
+
+(`npx tsx scripts/replay-fundraising-events.ts` is equivalent to the `npm run` form.)
+
+Set `DATABASE_URL` in `front-end/.env.local` (or the environment) and optional `EXPECTED_CONTRACT_IDENTIFIER` to match the webhook. The apply path **wipes and repopulates** `fundraising_events` only; `chainhook_deliveries` and `campaign_metadata` are unchanged. Inserts use **autocommit** (not one long open transaction) so serverless/Neon limits are less likely to drop the connection. If a run fails after `TRUNCATE`, re-run the script to rebuild from `chainhook_deliveries`.
+
 ## Notes
 
 - This indexer is intentionally minimal and stores the raw delivery in Postgres.
