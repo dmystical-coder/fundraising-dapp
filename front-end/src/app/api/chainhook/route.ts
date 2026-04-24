@@ -4,6 +4,7 @@ import {
   computeEventUid,
   extractFundraisingEvents,
   extractTopLevelMeta,
+  toJsonbSafe,
 } from "@/lib/chainhook";
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
         meta.txid ?? null,
         meta.contractIdentifier ?? null,
         deliveryUid,
-        payload,
+        toJsonbSafe(payload),
       ]
     );
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
           ev.txid ?? null,
           ev.blockHeight?.toString() ?? null,
           ev.contractIdentifier ?? null,
-          ev.raw,
+          toJsonbSafe(ev.raw),
         ]
       );
     }
