@@ -40,6 +40,7 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { ConnectWalletButton } from "./ConnectWallet";
 import { DevnetWalletButton } from "./DevnetWalletButton";
 import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
+import { FundstacksError } from "@dmystical-coder/fundstacks-headless-sdk";
 import {
   btcToSats,
   satsToSbtc,
@@ -211,8 +212,14 @@ export default function DonationModal({
       setSelectedAmount(null);
     } catch (e) {
       console.error(e);
-      toast.error("Error", {
-        description: "Failed to make contribution",
+      const description =
+        e instanceof FundstacksError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "Failed to make contribution";
+      toast.error(e instanceof FundstacksError ? "Invalid donation" : "Error", {
+        description,
       });
       setIsLoading(false);
       onClose();

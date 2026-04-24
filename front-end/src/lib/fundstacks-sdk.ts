@@ -2,16 +2,20 @@ import {
   buildDonateTx,
   type BuildDonateTxInput,
   createClient,
+  defaultSbtcAssetForNetwork,
 } from "@dmystical-coder/fundstacks-headless-sdk";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
 import { getStacksNetworkString } from "@/lib/stacks-api";
 import type { ContractCallOptions } from "@/lib/contract-utils";
 import { PostConditionMode, type PostCondition } from "@stacks/transactions";
 
+const network = getStacksNetworkString();
+
 export const fundstacksClient = createClient({
   contractAddress: FUNDRAISING_CONTRACT.address || "",
   contractName: FUNDRAISING_CONTRACT.name,
-  network: getStacksNetworkString(),
+  network,
+  sbtcAsset: defaultSbtcAssetForNetwork(network),
 });
 
 export const buildFundstacksDonateTx = (
