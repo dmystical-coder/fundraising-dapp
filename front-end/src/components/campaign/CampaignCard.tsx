@@ -76,6 +76,14 @@ export function CampaignCard({
   const status = getCampaignStatus({ isCancelled, isWithdrawn, isExpired });
   const progressTrackBg = useColorModeValue("gray.300", "whiteAlpha.300");
   const progressTrackBorder = useColorModeValue("gray.400", "whiteAlpha.400");
+  
+  const donateBtnBg = useColorModeValue("gray.800", "gray.100");
+  const donateBtnColor = useColorModeValue("white", "gray.900");
+  const donateBtnBorderColor = useColorModeValue("gray.900", "gray.300");
+  const donateBtnHoverBg = useColorModeValue("gray.900", "white");
+  const donateBtnHoverBorder = useColorModeValue("black", "gray.200");
+  const donateBtnActiveBg = useColorModeValue("black", "gray.300");
+  const donateBtnActiveBorder = useColorModeValue("black", "gray.400");
 
   const stxNum = typeof totalStx === "string" ? parseInt(totalStx, 10) : totalStx;
   const sbtcNum = typeof totalSbtc === "string" ? parseInt(totalSbtc, 10) : totalSbtc;
@@ -244,20 +252,20 @@ export function CampaignCard({
                   size="sm"
                   flex={1}
                   variant="solid"
-                  bg={{ _light: "gray.800", _dark: "gray.100" }}
-                  color={{ _light: "white", _dark: "gray.900" }}
+                  bg={donateBtnBg}
+                  color={donateBtnColor}
                   borderWidth="1px"
-                  borderColor={{ _light: "gray.900", _dark: "gray.300" }}
+                  borderColor={donateBtnBorderColor}
                   boxShadow="sm"
                   _hover={{
-                    bg: { _light: "gray.900", _dark: "white" },
-                    borderColor: { _light: "black", _dark: "gray.200" },
+                    bg: donateBtnHoverBg,
+                    borderColor: donateBtnHoverBorder,
                     transform: "translateY(-1px)",
                     boxShadow: "md",
                   }}
                   _active={{
-                    bg: { _light: "black", _dark: "gray.300" },
-                    borderColor: { _light: "black", _dark: "gray.400" },
+                    bg: donateBtnActiveBg,
+                    borderColor: donateBtnActiveBorder,
                     transform: "translateY(0)",
                   }}
                 >

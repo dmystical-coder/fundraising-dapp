@@ -19,6 +19,7 @@ import {
   AspectRatio,
   Wrap,
   WrapItem,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -162,6 +163,12 @@ export function CampaignGrid({
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
   const address = useAddress();
+
+  const filterActiveBg = useColorModeValue("gray.800", "gray.100");
+  const filterActiveColor = useColorModeValue("white", "gray.900");
+  const filterActiveBorder = useColorModeValue("gray.800", "gray.100");
+  const filterActiveHoverBg = useColorModeValue("gray.900", "white");
+  const filterActiveHoverColor = useColorModeValue("white", "gray.900");
 
   const {
     data: indexerCampaigns,
@@ -554,14 +561,14 @@ export function CampaignGrid({
                   borderRadius="full"
                   px={4}
                   minH="36px"
-                  bg={filterBy === "all" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
-                  color={filterBy === "all" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  bg={filterBy === "all" ? filterActiveBg : "bg.surface"}
+                  color={filterBy === "all" ? filterActiveColor : "text.secondary"}
                   borderWidth="1px"
-                  borderColor={filterBy === "all" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  borderColor={filterBy === "all" ? filterActiveBorder : "border.default"}
                   onClick={() => setFilterBy("all")}
                   _hover={{
-                    bg: filterBy === "all" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
-                    color: filterBy === "all" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                    bg: filterBy === "all" ? filterActiveHoverBg : "bg.surfaceAlt",
+                    color: filterBy === "all" ? filterActiveHoverColor : "text.primary",
                   }}
                 >
                   All
@@ -573,14 +580,14 @@ export function CampaignGrid({
                   borderRadius="full"
                   px={4}
                   minH="36px"
-                  bg={filterBy === "active" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
-                  color={filterBy === "active" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  bg={filterBy === "active" ? filterActiveBg : "bg.surface"}
+                  color={filterBy === "active" ? filterActiveColor : "text.secondary"}
                   borderWidth="1px"
-                  borderColor={filterBy === "active" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  borderColor={filterBy === "active" ? filterActiveBorder : "border.default"}
                   onClick={() => setFilterBy("active")}
                   _hover={{
-                    bg: filterBy === "active" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
-                    color: filterBy === "active" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                    bg: filterBy === "active" ? filterActiveHoverBg : "bg.surfaceAlt",
+                    color: filterBy === "active" ? filterActiveHoverColor : "text.primary",
                   }}
                 >
                   Active
@@ -592,14 +599,14 @@ export function CampaignGrid({
                   borderRadius="full"
                   px={4}
                   minH="36px"
-                  bg={filterBy === "ending-soon" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
-                  color={filterBy === "ending-soon" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  bg={filterBy === "ending-soon" ? filterActiveBg : "bg.surface"}
+                  color={filterBy === "ending-soon" ? filterActiveColor : "text.secondary"}
                   borderWidth="1px"
-                  borderColor={filterBy === "ending-soon" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  borderColor={filterBy === "ending-soon" ? filterActiveBorder : "border.default"}
                   onClick={() => setFilterBy("ending-soon")}
                   _hover={{
-                    bg: filterBy === "ending-soon" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
-                    color: filterBy === "ending-soon" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                    bg: filterBy === "ending-soon" ? filterActiveHoverBg : "bg.surfaceAlt",
+                    color: filterBy === "ending-soon" ? filterActiveHoverColor : "text.primary",
                   }}
                 >
                   Ending Soon
@@ -611,14 +618,14 @@ export function CampaignGrid({
                   borderRadius="full"
                   px={4}
                   minH="36px"
-                  bg={filterBy === "fully-funded" ? { _light: "gray.800", _dark: "gray.100" } : "bg.surface"}
-                  color={filterBy === "fully-funded" ? { _light: "white", _dark: "gray.900" } : "text.secondary"}
+                  bg={filterBy === "fully-funded" ? filterActiveBg : "bg.surface"}
+                  color={filterBy === "fully-funded" ? filterActiveColor : "text.secondary"}
                   borderWidth="1px"
-                  borderColor={filterBy === "fully-funded" ? { _light: "gray.800", _dark: "gray.100" } : "border.default"}
+                  borderColor={filterBy === "fully-funded" ? filterActiveBorder : "border.default"}
                   onClick={() => setFilterBy("fully-funded")}
                   _hover={{
-                    bg: filterBy === "fully-funded" ? { _light: "gray.900", _dark: "white" } : "bg.surfaceAlt",
-                    color: filterBy === "fully-funded" ? { _light: "white", _dark: "gray.900" } : "text.primary",
+                    bg: filterBy === "fully-funded" ? filterActiveHoverBg : "bg.surfaceAlt",
+                    color: filterBy === "fully-funded" ? filterActiveHoverColor : "text.primary",
                   }}
                 >
                   Fully Funded
@@ -727,8 +734,8 @@ export function CampaignGrid({
                 borderRadius="full"
                 colorScheme="gray"
                 variant={currentPage === page ? "solid" : "outline"}
-                bg={currentPage === page ? { _light: "gray.800", _dark: "gray.100" } : undefined}
-                color={currentPage === page ? { _light: "white", _dark: "gray.900" } : undefined}
+                bg={currentPage === page ? filterActiveBg : undefined}
+                color={currentPage === page ? filterActiveColor : undefined}
                 borderColor="border.default"
                 onClick={() => setCurrentPage(page)}
                 minW="34px"
