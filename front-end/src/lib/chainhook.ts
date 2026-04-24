@@ -19,6 +19,9 @@ export type ExtractedFundraisingEvent = {
 function stableJson(obj: unknown): string {
   const seen = new WeakSet<object>();
   const normalize = (value: unknown): unknown => {
+    if (typeof value === "bigint") {
+      return `__bigint__${value.toString()}`;
+    }
     if (value && typeof value === "object") {
       if (seen.has(value as object)) return "[Circular]";
       seen.add(value as object);
@@ -41,6 +44,25 @@ function stableJson(obj: unknown): string {
 
 export function computeEventUid(payload: unknown): string {
   return crypto.createHash("sha256").update(stableJson(payload)).digest("hex");
+}
+
+/**
+ * Deep-clone for JSON/JSONB columns: `pg` cannot serialize nested `bigint` (e.g. in `raw.ctx`).
+ */
+export function toJsonbSafe(value: unknown): unknown {
+  const seen = new WeakSet<object>();
+  const walk = (v: unknown): unknown => {
+    if (typeof v === "bigint") return v.toString();
+    if (v === null || v === undefined) return v;
+    if (typeof v !== "object") return v;
+    if (seen.has(v as object)) return "[Circular]";
+    seen.add(v as object);
+    if (Array.isArray(v)) return v.map(walk);
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, walk(val)])
+    );
+  };
+  return walk(value);
 }
 
 function toBigIntSafe(v: unknown): bigint | undefined {
@@ -106,6 +128,11 @@ export function extractFundraisingEvents(
   options?: { expectedContractIdentifier?: string }
 ): ExtractedFundraisingEvent[] {
   const results: ExtractedFundraisingEvent[] = [];
+  // Each chainhook delivery has a unique full-payload hash. Without this, two identical
+  // on-chain `print` tuples (same campaign/donor/amount) can yield the same { ctx, node }
+  // when txid is missing in context, colliding on event_uid and tripping ON CONFLICT DO NOTHING.
+  const deliveryFingerprint = computeEventUid(payload);
+  let printEmission = 0;
 
   const visit = (
     node: unknown,
@@ -125,10 +152,15 @@ export function extractFundraisingEvents(
     }
     if (!isRecord(node)) return;
 
-    const maybeTxid = typeof node.txid === "string" ? node.txid : undefined;
-    const maybeBlockHeight = toBigIntSafe(
-      node.block_height ?? node.blockHeight
-    );
+    let maybeTxid = typeof node.txid === "string" ? node.txid : undefined;
+    if (!maybeTxid && isRecord(node.transaction_identifier) && typeof node.transaction_identifier.hash === "string") {
+      maybeTxid = node.transaction_identifier.hash;
+    }
+
+    let maybeBlockHeight = toBigIntSafe(node.block_height ?? node.blockHeight);
+    if (maybeBlockHeight === undefined && isRecord(node.block_identifier)) {
+      maybeBlockHeight = toBigIntSafe(node.block_identifier.index);
+    }
     const maybeContractIdentifier =
       typeof node.contract_identifier === "string"
         ? node.contract_identifier
@@ -229,7 +261,13 @@ export function extractFundraisingEvents(
             eventName.includes("donated-") ||
             eventName.includes("refunded"))
         ) {
-          const eventUid = computeEventUid({ ctx: nextContext, node });
+          const idx = printEmission++;
+          const eventUid = computeEventUid({
+            deliveryFingerprint,
+            printIndex: idx,
+            ctx: nextContext,
+            node,
+          });
           results.push({
             eventUid,
             eventName,
