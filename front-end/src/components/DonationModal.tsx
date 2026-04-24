@@ -120,19 +120,40 @@ export default function DonationModal({
       return;
     }
 
-    const amount = selectedAmount || Number(customAmount);
+    let txAmount: number = 0;
+    let displayAmountText: string = "";
 
-    if (!amount || amount <= 0) {
-      setErrorMsg("Please enter a valid donation amount");
-      setIsLoading(false);
-      return;
+    if (selectedAmount) {
+      if (selectedAmount <= 0) {
+        setErrorMsg("Please enter a valid donation amount");
+        setIsLoading(false);
+        return;
+      }
+      displayAmountText = `$${selectedAmount}`;
+      txAmount =
+        paymentMethod === "sbtc"
+          ? Math.round(btcToSats(usdToSbtc(selectedAmount, prices?.sbtc || 0)))
+          : Math.round(Number(stxToUstx(usdToStx(selectedAmount, prices?.stx || 0))));
+    } else {
+      const tokenAmount = Number(customAmount);
+      if (!tokenAmount || tokenAmount <= 0) {
+        setErrorMsg("Please enter a valid donation amount");
+        setIsLoading(false);
+        return;
+      }
+      if (paymentMethod === "stx" && tokenAmount < 1) {
+        setErrorMsg("Please enter a minimum of 1 STX");
+        setIsLoading(false);
+        return;
+      }
+      displayAmountText = `${tokenAmount} ${paymentMethod.toUpperCase()}`;
+      txAmount =
+        paymentMethod === "sbtc"
+          ? Math.round(btcToSats(tokenAmount))
+          : Math.round(Number(stxToUstx(tokenAmount)));
     }
 
     try {
-      const txAmount =
-        paymentMethod === "sbtc"
-          ? Math.round(btcToSats(usdToSbtc(amount, prices?.sbtc || 0)))
-          : Math.round(Number(stxToUstx(usdToStx(amount, prices?.stx || 0))));
 
       const txOptions = buildFundstacksDonateTx({
         campaignId: BigInt(campaignId),
@@ -151,7 +172,7 @@ export default function DonationModal({
           title: "Donation Submitted! Thank you!",
           description: (
             <Flex direction="column" gap="4">
-              <Box>Processing donation of ${amount}.</Box>
+              <Box>Processing donation of {displayAmountText}.</Box>
               <Box fontSize="xs">
                 Transaction ID: <strong>{txid}</strong>
               </Box>
@@ -279,7 +300,7 @@ export default function DonationModal({
                     Thank You!
                   </Text>
                   <Text color="text.secondary">
-                    Your donation of ${selectedAmount || customAmount} has been submitted.
+                    Your donation of {selectedAmount ? `$${selectedAmount}` : `${customAmount} ${paymentMethod.toUpperCase()}`} has been submitted.
                   </Text>
                   <Text fontSize="xs" color="text.tertiary">
                     TxID: {successTxId.slice(0, 8)}...{successTxId.slice(-8)}
@@ -368,16 +389,16 @@ export default function DonationModal({
 
                     <FormControl isInvalid={!!errorMsg}>
                       <FormLabel htmlFor="custom-amount" fontSize="md" color="text.secondary">
-                        Or enter custom amount:
+                        Or enter custom amount in {paymentMethod.toUpperCase()}:
                       </FormLabel>
                       <NumberInput
                         id="custom-amount"
-                        min={1}
+                        min={paymentMethod === "stx" ? 1 : 0}
                         value={customAmount}
                         onChange={handleCustomAmountChange}
                       >
                         <NumberInputField
-                          placeholder="Enter amount"
+                          placeholder={`Enter ${paymentMethod.toUpperCase()} amount`}
                           textAlign="center"
                           fontSize="lg"
                         />
@@ -397,20 +418,18 @@ export default function DonationModal({
                         }
                         isLoading={isLoading}
                       >
-                        Donate ${selectedAmount || customAmount || "0"}
+                        Donate {selectedAmount ? `$${selectedAmount}` : customAmount ? `${customAmount} ${paymentMethod.toUpperCase()}` : "$0"}
                       </Button>
                       <Box mx="auto" fontSize="sm" fontWeight="bold" color="text.secondary">
-                        (≈
-                        {paymentMethod === "stx"
-                          ? `${usdToStx(
-                              Number(selectedAmount || customAmount || "0"),
-                              prices?.stx || 0
-                            ).toFixed(2)} STX`
-                          : `${usdToSbtc(
-                              Number(selectedAmount || customAmount || "0"),
-                              prices?.sbtc || 0
-                            ).toFixed(8)} sBTC`}
-                        )
+                        {selectedAmount ? (
+                          `(≈ ${paymentMethod === "stx"
+                            ? `${usdToStx(selectedAmount, prices?.stx || 0).toFixed(2)} STX`
+                            : `${usdToSbtc(selectedAmount, prices?.sbtc || 0).toFixed(8)} sBTC`})`
+                        ) : customAmount ? (
+                          `(≈ $${(Number(customAmount) * (paymentMethod === "stx" ? (prices?.stx || 0) : (prices?.sbtc || 0))).toFixed(2)})`
+                        ) : (
+                          `(≈ 0 STX)`
+                        )}
                       </Box>
                     </Flex>
                   </VStack>
