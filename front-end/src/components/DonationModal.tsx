@@ -1,5 +1,6 @@
 import { useExistingDonation } from "@/hooks/campaignQueries";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -88,6 +89,7 @@ export default function DonationModal({
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [successTxId, setSuccessTxId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const presetAmounts = [10, 25, 50, 100];
 
@@ -175,6 +177,15 @@ export default function DonationModal({
           ),
           duration: 30000,
         });
+
+        // Invalidate queries so the UI updates without requiring a page refresh
+        queryClient.invalidateQueries({ queryKey: ["indexer"] });
+        if (campaignId) {
+          queryClient.invalidateQueries({ queryKey: ["campaignInfo", campaignId] });
+        }
+        if (campaignId && currentWalletAddress) {
+          queryClient.invalidateQueries({ queryKey: ["campaignDonations", campaignId, currentWalletAddress] });
+        }
       };
 
       if (useDevnetExecution) {
