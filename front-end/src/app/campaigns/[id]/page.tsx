@@ -69,7 +69,7 @@ export default function CampaignDetailPage() {
       <Container maxW="container.xl" py={8}>
         <Button
           as={Link}
-          href="/"
+          href="/campaigns"
           leftIcon={<ArrowBackIcon />}
           variant="ghost"
           mb={6}
@@ -97,7 +97,7 @@ export default function CampaignDetailPage() {
       <Container maxW="container.xl" py={8}>
         <Button
           as={Link}
-          href="/"
+          href="/campaigns"
           leftIcon={<ArrowBackIcon />}
           variant="ghost"
           mb={6}
@@ -149,7 +149,7 @@ export default function CampaignDetailPage() {
     <Container maxW="container.xl" py={8}>
       <Button
         as={Link}
-        href="/"
+        href="/campaigns"
         leftIcon={<ArrowBackIcon />}
         variant="ghost"
         mb={6}

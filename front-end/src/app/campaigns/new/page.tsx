@@ -399,7 +399,7 @@ export default function CreateCampaignPage() {
     <Container maxW="container.md" py={8}>
       <Button
         as={Link}
-        href="/"
+        href="/campaigns"
         leftIcon={<ArrowBackIcon />}
         variant="ghost"
         mb={6}
