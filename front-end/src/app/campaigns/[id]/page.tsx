@@ -132,12 +132,9 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  const stxAmount = indexedCampaign?.total_stx 
-    ? parseInt(indexedCampaign.total_stx, 10) 
-    : (campaign.totalStx || 0);
-  const sbtcAmount = indexedCampaign?.total_sbtc 
-    ? parseInt(indexedCampaign.total_sbtc, 10) 
-    : (campaign.totalSbtc || 0);
+  // Raised amounts from chain (same source as donationCount); indexer metadata may disagree if ingestion is incomplete.
+  const stxAmount = campaign.totalStx;
+  const sbtcAmount = campaign.totalSbtc;
   const stxPrice = prices?.stx || 0;
   const sbtcPrice = prices?.sbtc || 0;
   const stxUsd = (stxAmount / 1_000_000) * stxPrice;
