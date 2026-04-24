@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import {
   Button,
@@ -12,7 +13,6 @@ import {
   Link,
   Text,
   useClipboard,
-  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { CheckIcon, CopyIcon, ExternalLinkIcon, LinkIcon } from "@chakra-ui/icons";
@@ -44,7 +44,7 @@ const WhatsAppIcon = (props: Record<string, unknown>) => (
 export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
   const [url, setUrl] = useState("");
   const { hasCopied, onCopy } = useClipboard(url);
-  const toast = useToast();
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -65,12 +65,9 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
       }
     } else {
       onCopy();
-      toast({
-        title: "Link copied",
+      toast.success("Link copied", {
         description: "Share it with your network.",
-        status: "success",
         duration: 2000,
-        isClosable: true,
       });
     }
   };
@@ -85,11 +82,8 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
 
   const handleCopyLink = () => {
     onCopy();
-    toast({
-      title: "Copied to clipboard",
-      status: "success",
+    toast.success("Copied to clipboard", {
       duration: 1800,
-      isClosable: true,
     });
   };
 

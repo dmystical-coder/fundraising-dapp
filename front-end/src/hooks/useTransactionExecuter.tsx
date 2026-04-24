@@ -5,13 +5,14 @@ import {
   openContractCall,
 } from "@/lib/contract-utils";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
-import { Box, Flex, useToast } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
+import { toast } from "sonner";
 
 // Execute a stx transaction on-chain from the client.
 // For devnet, it directly calls the transaction.
 // For mainnet/testnet, it requests signing from the browser wallet extension
 export default function useTransactionExecuter() {
-  const toast = useToast();
+
 
   return async (
     txOptions: ContractCallOptions,
@@ -20,8 +21,7 @@ export default function useTransactionExecuter() {
     errorMessage: string
   ) => {
     const doSuccessToast = (txid: string) => {
-      toast({
-        title: successMessage,
+      toast.success(successMessage, {
         description: (
           <Flex direction="column" gap="4">
             <Box fontSize="xs">
@@ -29,8 +29,6 @@ export default function useTransactionExecuter() {
             </Box>
           </Flex>
         ),
-        status: "success",
-        isClosable: true,
         duration: 30000,
       });
     };
@@ -47,10 +45,8 @@ export default function useTransactionExecuter() {
             doSuccessToast(data.txId);
           },
           onCancel: () => {
-            toast({
-              title: "Transaction not submitted",
+            toast.info("Transaction not submitted", {
               description: "Transaction was cancelled",
-              status: "info",
               duration: 3000,
             });
           },
@@ -58,10 +54,8 @@ export default function useTransactionExecuter() {
       }
     } catch (e) {
       console.error(e);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: errorMessage,
-        status: "error",
       });
       return false;
     }

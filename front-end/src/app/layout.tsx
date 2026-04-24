@@ -4,6 +4,7 @@ import { Providers } from "@/components/ui/Providers";
 import { Navbar } from "@/components/Navbar";
 import { AppFooter } from "@/components/AppFooter";
 import { Box } from "@chakra-ui/react";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "FundStacks | Crowdfunding on Stacks",
@@ -37,6 +38,7 @@ export default function RootLayout({
             <AppFooter />
           </Box>
         </Providers>
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );

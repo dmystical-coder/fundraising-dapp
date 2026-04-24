@@ -1,4 +1,5 @@
 import { useExistingDonation } from "@/hooks/campaignQueries";
+import { toast } from "sonner";
 import {
   Alert,
   AlertDescription,
@@ -15,7 +16,6 @@ import {
   Text,
   NumberInput,
   NumberInputField,
-  useToast,
   HStack,
   VStack,
   RadioGroup,
@@ -88,7 +88,6 @@ export default function DonationModal({
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [successTxId, setSuccessTxId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const toast = useToast();
 
   const presetAmounts = [10, 25, 50, 100];
 
@@ -109,12 +108,9 @@ export default function DonationModal({
     setErrorMsg(null);
 
     if (!campaignId) {
-      toast({
-        title: "No active campaign",
+      toast.error("No active campaign", {
         description: "There is no active campaign to contribute to yet.",
-        status: "error",
         duration: 3000,
-        isClosable: true,
       });
       setIsLoading(false);
       return;
@@ -168,8 +164,7 @@ export default function DonationModal({
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
         setIsLoading(false);
-        toast({
-          title: "Donation Submitted! Thank you!",
+        toast.success("Donation Submitted! Thank you!", {
           description: (
             <Flex direction="column" gap="4">
               <Box>Processing donation of {displayAmountText}.</Box>
@@ -178,8 +173,6 @@ export default function DonationModal({
               </Box>
             </Flex>
           ),
-          status: "success",
-          isClosable: true,
           duration: 30000,
         });
       };
@@ -194,10 +187,8 @@ export default function DonationModal({
             doSuccess(data.txId);
           },
           onCancel: () => {
-            toast({
-              title: "Cancelled",
+            toast.info("Cancelled", {
               description: "Transaction was cancelled",
-              status: "info",
               duration: 3000,
             });
             setIsLoading(false);
@@ -209,10 +200,8 @@ export default function DonationModal({
       setSelectedAmount(null);
     } catch (e) {
       console.error(e);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to make contribution",
-        status: "error",
       });
       setIsLoading(false);
       onClose();
@@ -235,7 +224,7 @@ export default function DonationModal({
       }
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
-      toast({ title: "Link copied to clipboard!", status: "success" });
+      toast.success("Link copied to clipboard!");
     }
   };
 

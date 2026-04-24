@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Container,
   Box,
@@ -33,7 +34,6 @@ import {
   StepDescription,
   StepSeparator,
   useSteps,
-  useToast,
   Alert,
   AlertIcon,
   Spinner,
@@ -74,7 +74,6 @@ const initialFormData: FormData = {
 
 export default function CreateCampaignPage() {
   const router = useRouter();
-  const toast = useToast();
   const queryClient = useQueryClient();
   const address = useAddress();
   const { activeStep, setActiveStep, goToNext, goToPrevious } = useSteps({
@@ -150,10 +149,8 @@ export default function CreateCampaignPage() {
 
   const handleSubmit = async () => {
     if (!address) {
-      toast({
-        title: "Wallet not connected",
+      toast.error("Wallet not connected", {
         description: "Please connect your wallet to create a campaign",
-        status: "error",
         duration: 5000,
       });
       return;
@@ -189,21 +186,16 @@ export default function CreateCampaignPage() {
           queryClient.invalidateQueries({ queryKey: ["indexer", "campaigns"] });
           queryClient.invalidateQueries({ queryKey: ["campaigns"] });
           
-          toast({
-            title: "Campaign Created!",
+          toast.success("Campaign Created!", {
             description: "Your campaign has been submitted. Metadata will be saved once confirmed.",
-            status: "success",
             duration: 8000,
-            isClosable: true,
           });
           router.push("/");
         },
         onCancel: () => {
           setIsSubmitting(false);
           localStorage.removeItem(`pending_campaign_metadata_${address}`);
-          toast({
-            title: "Transaction Cancelled",
-            status: "warning",
+          toast.warning("Transaction Cancelled", {
             duration: 3000,
           });
         },
@@ -211,10 +203,8 @@ export default function CreateCampaignPage() {
     } catch (error) {
       console.error("Failed to create campaign:", error);
       localStorage.removeItem(`pending_campaign_metadata_${address}`);
-      toast({
-        title: "Failed to create campaign",
+      toast.error("Failed to create campaign", {
         description: error instanceof Error ? error.message : "Unknown error occurred",
-        status: "error",
         duration: 5000,
       });
       setIsSubmitting(false);
