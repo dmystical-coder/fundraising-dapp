@@ -102,8 +102,9 @@ export default function DashboardPage() {
     }, 0);
   }, [campaigns, prices]);
 
+  /** Sum of per-campaign unique donors (same person across multiple campaigns may be counted more than once). */
   const totalDonors = useMemo(
-    () => campaigns.reduce((sum, campaign) => sum + (campaign.donation_count || 0), 0),
+    () => campaigns.reduce((sum, campaign) => sum + (campaign.donor_count ?? 0), 0),
     [campaigns]
   );
 
@@ -351,7 +352,7 @@ export default function DashboardPage() {
                               <HStack spacing={2} flexWrap="wrap">
                                 <StatusBadge status={campaign.status} size="sm" />
                                 <Text fontSize="xs" color="text.tertiary">
-                                  {campaign.donation_count} donors
+                                  {campaign.donor_count ?? 0} donors
                                 </Text>
                               </HStack>
                             </VStack>

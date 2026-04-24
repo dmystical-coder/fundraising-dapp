@@ -10,6 +10,8 @@ export interface IndexedCampaign {
   owner: string | null;
   beneficiary: string | null;
   donation_count: number;
+  /** Distinct donor principals (indexer; donation_count is total donation events). */
+  donor_count: number;
   total_stx: string;
   total_sbtc: string;
   is_cancelled: boolean;

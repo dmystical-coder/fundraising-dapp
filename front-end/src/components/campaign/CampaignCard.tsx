@@ -27,7 +27,8 @@ interface CampaignCardProps {
   totalSbtc: number | string;
   goal?: number;
   endAt?: number;
-  donationCount: number;
+  /** Number of unique donor addresses (not total donation count). */
+  donorCount: number;
   isCancelled: boolean;
   isWithdrawn: boolean;
   isExpired: boolean;
@@ -62,7 +63,7 @@ export function CampaignCard({
   totalSbtc,
   goal,
   endAt,
-  donationCount,
+  donorCount,
   isCancelled,
   isWithdrawn,
   isExpired,
@@ -231,10 +232,10 @@ export function CampaignCard({
           <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default" align="center">
             <HStack spacing={1} minW={0}>
               <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
-                {donationCount}
+                {donorCount}
               </Text>
               <Text fontSize="sm" color="text.secondary">
-                {donationCount === 1 ? "donor" : "donors"}
+                {donorCount === 1 ? "donor" : "donors"}
               </Text>
             </HStack>
             {isPending && (

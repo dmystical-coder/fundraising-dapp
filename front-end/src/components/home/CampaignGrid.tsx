@@ -82,7 +82,9 @@ function sortCampaigns(
         .sort((a, b) => (a.endAt ?? 0) - (b.endAt ?? 0));
     }
     case "most-donors":
-      return sorted.sort((a, b) => b.donation_count - a.donation_count);
+      return sorted.sort(
+        (a, b) => (b.donor_count ?? 0) - (a.donor_count ?? 0)
+      );
     default:
       return sorted;
   }
@@ -233,6 +235,7 @@ export function CampaignGrid({
         total_stx: "0",
         total_sbtc: "0",
         donation_count: 0,
+        donor_count: 0,
         is_cancelled: false,
         is_withdrawn: false,
         created_at: new Date(meta.createdAt).toISOString(),
@@ -701,7 +704,7 @@ export function CampaignGrid({
                 totalSbtc={campaign.total_sbtc}
                 goal={campaign.goal}
                 endAt={campaign.endAt}
-                donationCount={campaign.donation_count}
+                donorCount={campaign.donor_count ?? 0}
                 isCancelled={campaign.is_cancelled}
                 isWithdrawn={campaign.is_withdrawn}
                 isExpired={campaign.isExpired}

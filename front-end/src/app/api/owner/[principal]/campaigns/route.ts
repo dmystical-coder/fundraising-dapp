@@ -17,6 +17,7 @@ export async function GET(
         MAX(CASE WHEN event_name = 'campaign-created' THEN owner END) as owner,
         MAX(CASE WHEN event_name = 'campaign-created' THEN beneficiary END) as beneficiary,
         COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
+        COUNT(DISTINCT donor) FILTER (WHERE event_name LIKE 'donated-%' AND donor IS NOT NULL)::int as donor_count,
         COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
         COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
         BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
