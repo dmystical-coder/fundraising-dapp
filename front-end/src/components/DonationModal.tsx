@@ -25,6 +25,7 @@ import {
   FormControl,
   FormLabel,
   FormErrorMessage,
+  usePrefersReducedMotion,
 } from "@chakra-ui/react";
 import { CheckIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import React, { useState } from "react";
@@ -91,6 +92,7 @@ export default function DonationModal({
   const [successTxId, setSuccessTxId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const presetAmounts = [10, 25, 50, 100];
 
@@ -254,8 +256,18 @@ export default function DonationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size={{ base: "full", md: "md" }} isCentered returnFocusOnClose>
-      <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size={{ base: "full", md: "md" }}
+      isCentered
+      returnFocusOnClose
+      motionPreset={prefersReducedMotion ? "none" : "scale"}
+    >
+      <ModalOverlay
+        bg="blackAlpha.600"
+        backdropFilter={prefersReducedMotion ? "none" : "blur(4px)"}
+      />
       <ModalContent mx={4}>
         <ModalHeader>Make a Contribution</ModalHeader>
         <ModalCloseButton />

@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <Heading size="lg" color="chakra-body-text">
               Something went wrong
             </Heading>
-            <Text color="gray.500" maxW="400px">
+            <Text color="text.secondary" maxW="400px">
               An unexpected error occurred. Please try refreshing the page.
             </Text>
             {this.state.error && (
