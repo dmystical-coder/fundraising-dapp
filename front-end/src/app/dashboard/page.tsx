@@ -27,6 +27,7 @@ import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
 import { useMyCampaigns, useMyDonations } from "@/hooks/indexerQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
+import { isMainnetEnvironment } from "@/lib/contract-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { SimpleAddress } from "@/components/common/AddressDisplay";
@@ -110,30 +111,39 @@ export default function DashboardPage() {
 
   if (!address) {
     return (
-      <Box maxW="container.lg" mx="auto" py={16} px={{ base: 4, md: 8 }}>
-        <VStack spacing={8} textAlign="center">
+      <Box maxW="container.md" mx="auto" py={{ base: 10, md: 14 }} px={{ base: 4, md: 8 }}>
+        <VStack spacing={6} textAlign="center" align="center">
           <Box
-            w={20}
-            h={20}
+            w={16}
+            h={16}
             borderRadius="full"
             bg="primary.100"
             display="flex"
             alignItems="center"
             justifyContent="center"
-            mx="auto"
+            aria-hidden
           >
-            <Text fontSize="3xl">👋</Text>
+            <Text fontSize="2xl">👋</Text>
           </Box>
-          <VStack spacing={3}>
-            <Heading size="xl">
-              Your Dashboard
+          <VStack spacing={2}>
+            <Heading as="h1" size="xl">
+              Your dashboard
             </Heading>
-            <Text color="text.secondary" maxW="400px" fontSize="lg">
-              Connect your wallet to view your campaigns, track donations,
-              and manage your fundraising activity.
+            {isMainnetEnvironment() ? (
+              <Badge variant="active" fontSize="xs">
+                Stacks mainnet
+              </Badge>
+            ) : null}
+            <Text color="text.secondary" maxW="md" fontSize="md" lineHeight="1.6">
+              Connect your wallet to see your campaigns, donations, and activity in
+              one place.
+            </Text>
+            <Text fontSize="sm" color="text.tertiary" maxW="md">
+              Non-custodial — you approve actions in your wallet. FundStacks never
+              holds your keys or funds.
             </Text>
           </VStack>
-          <ConnectWallet />
+          <ConnectWallet size="lg" w={{ base: "full", sm: "auto" }} maxW="sm" />
         </VStack>
       </Box>
     );
