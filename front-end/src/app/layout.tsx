@@ -29,10 +29,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <a className="skip-to-main" href="#main-content">
+          Skip to main content
+        </a>
         <Providers>
           <Box minH="100vh" bg="bg.canvas" display="flex" flexDirection="column">
             <Navbar />
-            <Box as="main" pt={0} pb={{ base: 6, md: 10 }} flex="1">
+            <Box
+              as="main"
+              id="main-content"
+              tabIndex={-1}
+              pt={0}
+              pb={{ base: 6, md: 10 }}
+              flex="1"
+              aria-label="Main content"
+            >
               {children}
             </Box>
             <AppFooter />

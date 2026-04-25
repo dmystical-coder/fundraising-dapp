@@ -26,14 +26,50 @@ pre,
   margin: 0;
 }
 
+/* Skip to main (placed after global `a` rule below, class `a.skip-to-main` wins on color) */
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-/* Smooth scrolling */
+/* Skip to main content: off-screen until keyboard focus (must follow global `a` rules) */
+a.skip-to-main {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 2000;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: #fff;
+  background: var(--chakra-colors-primary-600, #6d28d9);
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 2px #fff;
+  transform: translateY(-200%);
+  transition: transform 0.2s ease;
+}
+
+a.skip-to-main:focus,
+a.skip-to-main:focus-visible {
+  transform: translateY(0);
+  outline: none;
+}
+
+/* Smooth scrolling (disabled when user requests reduced motion; see @media block below) */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  a.skip-to-main {
+    transition: none;
+  }
 }
 
 /* Custom scrollbar for webkit browsers */

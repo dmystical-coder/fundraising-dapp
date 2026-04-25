@@ -12,6 +12,7 @@ import {
   AspectRatio,
   Image,
   useColorModeValue,
+  usePrefersReducedMotion,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/navigation";
@@ -74,6 +75,7 @@ export function CampaignCard({
   coverUrl,
 }: CampaignCardProps) {
   const router = useRouter();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const status = getCampaignStatus({ isCancelled, isWithdrawn, isExpired });
   const progressTrackBg = useColorModeValue("gray.300", "whiteAlpha.300");
   const progressTrackBorder = useColorModeValue("gray.400", "whiteAlpha.400");
@@ -94,16 +96,25 @@ export function CampaignCard({
 
   const displayTitle = title || `Campaign #${campaignId}`;
 
-  const CardContent = (
-    <Card
-      role="group"
-      cursor="default"
-      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-      _hover={!isPending ? {
+  const cardHover = !isPending && !prefersReducedMotion
+    ? {
         transform: "translateY(-4px)",
         boxShadow: "0 12px 40px -15px var(--chakra-colors-primary-400)",
         borderColor: "primary.400",
-      } : undefined}
+      }
+    : undefined;
+
+  const CardContent = (
+    <Card
+      role="group"
+      position="relative"
+      cursor="default"
+      transition={
+        prefersReducedMotion
+          ? undefined
+          : "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+      }
+      _hover={cardHover}
       bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
@@ -141,13 +152,15 @@ export function CampaignCard({
             )}
           </HStack>
 
-          <Heading
+            <Heading
             size="md"
             lineHeight="1.4"
             noOfLines={2}
             color="chakra-body-text"
-            _groupHover={{ color: "primary.500" }}
-            transition="color 0.2s"
+            _groupHover={
+              !prefersReducedMotion ? { color: "primary.500" } : undefined
+            }
+            transition={prefersReducedMotion ? undefined : "color 0.2s"}
           >
             {displayTitle}
           </Heading>
@@ -261,13 +274,17 @@ export function CampaignCard({
                   _hover={{
                     bg: donateBtnHoverBg,
                     borderColor: donateBtnHoverBorder,
-                    transform: "translateY(-1px)",
                     boxShadow: "md",
+                    ...(!prefersReducedMotion
+                      ? { transform: "translateY(-1px)" }
+                      : {}),
                   }}
                   _active={{
                     bg: donateBtnActiveBg,
                     borderColor: donateBtnActiveBorder,
-                    transform: "translateY(0)",
+                    ...(!prefersReducedMotion
+                      ? { transform: "translateY(0)" }
+                      : {}),
                   }}
                 >
                   Donate
