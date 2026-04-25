@@ -9,6 +9,7 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  MenuGroup,
   Text,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
@@ -52,52 +53,66 @@ export const DevnetWalletButton = ({
             overflow="hidden"
             textOverflow="ellipsis"
             whiteSpace="nowrap"
+            color="chakra-body-text"
           >
             {formatStxAddress(currentAddress)}
           </Text>
-          <Tag size="sm" borderRadius="full" bg="whiteAlpha.300" color="text.inverse">
+          <Tag
+            size="sm"
+            borderRadius="full"
+            colorScheme="orange"
+            variant="subtle"
+          >
             devnet
           </Tag>
         </Flex>
       </MenuButton>
-      <MenuList minW="240px">
-        <MenuItem
-          as="a"
-          href={explorerLink}
-          target="_blank"
-          rel="noopener noreferrer"
+      <MenuList minW="240px" zIndex="popover" py={1}>
+        <MenuGroup
+          title="Local devnet (testing)"
+          fontSize="xs"
+          color="text.tertiary"
         >
-          View in Explorer
-        </MenuItem>
-        {wallets.map((wallet) => (
           <MenuItem
-            key={wallet.stxAddress}
-            onClick={() => onWalletSelect(wallet)}
-            bg={
-              wallet.stxAddress === currentWallet?.stxAddress
-                ? "bg.accentSubtle"
-                : "none"
-            }
+            as="a"
+            href={explorerLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            minH="11"
           >
-            <Flex align="center" gap={2}>
-              <Text
-                fontSize="sm"
-                fontFamily="mono"
-                width="150px"
-                overflow="hidden"
-                textOverflow="ellipsis"
-                whiteSpace="nowrap"
-              >
-                {formatStxAddress(wallet.stxAddress)}
-              </Text>
-              {wallet.label && (
-                <Tag size="sm" colorScheme="gray" borderRadius="full">
-                  {wallet.label}
-                </Tag>
-              )}
-            </Flex>
+            View in Explorer
           </MenuItem>
-        ))}
+          {wallets.map((wallet) => (
+            <MenuItem
+              key={wallet.stxAddress}
+              onClick={() => onWalletSelect(wallet)}
+              minH="11"
+              bg={
+                wallet.stxAddress === currentWallet?.stxAddress
+                  ? "bg.accentSubtle"
+                  : "none"
+              }
+            >
+              <Flex align="center" gap={2}>
+                <Text
+                  fontSize="sm"
+                  fontFamily="mono"
+                  width="150px"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  whiteSpace="nowrap"
+                >
+                  {formatStxAddress(wallet.stxAddress)}
+                </Text>
+                {wallet.label && (
+                  <Tag size="sm" colorScheme="gray" borderRadius="full">
+                    {wallet.label}
+                  </Tag>
+                )}
+              </Flex>
+            </MenuItem>
+          ))}
+        </MenuGroup>
       </MenuList>
     </Menu>
   );
