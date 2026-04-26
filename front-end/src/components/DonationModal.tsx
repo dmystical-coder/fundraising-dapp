@@ -122,7 +122,6 @@ export default function DonationModal({
     }
 
     let txAmount: number = 0;
-    let displayAmountText: string = "";
 
     if (selectedAmount) {
       if (selectedAmount <= 0) {
@@ -130,7 +129,6 @@ export default function DonationModal({
         setIsLoading(false);
         return;
       }
-      displayAmountText = `$${selectedAmount}`;
       txAmount =
         paymentMethod === "sbtc"
           ? Math.round(btcToSats(usdToSbtc(selectedAmount, prices?.sbtc || 0)))
@@ -147,7 +145,6 @@ export default function DonationModal({
         setIsLoading(false);
         return;
       }
-      displayAmountText = `${tokenAmount} ${paymentMethod.toUpperCase()}`;
       txAmount =
         paymentMethod === "sbtc"
           ? Math.round(btcToSats(tokenAmount))
@@ -169,17 +166,6 @@ export default function DonationModal({
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
         setIsLoading(false);
-        toast.success("Donation Submitted! Thank you!", {
-          description: (
-            <Flex direction="column" gap="4">
-              <Box>Processing donation of {displayAmountText}.</Box>
-              <Box fontSize="xs">
-                Transaction ID: <strong>{txid}</strong>
-              </Box>
-            </Flex>
-          ),
-          duration: 30000,
-        });
 
         // Invalidate queries so the UI updates without requiring a page refresh
         queryClient.invalidateQueries({ queryKey: ["indexer"] });
