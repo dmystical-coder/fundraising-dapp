@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   other: {
-    "talentapp:project_verification": "54b550be12306fc6f4bb8e77674b1920460549ab6eaa00401bf1f3b8958bf9a1fe4fb78a43f5c7f87ce2e1065ab970b23963fe7062770545d23eb7e90548eb4a",
+    "talentapp:project_verification": "6dca250bb1c37db4bb30b5e2a4017077aed242fa1bf47d24950b0a3cb29b38dd9a7da05b2b3bd939a845cd1731c59e3461db40fe603055635702acf4ec540594",
   },
 };
 
