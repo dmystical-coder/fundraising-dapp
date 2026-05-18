@@ -1,6 +1,25 @@
 // Indexer API configuration
 const getIndexerUrl = () => {
-  return process.env.NEXT_PUBLIC_INDEXER_URL || "";
+  const configured = process.env.NEXT_PUBLIC_INDEXER_URL?.trim();
+
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  // In the browser, prefer same-origin API calls so domain changes do not
+  // require redeploying env vars.
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  // SSR/server fallback for hosted environments.
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    return `https://${vercelUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
+  }
+
+  // Final fallback (works in local dev with same-origin requests).
+  return "";
 };
 
 export const INDEXER_CONFIG = {
