@@ -42,3 +42,79 @@
 ;; -- Asset --
 
 (define-non-fungible-token donor-badge uint)
+
+;; -- Storage --
+
+(define-data-var last-token-id uint u0)
+
+;; Templated metadata URI. Clients substitute `{id}` when resolving a
+;; specific token. Pattern follows the SIP-009 / ERC-1155 convention used
+;; by most NFT marketplaces.
+(define-data-var token-uri (string-ascii 256) "https://fundstacks.vercel.app/api/badges/{id}.json")
+
+;; tokenId -> badge facts
+(define-map badge-metadata
+  uint
+  {
+    owner: principal,
+    campaignId: uint,
+    tier: uint,
+    mintedAt: uint,
+  }
+)
+
+;; (campaignId, donor) -> tokenId, so the same donor cannot mint two badges
+;; for the same campaign (tier upgrades mutate the existing badge in place).
+(define-map donor-badge-id
+  {
+    campaignId: uint,
+    donor: principal,
+  }
+  uint
+)
+
+;; -- SIP-009 read-only views --
+
+(define-read-only (get-last-token-id)
+  (ok (var-get last-token-id))
+)
+
+(define-read-only (get-token-uri (id uint))
+  (ok (some (var-get token-uri)))
+)
+
+(define-read-only (get-owner (id uint))
+  (ok (nft-get-owner? donor-badge id))
+)
+
+;; -- FundStacks-specific views --
+
+(define-read-only (get-badge-metadata (id uint))
+  (map-get? badge-metadata id)
+)
+
+(define-read-only (get-donor-badge-id
+    (campaignId uint)
+    (donor principal)
+  )
+  (map-get? donor-badge-id {
+    campaignId: campaignId,
+    donor: donor,
+  })
+)
+
+;; Pure tier-from-amount helper. Exposed read-only so the front-end can
+;; preview the tier a donor would receive before they spend gas on
+;; `claim-badge`.
+(define-read-only (tier-for-amount (amount uint))
+  (if (>= amount threshold-gold)
+    tier-gold
+    (if (>= amount threshold-silver)
+      tier-silver
+      (if (>= amount threshold-bronze)
+        tier-bronze
+        tier-none
+      )
+    )
+  )
+)
