@@ -10,5 +10,10 @@ path = 'clarity/contracts/fundraising.clar'
 clarity_version = 4
 epoch = '3.3'
 
+[contracts.donor-badges]
+path = 'clarity/contracts/donor-badges.clar'
+clarity_version = 4
+epoch = '3.3'
+
 [repl.analysis]
 passes = []
