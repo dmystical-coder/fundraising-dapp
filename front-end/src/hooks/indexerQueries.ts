@@ -76,7 +76,7 @@ export interface PlatformStats {
 
 async function fetchFromIndexer<T>(endpoint: string): Promise<T> {
   const url = `${INDEXER_CONFIG.url}${endpoint}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error(`Indexer API error: ${response.status} ${response.statusText}`);
@@ -103,6 +103,7 @@ export async function saveCampaignMetadata(params: {
   
   const response = await fetch(url, {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
     },
