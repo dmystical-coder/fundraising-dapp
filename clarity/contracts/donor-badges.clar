@@ -52,6 +52,13 @@
 ;; by most NFT marketplaces.
 (define-data-var token-uri (string-ascii 256) "https://fundstacks.vercel.app/api/badges/{id}.json")
 
+;; sBTC -> STX-equivalent conversion rate, stored as a rational number
+;; (numerator / denominator) so the owner can adjust it as sBTC/STX market
+;; price moves without redeploying. The default of 100/1 means "1 satoshi
+;; counts as 100 microSTX" — adjust via `set-sbtc-rate`.
+(define-data-var sbtc-to-stx-numerator uint u100)
+(define-data-var sbtc-to-stx-denominator uint u1)
+
 ;; tokenId -> badge facts
 (define-map badge-metadata
   uint
@@ -101,6 +108,33 @@
     campaignId: campaignId,
     donor: donor,
   })
+)
+
+;; Read the donor's per-campaign STX and sBTC contributions from the
+;; fundraising contract and return their combined STX-equivalent value.
+;; This is the input to tier computation.
+(define-read-only (get-donor-contribution-stx-equivalent
+    (campaignId uint)
+    (donor principal)
+  )
+  (let (
+      (stx-amount (unwrap-panic (contract-call? fundraising-contract get-stx-donation campaignId donor)))
+      (sbtc-amount (unwrap-panic (contract-call? fundraising-contract get-sbtc-donation campaignId donor)))
+      (num (var-get sbtc-to-stx-numerator))
+      (den (var-get sbtc-to-stx-denominator))
+    )
+    (+ stx-amount (/ (* sbtc-amount num) den))
+  )
+)
+
+;; Convenience: tier the donor would currently qualify for, computed from
+;; live on-chain donation state. Useful for previewing a UI badge before
+;; the donor calls `claim-badge`.
+(define-read-only (preview-tier
+    (campaignId uint)
+    (donor principal)
+  )
+  (tier-for-amount (get-donor-contribution-stx-equivalent campaignId donor))
 )
 
 ;; Pure tier-from-amount helper. Exposed read-only so the front-end can
