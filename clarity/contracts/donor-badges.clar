@@ -152,3 +152,64 @@
     )
   )
 )
+
+;; -- Public functions --
+
+;; Claim or upgrade a donor badge for a campaign.
+;;
+;; Idempotent within a tier: calling twice without donating more returns
+;; err-already-at-tier. The first call mints a new SIP-009 token; later
+;; calls that cross a tier threshold mutate the existing badge's metadata
+;; in place (same tokenId, new tier), so a donor never holds more than
+;; one badge per campaign.
+(define-public (claim-badge (campaignId uint))
+  (let (
+      (donor tx-sender)
+      (contribution (get-donor-contribution-stx-equivalent campaignId donor))
+      (new-tier (tier-for-amount contribution))
+      (existing-id (map-get? donor-badge-id {
+        campaignId: campaignId,
+        donor: donor,
+      }))
+    )
+    (asserts! (> new-tier tier-none) err-no-donation)
+    (match existing-id
+      prev-id
+      (let ((meta (unwrap! (map-get? badge-metadata prev-id) err-token-not-found)))
+        (asserts! (> new-tier (get tier meta)) err-already-at-tier)
+        (map-set badge-metadata prev-id (merge meta { tier: new-tier }))
+        (print {
+          event: "badge-upgraded",
+          tokenId: prev-id,
+          campaignId: campaignId,
+          donor: donor,
+          tier: new-tier,
+          previousTier: (get tier meta),
+        })
+        (ok prev-id)
+      )
+      (let ((id (+ (var-get last-token-id) u1)))
+        (try! (nft-mint? donor-badge id donor))
+        (var-set last-token-id id)
+        (map-set badge-metadata id {
+          owner: donor,
+          campaignId: campaignId,
+          tier: new-tier,
+          mintedAt: stacks-block-time,
+        })
+        (map-set donor-badge-id
+          { campaignId: campaignId, donor: donor }
+          id
+        )
+        (print {
+          event: "badge-claimed",
+          tokenId: id,
+          campaignId: campaignId,
+          donor: donor,
+          tier: new-tier,
+        })
+        (ok id)
+      )
+    )
+  )
+)
