@@ -233,3 +233,67 @@ export function filterByDonor(
       e.donor === donor
   );
 }
+
+// -- Block/timestamp enrichment --
+
+// /extended/v1/contract/{id}/events returns the print payload + tx_id
+// but no block height or block time. Routes that surface individual
+// events (activity, campaign events, donor donations) need both for
+// human-readable display, so we batch-fetch tx metadata via
+// /extended/v1/tx/multiple and attach it to each event.
+
+export type WithTxData<T> = T & {
+  blockHeight: bigint | null;
+  blockTime: string | null;
+};
+
+export type EnrichedEvent = WithTxData<FundraisingEvent>;
+
+interface HiroTxMultipleEntry {
+  found: boolean;
+  result?: {
+    tx_id: string;
+    block_height: number;
+    burn_block_time: number;
+    burn_block_time_iso: string;
+  };
+}
+
+// Hiro caps tx_id params per request; 50 keeps URLs comfortably short
+// and matches the page size we use elsewhere.
+const TX_LOOKUP_CHUNK = 50;
+
+export async function enrichEventsWithTxData<T extends FundraisingEvent>(
+  events: T[]
+): Promise<WithTxData<T>[]> {
+  const uniqueIds = Array.from(new Set(events.map((e) => e.txid)));
+  const byTx = new Map<string, { blockHeight: bigint; blockTime: string }>();
+
+  for (let i = 0; i < uniqueIds.length; i += TX_LOOKUP_CHUNK) {
+    const chunk = uniqueIds.slice(i, i + TX_LOOKUP_CHUNK);
+    const qs = chunk.map((id) => `tx_id=${id}`).join("&");
+    const url = `${getStacksUrl()}/extended/v1/tx/multiple?${qs}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Hiro /tx/multiple failed: HTTP ${res.status}`);
+    }
+    const data = (await res.json()) as Record<string, HiroTxMultipleEntry>;
+    for (const [txId, entry] of Object.entries(data)) {
+      if (entry.found && entry.result) {
+        byTx.set(txId, {
+          blockHeight: BigInt(entry.result.block_height),
+          blockTime: entry.result.burn_block_time_iso,
+        });
+      }
+    }
+  }
+
+  return events.map((ev) => {
+    const meta = byTx.get(ev.txid);
+    return {
+      ...ev,
+      blockHeight: meta?.blockHeight ?? null,
+      blockTime: meta?.blockTime ?? null,
+    } as WithTxData<T>;
+  });
+}
