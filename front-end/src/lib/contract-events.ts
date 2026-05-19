@@ -1,8 +1,7 @@
 // Read fundraising contract events directly from Hiro's
 // /extended/v1/contract/{id}/events endpoint and decode each print payload
-// into a typed event union. Replaces the chainhook-fed `fundraising_events`
-// Postgres table for activity-feed / per-campaign / per-donor history use
-// cases.
+// into a typed event union. Powers activity-feed / per-campaign /
+// per-donor history queries.
 
 import { hexToCV } from "@stacks/transactions";
 import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
