@@ -228,3 +228,42 @@
   )
   err-soulbound
 )
+
+;; -- Owner-only admin --
+
+;; Update the templated metadata URI. The base is stored as a single
+;; string so the contract doesn't need to do on-chain integer-to-ascii
+;; conversion for every read; clients substitute `{id}` themselves.
+(define-public (set-token-uri (new-uri (string-ascii 256)))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
+    (var-set token-uri new-uri)
+    (print {
+      event: "token-uri-updated",
+      uri: new-uri,
+    })
+    (ok true)
+  )
+)
+
+;; Adjust the sBTC-to-STX conversion rate that feeds tier resolution.
+;; Owner uses this to track sBTC/STX market price moves so a 1-sat
+;; donation always counts as roughly its current STX-equivalent value.
+;; Denominator must be non-zero (division-by-zero guard).
+(define-public (set-sbtc-rate
+    (numerator uint)
+    (denominator uint)
+  )
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
+    (asserts! (> denominator u0) err-invalid-rate)
+    (var-set sbtc-to-stx-numerator numerator)
+    (var-set sbtc-to-stx-denominator denominator)
+    (print {
+      event: "sbtc-rate-updated",
+      numerator: numerator,
+      denominator: denominator,
+    })
+    (ok true)
+  )
+)
