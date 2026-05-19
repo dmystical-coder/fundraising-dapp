@@ -213,3 +213,18 @@
     )
   )
 )
+
+;; SIP-009 trait conformance — and the soulbound enforcement point.
+;;
+;; A donor badge is on-chain proof that *this specific principal*
+;; supported *this specific campaign*. Allowing transfer would let donors
+;; resell social proof on secondary markets, defeating the purpose. So
+;; this function always rejects with err-soulbound, regardless of who is
+;; calling, who owns the token, or who the proposed recipient is.
+(define-public (transfer
+    (id uint)
+    (sender principal)
+    (recipient principal)
+  )
+  err-soulbound
+)
