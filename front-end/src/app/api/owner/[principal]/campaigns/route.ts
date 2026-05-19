@@ -1,9 +1,19 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { listAllCampaigns } from "@/lib/fundraising-reads";
+import { fetchAllEvents } from "@/lib/contract-events";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Per-owner dashboard listing. Same shape as /api/campaigns but scoped
+// by owner principal. Donor uniqueness still requires a full event
+// scan since the contract doesn't aggregate per-campaign donor sets.
+export const revalidate = 30;
+
+interface PerCampaignAgg {
+  donation_count: number;
+  donors: Set<string>;
+  total_stx: bigint;
+  total_sbtc: bigint;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -12,33 +22,69 @@ export async function GET(
   const { principal: owner } = await params;
 
   try {
-    const db = getDb();
-    const result = await db.query(
-      `
-      SELECT 
-        campaign_id,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN owner END) as owner,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN beneficiary END) as beneficiary,
-        COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
-        COUNT(DISTINCT donor) FILTER (WHERE event_name LIKE 'donated-%' AND donor IS NOT NULL)::int as donor_count,
-        COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
-        COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
-        BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
-        BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
-        MIN(inserted_at) as created_at
-      FROM fundraising_events
-      WHERE campaign_id IN (
-        SELECT DISTINCT campaign_id FROM fundraising_events 
-        WHERE event_name = 'campaign-created' AND owner = $1
-      )
-      GROUP BY campaign_id
-      ORDER BY campaign_id DESC
-      `,
-      [owner]
+    const [chainCampaigns, events, metaRows] = await Promise.all([
+      listAllCampaigns(),
+      fetchAllEvents(),
+      getDb().query<{
+        campaign_id: number;
+        title: string | null;
+        description: string | null;
+      }>(`SELECT campaign_id, title, description FROM campaign_metadata`),
+    ]);
+
+    const mine = chainCampaigns.filter((c) => c.owner === owner);
+    const mineIds = new Set(mine.map((c) => Number(c.id)));
+
+    const aggByCampaign = new Map<number, PerCampaignAgg>();
+    for (const ev of events) {
+      if (ev.name !== "donated-stx" && ev.name !== "donated-sbtc") continue;
+      const key = Number(ev.campaignId);
+      if (!mineIds.has(key)) continue;
+      const agg = aggByCampaign.get(key) ?? {
+        donation_count: 0,
+        donors: new Set<string>(),
+        total_stx: BigInt(0),
+        total_sbtc: BigInt(0),
+      };
+      agg.donation_count += 1;
+      agg.donors.add(ev.donor);
+      if (ev.name === "donated-stx") agg.total_stx += ev.amount;
+      else agg.total_sbtc += ev.amount;
+      aggByCampaign.set(key, agg);
+    }
+
+    const metaByCampaign = new Map(
+      metaRows.rows.map((r) => [r.campaign_id, r])
     );
-    return NextResponse.json({ campaigns: result.rows });
+
+    const campaigns = [...mine]
+      .sort((a, b) => Number(b.id) - Number(a.id))
+      .map((c) => {
+        const id = Number(c.id);
+        const agg = aggByCampaign.get(id);
+        const meta = metaByCampaign.get(id);
+        return {
+          campaign_id: id,
+          owner: c.owner,
+          beneficiary: c.beneficiary,
+          donation_count: agg?.donation_count ?? 0,
+          donor_count: agg?.donors.size ?? 0,
+          total_stx: (agg?.total_stx ?? BigInt(0)).toString(),
+          total_sbtc: (agg?.total_sbtc ?? BigInt(0)).toString(),
+          is_cancelled: c.isCancelled,
+          is_withdrawn: c.isWithdrawn,
+          created_at: new Date(Number(c.createdAt) * 1000).toISOString(),
+          title: meta?.title ?? null,
+          description: meta?.description ?? null,
+        };
+      });
+
+    return NextResponse.json({ campaigns });
   } catch (err) {
     console.error("Error fetching owner campaigns:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Owner campaigns fetch failed" },
+      { status: 500 }
+    );
   }
 }
