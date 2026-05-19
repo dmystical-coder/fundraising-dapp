@@ -5,8 +5,18 @@ authors = []
 telemetry = false
 cache_dir = './.cache'
 
+[contracts.donation-source-trait]
+path = 'clarity/contracts/donation-source-trait.clar'
+clarity_version = 4
+epoch = '3.3'
+
 [contracts.fundraising]
 path = 'clarity/contracts/fundraising.clar'
+clarity_version = 4
+epoch = '3.3'
+
+[contracts.donor-badges]
+path = 'clarity/contracts/donor-badges.clar'
 clarity_version = 4
 epoch = '3.3'
 
