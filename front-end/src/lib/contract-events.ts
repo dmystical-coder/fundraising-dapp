@@ -162,9 +162,10 @@ export async function fetchEvents(
 
 /**
  * Walk every contract event by paginating until Hiro returns an empty page.
- * Use sparingly — this can be N requests for old contracts. Suitable for
- * "give me everything for this campaign" queries that callers then filter
- * client-side; for hot paths prefer fetchEvents with a tight limit.
+ * Use sparingly — this can be N requests for old contracts. Genuine
+ * whole-history aggregates (e.g. global stats) need this; per-campaign
+ * callers should prefer fetchEventsForCampaign, which bounds the scan
+ * at the campaign's creation event.
  */
 export async function fetchAllEvents(
   pageSize = 50
@@ -179,6 +180,37 @@ export async function fetchAllEvents(
     offset += pageSize;
   }
   return all;
+}
+
+/**
+ * Fetch every event for a single campaign by walking pages newest-first
+ * and stopping once we pass the campaign's `campaign-created` event (no
+ * older event can belong to this campaign). Cost is bounded by the
+ * campaign's age relative to the contract, not the contract's total
+ * activity. Falls back to a full scan only if Hiro never returns the
+ * created event (shouldn't happen for valid ids).
+ */
+export async function fetchEventsForCampaign(
+  campaignId: bigint | number,
+  pageSize = 50
+): Promise<FundraisingEvent[]> {
+  const target = BigInt(campaignId);
+  const collected: FundraisingEvent[] = [];
+  let offset = 0;
+  for (;;) {
+    const page = await fetchEvents({ limit: pageSize, offset });
+    if (page.length === 0) break;
+    let sawCreated = false;
+    for (const ev of page) {
+      if (ev.campaignId !== target) continue;
+      collected.push(ev);
+      if (ev.name === "campaign-created") sawCreated = true;
+    }
+    if (sawCreated) break;
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return collected;
 }
 
 // -- Convenience filters that callers will commonly want --
