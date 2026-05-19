@@ -1,0 +1,203 @@
+// Read fundraising contract events directly from Hiro's
+// /extended/v1/contract/{id}/events endpoint and decode each print payload
+// into a typed event union. Replaces the chainhook-fed `fundraising_events`
+// Postgres table for activity-feed / per-campaign / per-donor history use
+// cases.
+
+import { hexToCV } from "@stacks/transactions";
+import { FUNDRAISING_CONTRACT } from "@/constants/contracts";
+import { getStacksUrl } from "@/lib/stacks-api";
+
+// Each print event always carries `event` (ascii) and `campaignId` (uint).
+// Other fields are conditional on the event type.
+interface BaseEvent {
+  txid: string;
+  eventIndex: number;
+  campaignId: bigint;
+}
+
+export interface CampaignCreatedEvent extends BaseEvent {
+  name: "campaign-created";
+  owner: string;
+  beneficiary: string;
+  goal: bigint;
+}
+
+export interface CampaignCancelledEvent extends BaseEvent {
+  name: "campaign-cancelled";
+}
+
+export interface CampaignWithdrawnEvent extends BaseEvent {
+  name: "campaign-withdrawn";
+}
+
+export interface DonatedEvent extends BaseEvent {
+  name: "donated-stx" | "donated-sbtc";
+  donor: string;
+  amount: bigint;
+}
+
+export interface RefundedEvent extends BaseEvent {
+  name: "refunded";
+  donor: string;
+}
+
+export type FundraisingEvent =
+  | CampaignCreatedEvent
+  | CampaignCancelledEvent
+  | CampaignWithdrawnEvent
+  | DonatedEvent
+  | RefundedEvent;
+
+const CONTRACT_ID = `${FUNDRAISING_CONTRACT.address}.${FUNDRAISING_CONTRACT.name}`;
+
+interface HiroContractLogEvent {
+  event_index: number;
+  event_type: string;
+  tx_id: string;
+  contract_log?: {
+    contract_id: string;
+    topic: string;
+    value: { hex: string; repr: string };
+  };
+}
+
+interface HiroEventsResponse {
+  limit: number;
+  offset: number;
+  results: HiroContractLogEvent[];
+}
+
+interface UIntCVShape {
+  type: "uint";
+  value: bigint;
+}
+
+interface PrincipalCVShape {
+  type: "address";
+  value: string;
+}
+
+interface AsciiCVShape {
+  type: "ascii";
+  value: string;
+}
+
+interface TupleCVShape {
+  type: "tuple";
+  value: Record<string, unknown>;
+}
+
+function parseEvent(raw: HiroContractLogEvent): FundraisingEvent | null {
+  if (!raw.contract_log || raw.contract_log.topic !== "print") return null;
+  const cv = hexToCV(raw.contract_log.value.hex) as unknown as TupleCVShape;
+  if (cv.type !== "tuple") return null;
+
+  const fields = cv.value;
+  const eventName = (fields.event as AsciiCVShape | undefined)?.value;
+  const campaignIdField = fields.campaignId as UIntCVShape | undefined;
+  if (!eventName || !campaignIdField) return null;
+
+  const base: BaseEvent = {
+    txid: raw.tx_id,
+    eventIndex: raw.event_index,
+    campaignId: campaignIdField.value,
+  };
+
+  switch (eventName) {
+    case "campaign-created": {
+      const owner = (fields.owner as PrincipalCVShape | undefined)?.value;
+      const beneficiary = (fields.beneficiary as PrincipalCVShape | undefined)?.value;
+      const goal = (fields.goal as UIntCVShape | undefined)?.value;
+      if (!owner || !beneficiary || goal === undefined) return null;
+      return { ...base, name: "campaign-created", owner, beneficiary, goal };
+    }
+    case "campaign-cancelled":
+      return { ...base, name: "campaign-cancelled" };
+    case "campaign-withdrawn":
+      return { ...base, name: "campaign-withdrawn" };
+    case "donated-stx":
+    case "donated-sbtc": {
+      const donor = (fields.donor as PrincipalCVShape | undefined)?.value;
+      const amount = (fields.amount as UIntCVShape | undefined)?.value;
+      if (!donor || amount === undefined) return null;
+      return { ...base, name: eventName, donor, amount };
+    }
+    case "refunded": {
+      const donor = (fields.donor as PrincipalCVShape | undefined)?.value;
+      if (!donor) return null;
+      return { ...base, name: "refunded", donor };
+    }
+    default:
+      return null;
+  }
+}
+
+export interface FetchEventsOptions {
+  /** Page size; Hiro caps this at 50. */
+  limit?: number;
+  /** Offset from the most recent event (0 = latest). */
+  offset?: number;
+}
+
+/**
+ * Fetch a single page of fundraising events, most-recent first.
+ * Use `fetchAllEvents` for paginated full scans.
+ */
+export async function fetchEvents(
+  options: FetchEventsOptions = {}
+): Promise<FundraisingEvent[]> {
+  const limit = Math.min(options.limit ?? 50, 50);
+  const offset = options.offset ?? 0;
+  const url = `${getStacksUrl()}/extended/v1/contract/${CONTRACT_ID}/events?limit=${limit}&offset=${offset}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Hiro contract events fetch failed: HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as HiroEventsResponse;
+  return data.results
+    .map(parseEvent)
+    .filter((e): e is FundraisingEvent => e !== null);
+}
+
+/**
+ * Walk every contract event by paginating until Hiro returns an empty page.
+ * Use sparingly — this can be N requests for old contracts. Suitable for
+ * "give me everything for this campaign" queries that callers then filter
+ * client-side; for hot paths prefer fetchEvents with a tight limit.
+ */
+export async function fetchAllEvents(
+  pageSize = 50
+): Promise<FundraisingEvent[]> {
+  const all: FundraisingEvent[] = [];
+  let offset = 0;
+  for (;;) {
+    const page = await fetchEvents({ limit: pageSize, offset });
+    if (page.length === 0) break;
+    all.push(...page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+// -- Convenience filters that callers will commonly want --
+
+export function filterByCampaign(
+  events: FundraisingEvent[],
+  campaignId: bigint | number
+): FundraisingEvent[] {
+  const target = BigInt(campaignId);
+  return events.filter((e) => e.campaignId === target);
+}
+
+export function filterByDonor(
+  events: FundraisingEvent[],
+  donor: string
+): DonatedEvent[] {
+  return events.filter(
+    (e): e is DonatedEvent =>
+      (e.name === "donated-stx" || e.name === "donated-sbtc") &&
+      e.donor === donor
+  );
+}
