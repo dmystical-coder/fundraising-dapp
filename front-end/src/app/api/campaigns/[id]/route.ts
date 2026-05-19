@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { getCampaignInfo } from "@/lib/fundraising-reads";
+import { fetchAllEvents, filterByCampaign } from "@/lib/contract-events";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30;
 
 export async function GET(
   _request: NextRequest,
@@ -15,37 +16,63 @@ export async function GET(
   }
 
   try {
-    const db = getDb();
-    const result = await db.query(
-      `
-      SELECT 
-        fe.campaign_id,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN fe.owner END) as owner,
-        MAX(CASE WHEN event_name = 'campaign-created' THEN beneficiary END) as beneficiary,
-        COUNT(CASE WHEN event_name LIKE 'donated-%' THEN 1 END)::int as donation_count,
-        COUNT(DISTINCT donor) FILTER (WHERE event_name LIKE 'donated-%' AND donor IS NOT NULL)::int as donor_count,
-        COALESCE(SUM(CASE WHEN event_name = 'donated-stx' THEN amount ELSE 0 END), 0)::text as total_stx,
-        COALESCE(SUM(CASE WHEN event_name = 'donated-sbtc' THEN amount ELSE 0 END), 0)::text as total_sbtc,
-        BOOL_OR(event_name = 'campaign-cancelled') as is_cancelled,
-        BOOL_OR(event_name = 'campaign-withdrawn') as is_withdrawn,
-        MIN(fe.inserted_at) as created_at,
-        MAX(cm.title) as title,
-        MAX(cm.description) as description
-      FROM fundraising_events fe
-      LEFT JOIN campaign_metadata cm ON fe.campaign_id = cm.campaign_id
-      WHERE fe.campaign_id = $1
-      GROUP BY fe.campaign_id
-      `,
-      [campaignId]
-    );
+    const [chain, events, metadataResult] = await Promise.all([
+      getCampaignInfo(campaignId),
+      fetchAllEvents(),
+      getDb().query<{ title: string | null; description: string | null }>(
+        `SELECT title, description FROM campaign_metadata WHERE campaign_id = $1`,
+        [campaignId]
+      ),
+    ]);
 
-    if (result.rows.length === 0) {
+    if (!chain) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ campaign: result.rows[0] });
+    // Event-derived totals preserve history after withdraw (when the
+    // contract zeroes totalStx/totalSbtc). Donor count must come from
+    // events — the contract doesn't track donor uniqueness.
+    const ours = filterByCampaign(events, campaignId);
+    let event_total_stx = BigInt(0);
+    let event_total_sbtc = BigInt(0);
+    let donation_count = 0;
+    const donors = new Set<string>();
+    for (const ev of ours) {
+      if (ev.name === "donated-stx") {
+        event_total_stx += ev.amount;
+        donation_count += 1;
+        donors.add(ev.donor);
+      } else if (ev.name === "donated-sbtc") {
+        event_total_sbtc += ev.amount;
+        donation_count += 1;
+        donors.add(ev.donor);
+      }
+    }
+
+    const meta = metadataResult.rows[0] ?? { title: null, description: null };
+    const created_at = new Date(Number(chain.createdAt) * 1000).toISOString();
+
+    return NextResponse.json({
+      campaign: {
+        campaign_id: campaignId,
+        owner: chain.owner,
+        beneficiary: chain.beneficiary,
+        goal: chain.goal.toString(),
+        donation_count,
+        donor_count: donors.size,
+        total_stx: event_total_stx.toString(),
+        total_sbtc: event_total_sbtc.toString(),
+        is_cancelled: chain.isCancelled,
+        is_withdrawn: chain.isWithdrawn,
+        is_expired: chain.isExpired,
+        end_at: chain.endAt.toString(),
+        created_at,
+        title: meta.title,
+        description: meta.description,
+      },
+    });
   } catch (err) {
     console.error("Error fetching campaign:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    return NextResponse.json({ error: "Campaign fetch failed" }, { status: 500 });
   }
 }
