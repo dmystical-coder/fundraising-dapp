@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  PORT: z.coerce.number().default(4001),
   DATABASE_URL: z.string().min(1),
-  CHAINHOOK_AUTH_TOKEN: z.string().min(1).optional(),
-  EXPECTED_CONTRACT_IDENTIFIER: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

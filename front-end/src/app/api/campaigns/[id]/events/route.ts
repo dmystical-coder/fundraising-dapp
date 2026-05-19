@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import {
+  fetchEventsForCampaign,
+  enrichEventsWithTxData,
+} from "@/lib/contract-events";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Per-campaign feed for the detail page. Client refetches at 15s; we
+// cache at the same cadence. fetchEventsForCampaign bounds the scan
+// at the campaign's creation event, so cost is proportional to the
+// campaign's age, not the contract's.
+export const revalidate = 15;
 
 export async function GET(
   request: NextRequest,
@@ -18,22 +24,34 @@ export async function GET(
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
   try {
-    const db = getDb();
-    const result = await db.query(
-      `
-      SELECT 
-        event_name, donor, owner, beneficiary, amount, token,
-        txid, block_height, inserted_at
-      FROM fundraising_events
-      WHERE campaign_id = $1
-      ORDER BY inserted_at DESC
-      LIMIT $2
-      `,
-      [campaignId, limit]
-    );
-    return NextResponse.json({ events: result.rows });
+    const all = await fetchEventsForCampaign(campaignId);
+    const slice = all.slice(0, limit);
+    const enriched = await enrichEventsWithTxData(slice);
+
+    const events = enriched.map((ev) => ({
+      event_name: ev.name,
+      donor:
+        ev.name === "donated-stx" ||
+        ev.name === "donated-sbtc" ||
+        ev.name === "refunded"
+          ? ev.donor
+          : null,
+      owner: ev.name === "campaign-created" ? ev.owner : null,
+      beneficiary: ev.name === "campaign-created" ? ev.beneficiary : null,
+      amount:
+        ev.name === "donated-stx" || ev.name === "donated-sbtc"
+          ? ev.amount.toString()
+          : null,
+      txid: ev.txid,
+      inserted_at: ev.blockTime,
+    }));
+
+    return NextResponse.json({ events });
   } catch (err) {
     console.error("Error fetching campaign events:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Campaign events fetch failed" },
+      { status: 500 }
+    );
   }
 }

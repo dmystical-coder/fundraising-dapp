@@ -27,9 +27,7 @@ export interface CampaignEvent {
   owner: string | null;
   beneficiary: string | null;
   amount: string | null;
-  token: string | null;
   txid: string | null;
-  block_height: string | null;
   inserted_at: string;
 }
 
@@ -48,7 +46,6 @@ export interface ActivityEvent {
   beneficiary: string | null;
   amount: string | null;
   txid: string | null;
-  block_height: string | null;
   inserted_at: string;
 }
 
@@ -57,7 +54,6 @@ export interface DonorDonation {
   event_name: string;
   amount: string;
   txid: string | null;
-  block_height: string | null;
   inserted_at: string;
 }
 

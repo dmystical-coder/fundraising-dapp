@@ -1,4 +1,4 @@
-import { devnetWallets } from "@/lib/devnet-wallet-context";
+import { devnetWallets } from "@/lib/devnet-wallets";
 
 const CONTRACT_NAME = "fundraising";
 

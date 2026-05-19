@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import {
+  fetchAllEvents,
+  filterByDonor,
+  enrichEventsWithTxData,
+} from "@/lib/contract-events";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// "My donations" for a single principal. The contract doesn't expose a
+// per-donor view, so we walk the contract's event history once and
+// filter client-side. Cached at the same cadence as the client (60s)
+// so repeat refreshes don't re-scan.
+export const revalidate = 60;
 
 export async function GET(
   request: NextRequest,
@@ -13,21 +20,24 @@ export async function GET(
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
   try {
-    const db = getDb();
-    const result = await db.query(
-      `
-      SELECT 
-        campaign_id, event_name, amount, txid, block_height, inserted_at
-      FROM fundraising_events
-      WHERE donor = $1 AND event_name LIKE 'donated-%'
-      ORDER BY inserted_at DESC
-      LIMIT $2
-      `,
-      [donor, limit]
-    );
-    return NextResponse.json({ donations: result.rows });
+    const all = await fetchAllEvents();
+    const mine = filterByDonor(all, donor).slice(0, limit);
+    const enriched = await enrichEventsWithTxData(mine);
+
+    const donations = enriched.map((ev) => ({
+      campaign_id: Number(ev.campaignId),
+      event_name: ev.name,
+      amount: ev.amount.toString(),
+      txid: ev.txid,
+      inserted_at: ev.blockTime,
+    }));
+
+    return NextResponse.json({ donations });
   } catch (err) {
     console.error("Error fetching donor donations:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Donor donations fetch failed" },
+      { status: 500 }
+    );
   }
 }

@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "db:replay-fundraising-events": "tsx scripts/replay-fundraising-events.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -32,10 +31,8 @@
     "@types/pg": "^8.18.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
