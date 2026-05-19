@@ -1,4 +1,4 @@
-;; Donor Badges — Soulbound SIP-009 NFT awarded to FundStacks donors.
+;; Donor Badges -- Soulbound SIP-009 NFT awarded to FundStacks donors.
 ;;
 ;; A donor calls `claim-badge` against a campaign they have contributed to.
 ;; The contract reads their per-campaign contribution from the fundraising
@@ -8,6 +8,10 @@
 ;; Badges are non-transferable (soulbound): `transfer` always rejects. This
 ;; preserves the badge as on-chain proof that *this principal* supported
 ;; *this campaign* and prevents resale of social proof.
+
+;; -- Trait --
+
+(use-trait donation-source .donation-source-trait.donation-source-trait)
 
 ;; -- Constants --
 
@@ -34,11 +38,6 @@
 (define-constant threshold-silver u10000000)       ;; 10 STX
 (define-constant threshold-gold u100000000)        ;; 100 STX
 
-;; Fundraising contract that issues the donations we read from.
-;; Hard-coded to the mainnet deployment; non-mainnet deployments remap this
-;; principal in their deployment plan (see clarity/deployments/*.yaml).
-(define-constant fundraising-contract 'SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH.fundraising)
-
 ;; -- Asset --
 
 (define-non-fungible-token donor-badge uint)
@@ -55,7 +54,7 @@
 ;; sBTC -> STX-equivalent conversion rate, stored as a rational number
 ;; (numerator / denominator) so the owner can adjust it as sBTC/STX market
 ;; price moves without redeploying. The default of 100/1 means "1 satoshi
-;; counts as 100 microSTX" — adjust via `set-sbtc-rate`.
+;; counts as 100 microSTX" -- adjust via `set-sbtc-rate`.
 (define-data-var sbtc-to-stx-numerator uint u100)
 (define-data-var sbtc-to-stx-denominator uint u1)
 
@@ -111,30 +110,38 @@
 )
 
 ;; Read the donor's per-campaign STX and sBTC contributions from the
-;; fundraising contract and return their combined STX-equivalent value.
+;; given donation source and return their combined STX-equivalent value.
 ;; This is the input to tier computation.
-(define-read-only (get-donor-contribution-stx-equivalent
+;;
+;; The source contract must implement donation-source-trait, which the
+;; live fundraising contract satisfies via its get-stx-donation and
+;; get-sbtc-donation read-only functions.
+(define-public (get-donor-contribution-stx-equivalent
+    (source <donation-source>)
     (campaignId uint)
     (donor principal)
   )
   (let (
-      (stx-amount (unwrap-panic (contract-call? fundraising-contract get-stx-donation campaignId donor)))
-      (sbtc-amount (unwrap-panic (contract-call? fundraising-contract get-sbtc-donation campaignId donor)))
+      (stx-amount (try! (contract-call? source get-stx-donation campaignId donor)))
+      (sbtc-amount (try! (contract-call? source get-sbtc-donation campaignId donor)))
       (num (var-get sbtc-to-stx-numerator))
       (den (var-get sbtc-to-stx-denominator))
     )
-    (+ stx-amount (/ (* sbtc-amount num) den))
+    (ok (+ stx-amount (/ (* sbtc-amount num) den)))
   )
 )
 
-;; Convenience: tier the donor would currently qualify for, computed from
-;; live on-chain donation state. Useful for previewing a UI badge before
-;; the donor calls `claim-badge`.
-(define-read-only (preview-tier
+;; Convenience: tier the donor would currently qualify for, computed
+;; from live on-chain donation state. Useful for previewing a UI badge
+;; before the donor calls `claim-badge`.
+(define-public (preview-tier
+    (source <donation-source>)
     (campaignId uint)
     (donor principal)
   )
-  (tier-for-amount (get-donor-contribution-stx-equivalent campaignId donor))
+  (let ((amount (try! (get-donor-contribution-stx-equivalent source campaignId donor))))
+    (ok (tier-for-amount amount))
+  )
 )
 
 ;; Pure tier-from-amount helper. Exposed read-only so the front-end can
@@ -162,10 +169,13 @@
 ;; calls that cross a tier threshold mutate the existing badge's metadata
 ;; in place (same tokenId, new tier), so a donor never holds more than
 ;; one badge per campaign.
-(define-public (claim-badge (campaignId uint))
+(define-public (claim-badge
+    (source <donation-source>)
+    (campaignId uint)
+  )
   (let (
       (donor tx-sender)
-      (contribution (get-donor-contribution-stx-equivalent campaignId donor))
+      (contribution (try! (get-donor-contribution-stx-equivalent source campaignId donor)))
       (new-tier (tier-for-amount contribution))
       (existing-id (map-get? donor-badge-id {
         campaignId: campaignId,
@@ -214,7 +224,7 @@
   )
 )
 
-;; SIP-009 trait conformance — and the soulbound enforcement point.
+;; SIP-009 trait conformance -- and the soulbound enforcement point.
 ;;
 ;; A donor badge is on-chain proof that *this specific principal*
 ;; supported *this specific campaign*. Allowing transfer would let donors
