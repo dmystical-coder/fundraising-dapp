@@ -39,7 +39,6 @@ async function callReadOnly(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error(

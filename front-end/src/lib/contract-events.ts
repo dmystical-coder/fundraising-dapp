@@ -88,13 +88,6 @@ interface TupleCVShape {
   value: Record<string, unknown>;
 }
 
-function decodePrint(hex: string): FundraisingEvent["name"] | null {
-  const cv = hexToCV(hex) as unknown as TupleCVShape;
-  if (cv.type !== "tuple") return null;
-  const eventField = cv.value.event as AsciiCVShape | undefined;
-  return (eventField?.value ?? null) as FundraisingEvent["name"] | null;
-}
-
 function parseEvent(raw: HiroContractLogEvent): FundraisingEvent | null {
   if (!raw.contract_log || raw.contract_log.topic !== "print") return null;
   const cv = hexToCV(raw.contract_log.value.hex) as unknown as TupleCVShape;
@@ -157,7 +150,7 @@ export async function fetchEvents(
   const limit = Math.min(options.limit ?? 50, 50);
   const offset = options.offset ?? 0;
   const url = `${getStacksUrl()}/extended/v1/contract/${CONTRACT_ID}/events?limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Hiro contract events fetch failed: HTTP ${res.status}`);
   }
