@@ -42,14 +42,7 @@ export async function GET(
         ev.name === "donated-stx" || ev.name === "donated-sbtc"
           ? ev.amount.toString()
           : null,
-      token:
-        ev.name === "donated-stx"
-          ? "stx"
-          : ev.name === "donated-sbtc"
-          ? "sbtc"
-          : null,
       txid: ev.txid,
-      block_height: ev.blockHeight?.toString() ?? null,
       inserted_at: ev.blockTime,
     }));
 

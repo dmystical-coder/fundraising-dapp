@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
           ? ev.amount.toString()
           : null,
       txid: ev.txid,
-      block_height: ev.blockHeight?.toString() ?? null,
       inserted_at: ev.blockTime,
     }));
 

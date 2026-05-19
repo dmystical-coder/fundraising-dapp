@@ -29,7 +29,6 @@ export async function GET(
       event_name: ev.name,
       amount: ev.amount.toString(),
       txid: ev.txid,
-      block_height: ev.blockHeight?.toString() ?? null,
       inserted_at: ev.blockTime,
     }));
 

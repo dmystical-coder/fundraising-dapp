@@ -92,7 +92,7 @@ cp .env.example .env
 npm run db:migrate
 ```
 
-This sets up the `campaign_metadata` table for titles and descriptions. (Historical note: an earlier version of this app ingested chainhook deliveries into a `fundraising_events` table. That's being deprecated in favour of direct on-chain reads — see [`chainhooks/README.md`](./chainhooks/README.md) if you need the legacy path.)
+This sets up the `campaign_metadata` table for titles and descriptions. Everything else — campaign state, donations, totals, events — is read directly from the contract via Hiro's API; there is no shadow event store.
 
 ## Roadmap — May 2026
 
