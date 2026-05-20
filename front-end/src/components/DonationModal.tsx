@@ -95,7 +95,9 @@ export default function DonationModal({
   const queryClient = useQueryClient();
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const presetAmounts = [10, 25, 50, 100];
+  // $1 covers the sub-1-STX donation path that exercises the DonorBadgePanel
+  // "not-eligible" branch (especially via sBTC, which has no token-side floor).
+  const presetAmounts = [1, 10, 25, 50, 100];
 
   const handlePresetClick = (amount: number) => {
     setSelectedAmount(amount);
@@ -138,11 +140,6 @@ export default function DonationModal({
       const tokenAmount = Number(customAmount);
       if (!tokenAmount || tokenAmount <= 0) {
         setErrorMsg("Please enter a valid donation amount");
-        setIsLoading(false);
-        return;
-      }
-      if (paymentMethod === "stx" && tokenAmount < 1) {
-        setErrorMsg("Please enter a minimum of 1 STX");
         setIsLoading(false);
         return;
       }
@@ -402,7 +399,7 @@ export default function DonationModal({
                       </FormLabel>
                       <NumberInput
                         id="custom-amount"
-                        min={paymentMethod === "stx" ? 1 : 0}
+                        min={0}
                         value={customAmount}
                         onChange={handleCustomAmountChange}
                       >
