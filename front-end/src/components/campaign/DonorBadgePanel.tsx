@@ -154,14 +154,17 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
 
         {state.status === "claimable" && (
           <VStack align="stretch" spacing={3}>
-            <HStack justify="space-between">
-              <Text fontSize="sm" color="text.secondary">
-                You qualify for a
-              </Text>
-              <TierBadge tier={state.previewTier} />
-            </HStack>
-            <Text fontSize="xs" color="text.tertiary">
-              Soulbound NFT — proves you supported this campaign. Non-transferable.
+            <VStack align="center" pt={1}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/badges/${tierLabel(state.previewTier)}.svg`}
+                alt={`${tierLabel(state.previewTier)} donor badge`}
+                width={72}
+                style={{ opacity: 0.55 }}
+              />
+            </VStack>
+            <Text fontSize="xs" color="text.tertiary" textAlign="center">
+              Soulbound NFT · non-transferable · proves you supported this campaign
             </Text>
             <Button
               colorScheme="primary"
@@ -175,13 +178,13 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
         )}
 
         {state.status === "claimed" && (
-          <VStack align="stretch" spacing={3}>
-            <HStack justify="space-between">
-              <Text fontSize="sm" color="text.secondary">
-                Your badge
-              </Text>
-              <TierBadge tier={state.metadata.tier} />
-            </HStack>
+          <VStack align="center" spacing={2} pt={1}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/badges/${tierLabel(state.metadata.tier)}.svg`}
+              alt={`${tierLabel(state.metadata.tier)} donor badge`}
+              width={88}
+            />
             <Text fontSize="xs" color="text.tertiary">
               Token #{state.metadata.tokenId.toString()} · soulbound
             </Text>
@@ -190,17 +193,27 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
 
         {state.status === "upgradeable" && (
           <VStack align="stretch" spacing={3}>
-            <HStack justify="space-between">
-              <Text fontSize="sm" color="text.secondary">
-                Current
-              </Text>
-              <TierBadge tier={state.metadata.tier} />
-            </HStack>
-            <HStack justify="space-between">
-              <Text fontSize="sm" color="text.secondary">
-                Now eligible for
-              </Text>
-              <TierBadge tier={state.previewTier} />
+            <HStack justify="center" spacing={4}>
+              <VStack spacing={1}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/badges/${tierLabel(state.metadata.tier)}.svg`}
+                  alt={`current ${tierLabel(state.metadata.tier)} badge`}
+                  width={56}
+                  style={{ opacity: 0.65 }}
+                />
+                <TierBadge tier={state.metadata.tier} />
+              </VStack>
+              <Text fontSize="xl" color="text.secondary" mt={2}>→</Text>
+              <VStack spacing={1}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/badges/${tierLabel(state.previewTier)}.svg`}
+                  alt={`${tierLabel(state.previewTier)} badge`}
+                  width={56}
+                />
+                <TierBadge tier={state.previewTier} />
+              </VStack>
             </HStack>
             <Button
               colorScheme="primary"
