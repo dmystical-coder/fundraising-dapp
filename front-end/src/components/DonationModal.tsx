@@ -41,6 +41,7 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { ConnectWalletButton } from "./ConnectWallet";
 import { DevnetWalletButton } from "./DevnetWalletButton";
 import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
+import { BADGE_QUERY_PREFIX } from "@/hooks/donorBadgeQueries";
 import { FundstacksError } from "@dmystical-coder/fundstacks-headless-sdk";
 import {
   btcToSats,
@@ -94,7 +95,9 @@ export default function DonationModal({
   const queryClient = useQueryClient();
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const presetAmounts = [10, 25, 50, 100];
+  // $1 covers the sub-1-STX donation path that exercises the DonorBadgePanel
+  // "not-eligible" branch (especially via sBTC, which has no token-side floor).
+  const presetAmounts = [1, 10, 25, 50, 100];
 
   const handlePresetClick = (amount: number) => {
     setSelectedAmount(amount);
@@ -140,11 +143,6 @@ export default function DonationModal({
         setIsLoading(false);
         return;
       }
-      if (paymentMethod === "stx" && tokenAmount < 1) {
-        setErrorMsg("Please enter a minimum of 1 STX");
-        setIsLoading(false);
-        return;
-      }
       txAmount =
         paymentMethod === "sbtc"
           ? Math.round(btcToSats(tokenAmount))
@@ -175,6 +173,9 @@ export default function DonationModal({
         if (campaignId && currentWalletAddress) {
           queryClient.invalidateQueries({ queryKey: ["campaignDonations", campaignId, currentWalletAddress] });
         }
+        // Refresh donor-badge state so the panel reflects the new
+        // contribution (and a possible tier upgrade) without a page reload.
+        queryClient.invalidateQueries({ queryKey: BADGE_QUERY_PREFIX });
       };
 
       if (useDevnetExecution) {
@@ -398,7 +399,7 @@ export default function DonationModal({
                       </FormLabel>
                       <NumberInput
                         id="custom-amount"
-                        min={paymentMethod === "stx" ? 1 : 0}
+                        min={0}
                         value={customAmount}
                         onChange={handleCustomAmountChange}
                       >

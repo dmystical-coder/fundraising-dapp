@@ -37,6 +37,7 @@ import { CountdownTimer } from "@/components/common/CountdownTimer";
 import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import { ShareCard } from "@/components/campaign/ShareCard";
+import { DonorBadgePanel } from "@/components/campaign/DonorBadgePanel";
 import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
@@ -339,10 +340,12 @@ export default function CampaignDetailPage() {
               </CardBody>
             </Card>
 
+            <DonorBadgePanel campaignId={campaign.id} />
+
             {campaign && (
-              <ShareCard 
-                title={indexedCampaign?.title || "Community Fundraiser"} 
-                campaignId={campaign.id} 
+              <ShareCard
+                title={indexedCampaign?.title || "Community Fundraiser"}
+                campaignId={campaign.id}
               />
             )}
 
