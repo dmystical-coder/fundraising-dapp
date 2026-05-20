@@ -41,6 +41,7 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { ConnectWalletButton } from "./ConnectWallet";
 import { DevnetWalletButton } from "./DevnetWalletButton";
 import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
+import { BADGE_QUERY_PREFIX } from "@/hooks/donorBadgeQueries";
 import { FundstacksError } from "@dmystical-coder/fundstacks-headless-sdk";
 import {
   btcToSats,
@@ -175,6 +176,9 @@ export default function DonationModal({
         if (campaignId && currentWalletAddress) {
           queryClient.invalidateQueries({ queryKey: ["campaignDonations", campaignId, currentWalletAddress] });
         }
+        // Refresh donor-badge state so the panel reflects the new
+        // contribution (and a possible tier upgrade) without a page reload.
+        queryClient.invalidateQueries({ queryKey: BADGE_QUERY_PREFIX });
       };
 
       if (useDevnetExecution) {
