@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <!-- Shield body -->
+  <path d="M100 10 L186 46 L186 128 C186 176 144 216 100 234 C56 216 14 176 14 128 L14 46 Z"
+        fill="#94A3B8" stroke="#475569" stroke-width="4"/>
+  <!-- Inner border -->
+  <path d="M100 22 L174 53 L174 129 C174 170 136 205 100 220 C64 205 26 170 26 129 L26 53 Z"
+        fill="none" stroke="#CBD5E1" stroke-width="2" opacity="0.45"/>
+  <!-- FundStacks label -->
+  <text x="100" y="105" text-anchor="middle" font-size="18" font-family="Arial,sans-serif"
+        font-weight="600" fill="rgba(255,255,255,0.8)" letter-spacing="1">FUNDSTACKS</text>
+  <!-- Tier name -->
+  <text x="100" y="140" text-anchor="middle" font-size="30" font-family="Arial,sans-serif"
+        font-weight="700" fill="white" letter-spacing="2">SILVER</text>
+  <!-- Donor label -->
+  <text x="100" y="163" text-anchor="middle" font-size="15" font-family="Arial,sans-serif"
+        fill="rgba(241,245,249,0.75)" letter-spacing="1">DONOR</text>
+</svg>
