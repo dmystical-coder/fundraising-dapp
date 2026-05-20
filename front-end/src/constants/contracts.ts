@@ -18,6 +18,11 @@ export const FUNDRAISING_CONTRACT = {
   name: CONTRACT_NAME,
 } as const;
 
+export const DONOR_BADGES_CONTRACT = {
+  address: DEPLOYER_ADDRESS,
+  name: "donor-badges",
+} as const;
+
 const sbtcMainnetAddress = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4";
 
 export const SBTC_CONTRACT = {
