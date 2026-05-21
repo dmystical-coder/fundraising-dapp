@@ -262,3 +262,128 @@ describe("fundstacks-rewards: preview-rewards", () => {
     expect(previewTokens).toBe(actual);
   });
 });
+
+// -- Edge cases --
+
+describe("fundstacks-rewards: earn-rewards guards", () => {
+  it("rejects a donor with no contribution", () => {
+    const campaignId = createCampaign(10_000_000);
+    const r = earnRewards(campaignId, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_NO_CONTRIBUTION));
+  });
+
+  it("rejects a second earn-rewards call for the same (campaign, donor)", () => {
+    const campaignId = createCampaign(10_000_000);
+    donateStx(campaignId, donor1, 1_000_000n);
+    earnRewards(campaignId, donor1);
+
+    const r = earnRewards(campaignId, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_ALREADY_CLAIMED));
+  });
+
+  it("does not mint additional tokens after an extra donation when already claimed", () => {
+    const campaignId = createCampaign(10_000_000);
+    donateStx(campaignId, donor1, 1_000_000n);
+    earnRewards(campaignId, donor1);
+    const balanceAfterFirst = balance(donor1);
+
+    donateStx(campaignId, donor1, 1_000_000n);
+    const r = earnRewards(campaignId, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_ALREADY_CLAIMED));
+    expect(balance(donor1)).toBe(balanceAfterFirst);
+  });
+});
+
+describe("fundstacks-rewards: issuance curve edge cases", () => {
+  it("overfunded campaign pays out at min rate (progress capped at 100%)", () => {
+    const goal = 1_000_000n;
+    const donation = 2_000_000n;
+    const campaignId = createCampaign(Number(goal));
+    donateStx(campaignId, donor1, donation);
+
+    const r = earnRewards(campaignId, donor1);
+    const tokens = parseOkUint(r.result);
+    // progress capped at 100%: tokens = donation * 1000 / 1000 = donation
+    expect(tokens).toBe(donation);
+  });
+
+  it("two donors with equal donations at same snapshot receive equal rewards", () => {
+    const goal = 20_000_000n;
+    const donation = 1_000_000n;
+    const campaignId = createCampaign(Number(goal));
+    donateStx(campaignId, donor1, donation);
+    donateStx(campaignId, donor2, donation);
+
+    const r1 = earnRewards(campaignId, donor1);
+    const r2 = earnRewards(campaignId, donor2);
+    expect(parseOkUint(r1.result)).toBe(parseOkUint(r2.result));
+  });
+
+  it("large donation does not overflow (near-max STX supply)", () => {
+    // 21M STX = 21_000_000_000_000 microSTX -- well within Clarity uint128.
+    const donation = 21_000_000_000_000n;
+    const goal = 21_000_000_000_000n;
+    const campaignId = createCampaign(Number(goal));
+    donateStx(campaignId, donor1, donation);
+
+    const r = earnRewards(campaignId, donor1);
+    // progress = 100%, rate = 1000, tokens = donation
+    expect(parseOkUint(r.result)).toBe(donation);
+  });
+});
+
+describe("fundstacks-rewards: admin", () => {
+  it("owner can update token URI", () => {
+    const newUri = "https://fundstacks.vercel.app/api/rewards/v2/token.json";
+    const r = simnet.callPublicFn(
+      "fundstacks-rewards",
+      "set-token-uri",
+      [Cl.stringUtf8(newUri)],
+      deployer
+    );
+    expect(r.result).toBeOk(Cl.bool(true));
+
+    const getR = simnet.callReadOnlyFn("fundstacks-rewards", "get-token-uri", [], deployer);
+    expect(getR.result).toBeOk(Cl.some(Cl.stringUtf8(newUri)));
+  });
+
+  it("non-owner cannot update token URI", () => {
+    const r = simnet.callPublicFn(
+      "fundstacks-rewards",
+      "set-token-uri",
+      [Cl.stringUtf8("https://evil.example.com/token.json")],
+      stranger
+    );
+    expect(r.result).toBeErr(Cl.uint(ERR_NOT_AUTHORIZED));
+  });
+
+  it("owner can update sBTC rate", () => {
+    const r = simnet.callPublicFn(
+      "fundstacks-rewards",
+      "set-sbtc-rate",
+      [Cl.uint(200), Cl.uint(1)],
+      deployer
+    );
+    expect(r.result).toBeOk(Cl.bool(true));
+  });
+
+  it("rejects zero denominator in set-sbtc-rate", () => {
+    const r = simnet.callPublicFn(
+      "fundstacks-rewards",
+      "set-sbtc-rate",
+      [Cl.uint(100), Cl.uint(0)],
+      deployer
+    );
+    expect(r.result).toBeErr(Cl.uint(ERR_INVALID_RATE));
+  });
+
+  it("non-owner cannot update sBTC rate", () => {
+    const r = simnet.callPublicFn(
+      "fundstacks-rewards",
+      "set-sbtc-rate",
+      [Cl.uint(1), Cl.uint(1)],
+      stranger
+    );
+    expect(r.result).toBeErr(Cl.uint(ERR_NOT_AUTHORIZED));
+  });
+});
