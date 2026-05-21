@@ -26,5 +26,15 @@ path = 'contracts/donor-badges.clar'
 clarity_version = 4
 epoch = "3.3"
 
+[contracts.fundstacks-source-trait]
+path = 'contracts/fundstacks-source-trait.clar'
+clarity_version = 4
+epoch = "3.3"
+
+[contracts.fundstacks-rewards]
+path = 'contracts/fundstacks-rewards.clar'
+clarity_version = 4
+epoch = "3.3"
+
 [repl.analysis]
 passes = []
