@@ -23,22 +23,21 @@
 
 ;; -- Constants --
 
-(define-constant contract-owner tx-sender)
+(define-constant CONTRACT-OWNER tx-sender)
 
 ;; Errors
-(define-constant err-not-authorized (err u300))
-(define-constant err-no-contribution (err u301))
-(define-constant err-already-claimed (err u302))
-(define-constant err-invalid-campaign (err u303))
-(define-constant err-invalid-rate (err u304))
+(define-constant ERR-NOT-AUTHORIZED (err u300))
+(define-constant ERR-NO-CONTRIBUTION (err u301))
+(define-constant ERR-ALREADY-CLAIMED (err u302))
+(define-constant ERR-INVALID-CAMPAIGN (err u303))
+(define-constant ERR-INVALID-RATE (err u304))
 
 ;; Issuance curve.
 ;; rate (scaled) = rate-min + rate-spread * (100 - progress%) / 100
 ;; tokens = contribution_ustx * rate / rate-scale
-(define-constant rate-scale u1000)
-(define-constant rate-min u1000)    ;; 1 FSTR per STX at 100% progress
-(define-constant rate-max u10000)   ;; 10 FSTR per STX at 0% progress
-(define-constant rate-spread u9000) ;; rate-max - rate-min
+(define-constant RATE-SCALE u1000)
+(define-constant RATE-MIN u1000) ;; 1 FSTR per STX at 100% progress
+(define-constant RATE-SPREAD u9000) ;; (10 * RATE-SCALE) - RATE-MIN
 
 ;; sBTC -> STX-equivalent conversion rate. Stored as a rational so the
 ;; owner can track sBTC/STX market moves without redeploying.
@@ -56,7 +55,10 @@
 
 ;; (campaignId, donor) -> claimed? Guards against double-claiming.
 (define-map rewards-claimed
-  { campaignId: uint, donor: principal }
+  {
+    campaignId: uint,
+    donor: principal,
+  }
   bool
 )
 
@@ -69,36 +71,62 @@
     (memo (optional (buff 34)))
   )
   (begin
-    (asserts! (is-eq tx-sender sender) err-not-authorized)
+    (asserts! (is-eq tx-sender sender) ERR-NOT-AUTHORIZED)
     (try! (ft-transfer? fstr-token amount sender recipient))
-    (match memo m (begin (print m) true) true)
+    (match memo
+      m (begin
+        (print m)
+        true
+      )
+      true
+    )
     (ok true)
   )
 )
 
-(define-read-only (get-name) (ok "FundStacks Rewards"))
-(define-read-only (get-symbol) (ok "FSTR"))
-(define-read-only (get-decimals) (ok u6))
-(define-read-only (get-balance (who principal)) (ok (ft-get-balance fstr-token who)))
-(define-read-only (get-total-supply) (ok (ft-get-supply fstr-token)))
-(define-read-only (get-token-uri) (ok (some (var-get token-uri))))
+(define-read-only (get-name)
+  (ok "FundStacks Rewards")
+)
+(define-read-only (get-symbol)
+  (ok "FSTR")
+)
+(define-read-only (get-decimals)
+  (ok u6)
+)
+(define-read-only (get-balance (who principal))
+  (ok (ft-get-balance fstr-token who))
+)
+(define-read-only (get-total-supply)
+  (ok (ft-get-supply fstr-token))
+)
+(define-read-only (get-token-uri)
+  (ok (some (var-get token-uri)))
+)
 
 ;; -- FundStacks-specific read-only views --
 
 ;; Returns whether `donor` has already claimed rewards for `campaignId`.
-(define-read-only (has-claimed (campaignId uint) (donor principal))
-  (default-to false (map-get? rewards-claimed { campaignId: campaignId, donor: donor }))
+(define-read-only (has-claimed
+    (campaign-id uint)
+    (donor principal)
+  )
+  (default-to false
+    (map-get? rewards-claimed {
+      campaignId: campaign-id,
+      donor: donor,
+    })
+  )
 )
 
 ;; Compute how many FSTR tokens a contribution earns at a given campaign
 ;; snapshot, without minting. Front-end can call this off-chain to
 ;; preview the reward before the donor submits the transaction.
 (define-read-only (preview-rewards
-    (contributionStxEq uint)
-    (campaignGoal uint)
-    (campaignTotalStx uint)
+    (contribution-stx-eq uint)
+    (campaign-goal uint)
+    (campaign-total-stx uint)
   )
-  (ok (compute-tokens contributionStxEq campaignGoal campaignTotalStx))
+  (ok (compute-tokens contribution-stx-eq campaign-goal campaign-total-stx))
 )
 
 ;; -- Public functions --
@@ -111,31 +139,41 @@
 ;; (campaign, donor) pair can only be claimed once.
 (define-public (earn-rewards
     (source <fundstacks-source>)
-    (campaignId uint)
+    (campaign-id uint)
   )
   (let (
       (donor tx-sender)
-      (stx-amount (try! (contract-call? source get-stx-donation campaignId donor)))
-      (sbtc-amount (try! (contract-call? source get-sbtc-donation campaignId donor)))
+      (stx-amount (try! (contract-call? source get-stx-donation campaign-id donor)))
+      (sbtc-amount (try! (contract-call? source get-sbtc-donation campaign-id donor)))
       (num (var-get sbtc-to-stx-numerator))
       (den (var-get sbtc-to-stx-denominator))
       (contribution-stx-eq (+ stx-amount (/ (* sbtc-amount num) den)))
-      (info (try! (contract-call? source get-campaign-info campaignId)))
+      (info (try! (contract-call? source get-campaign-info campaign-id)))
       (goal (get goal info))
       (total-stx (get totalStx info))
       (tokens (compute-tokens contribution-stx-eq goal total-stx))
     )
-    (asserts! (> contribution-stx-eq u0) err-no-contribution)
-    (asserts! (> goal u0) err-invalid-campaign)
+    (asserts! (> contribution-stx-eq u0) ERR-NO-CONTRIBUTION)
+    (asserts! (> goal u0) ERR-INVALID-CAMPAIGN)
     (asserts!
-      (not (default-to false (map-get? rewards-claimed { campaignId: campaignId, donor: donor })))
-      err-already-claimed
+      (not (default-to false
+        (map-get? rewards-claimed {
+          campaignId: campaign-id,
+          donor: donor,
+        })
+      ))
+      ERR-ALREADY-CLAIMED
     )
-    (map-set rewards-claimed { campaignId: campaignId, donor: donor } true)
+    (map-set rewards-claimed {
+      campaignId: campaign-id,
+      donor: donor,
+    }
+      true
+    )
     (try! (ft-mint? fstr-token tokens donor))
     (print {
       event: "rewards-earned",
-      campaignId: campaignId,
+      campaignId: campaign-id,
       donor: donor,
       tokens: tokens,
       contributionStxEq: contribution-stx-eq,
@@ -156,10 +194,13 @@
   (if (is-eq goal u0)
     u0
     (let (
-        (progress (if (>= total-stx goal) u100 (/ (* total-stx u100) goal)))
-        (rate (+ rate-min (/ (* rate-spread (- u100 progress)) u100)))
+        (progress (if (>= total-stx goal)
+          u100
+          (/ (* total-stx u100) goal)
+        ))
+        (rate (+ RATE-MIN (/ (* RATE-SPREAD (- u100 progress)) u100)))
       )
-      (/ (* contribution-stx-eq rate) rate-scale)
+      (/ (* contribution-stx-eq rate) RATE-SCALE)
     )
   )
 )
@@ -168,17 +209,23 @@
 
 (define-public (set-token-uri (new-uri (string-utf8 256)))
   (begin
-    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
     (var-set token-uri new-uri)
-    (print { event: "token-uri-updated", uri: new-uri })
+    (print {
+      event: "token-uri-updated",
+      uri: new-uri,
+    })
     (ok true)
   )
 )
 
-(define-public (set-sbtc-rate (numerator uint) (denominator uint))
+(define-public (set-sbtc-rate
+    (numerator uint)
+    (denominator uint)
+  )
   (begin
-    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
-    (asserts! (> denominator u0) err-invalid-rate)
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (> denominator u0) ERR-INVALID-RATE)
     (var-set sbtc-to-stx-numerator numerator)
     (var-set sbtc-to-stx-denominator denominator)
     (print {
