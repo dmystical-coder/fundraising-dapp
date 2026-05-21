@@ -1,0 +1,25 @@
+---
+id: 1
+name: fundstacks-rewards mainnet deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: fundstacks-source-trait
+            expected-sender: SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH
+            cost: 8200
+            path: contracts/fundstacks-source-trait.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: fundstacks-rewards
+            expected-sender: SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH
+            cost: 92000
+            path: contracts/fundstacks-rewards.clar
+            anchor-block-only: true
+            clarity-version: 4
+      epoch: "3.3"
