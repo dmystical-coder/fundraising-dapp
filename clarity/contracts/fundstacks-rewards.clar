@@ -23,21 +23,21 @@
 
 ;; -- Constants --
 
-(define-constant CONTRACT-OWNER tx-sender)
+(define-constant CONTRACT_OWNER tx-sender)
 
 ;; Errors
-(define-constant ERR-NOT-AUTHORIZED (err u300))
-(define-constant ERR-NO-CONTRIBUTION (err u301))
-(define-constant ERR-ALREADY-CLAIMED (err u302))
-(define-constant ERR-INVALID-CAMPAIGN (err u303))
-(define-constant ERR-INVALID-RATE (err u304))
+(define-constant ERR_NOT_AUTHORIZED (err u300))
+(define-constant ERR_NO_CONTRIBUTION (err u301))
+(define-constant ERR_ALREADY_CLAIMED (err u302))
+(define-constant ERR_INVALID_CAMPAIGN (err u303))
+(define-constant ERR_INVALID_RATE (err u304))
 
 ;; Issuance curve.
 ;; rate (scaled) = rate-min + rate-spread * (100 - progress%) / 100
 ;; tokens = contribution_ustx * rate / rate-scale
-(define-constant RATE-SCALE u1000)
-(define-constant RATE-MIN u1000) ;; 1 FSTR per STX at 100% progress
-(define-constant RATE-SPREAD u9000) ;; (10 * RATE-SCALE) - RATE-MIN
+(define-constant RATE_SCALE u1000)
+(define-constant RATE_MIN u1000) ;; 1 FSTR per STX at 100% progress
+(define-constant RATE_SPREAD u9000) ;; (10 * RATE_SCALE) - RATE_MIN
 
 ;; sBTC -> STX-equivalent conversion rate. Stored as a rational so the
 ;; owner can track sBTC/STX market moves without redeploying.
@@ -71,7 +71,7 @@
     (memo (optional (buff 34)))
   )
   (begin
-    (asserts! (is-eq tx-sender sender) ERR-NOT-AUTHORIZED)
+    (asserts! (is-eq tx-sender sender) ERR_NOT_AUTHORIZED)
     (try! (ft-transfer? fstr-token amount sender recipient))
     (match memo
       m (begin
@@ -153,8 +153,8 @@
       (total-stx (get totalStx info))
       (tokens (compute-tokens contribution-stx-eq goal total-stx))
     )
-    (asserts! (> contribution-stx-eq u0) ERR-NO-CONTRIBUTION)
-    (asserts! (> goal u0) ERR-INVALID-CAMPAIGN)
+    (asserts! (> contribution-stx-eq u0) ERR_NO_CONTRIBUTION)
+    (asserts! (> goal u0) ERR_INVALID_CAMPAIGN)
     (asserts!
       (not (default-to false
         (map-get? rewards-claimed {
@@ -162,7 +162,7 @@
           donor: donor,
         })
       ))
-      ERR-ALREADY-CLAIMED
+      ERR_ALREADY_CLAIMED
     )
     (map-set rewards-claimed {
       campaignId: campaign-id,
@@ -198,9 +198,9 @@
           u100
           (/ (* total-stx u100) goal)
         ))
-        (rate (+ RATE-MIN (/ (* RATE-SPREAD (- u100 progress)) u100)))
+        (rate (+ RATE_MIN (/ (* RATE_SPREAD (- u100 progress)) u100)))
       )
-      (/ (* contribution-stx-eq rate) RATE-SCALE)
+      (/ (* contribution-stx-eq rate) RATE_SCALE)
     )
   )
 )
@@ -209,7 +209,7 @@
 
 (define-public (set-token-uri (new-uri (string-utf8 256)))
   (begin
-    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
     (var-set token-uri new-uri)
     (print {
       event: "token-uri-updated",
@@ -224,8 +224,8 @@
     (denominator uint)
   )
   (begin
-    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
-    (asserts! (> denominator u0) ERR-INVALID-RATE)
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+    (asserts! (> denominator u0) ERR_INVALID_RATE)
     (var-set sbtc-to-stx-numerator numerator)
     (var-set sbtc-to-stx-denominator denominator)
     (print {
