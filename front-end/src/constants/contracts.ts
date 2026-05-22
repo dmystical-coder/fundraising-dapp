@@ -28,6 +28,11 @@ export const FUNDSTACKS_REWARDS_CONTRACT = {
   name: "fundstacks-rewards",
 } as const;
 
+export const FEE_SPLITTER_CONTRACT = {
+  address: DEPLOYER_ADDRESS,
+  name: "fee-splitter",
+} as const;
+
 const sbtcMainnetAddress = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4";
 
 export const SBTC_CONTRACT = {
