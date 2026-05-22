@@ -43,6 +43,8 @@ import { DevnetWalletButton } from "./DevnetWalletButton";
 import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
 import { BADGE_QUERY_PREFIX } from "@/hooks/donorBadgeQueries";
 import { REWARDS_QUERY_PREFIX } from "@/hooks/rewardsQueries";
+import { computeFee } from "@/lib/fee-splitter-reads";
+import { buildPayFeeStxTx, buildPayFeeSbtcTx } from "@/lib/build-pay-fee-tx";
 import { FundstacksError } from "@dmystical-coder/fundstacks-headless-sdk";
 import {
   btcToSats,
@@ -92,6 +94,9 @@ export default function DonationModal({
   const [customAmount, setCustomAmount] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [successTxId, setSuccessTxId] = useState<string | null>(null);
+  const [submittedAmount, setSubmittedAmount] = useState<number>(0);
+  const [feePaid, setFeePaid] = useState(false);
+  const [feeLoading, setFeeLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -164,6 +169,7 @@ export default function DonationModal({
 
       const doSuccess = (txid: string) => {
         setSuccessTxId(txid);
+        setSubmittedAmount(txAmount);
         setIsLoading(false);
 
         // Invalidate queries so the UI updates without requiring a page refresh
@@ -237,8 +243,37 @@ export default function DonationModal({
     }
   };
 
+  const handlePayFee = async () => {
+    if (!campaignId || submittedAmount === 0) return;
+    setFeeLoading(true);
+    try {
+      const builder = paymentMethod === "sbtc" ? buildPayFeeSbtcTx : buildPayFeeStxTx;
+      const txOptions = builder({ campaignId, amount: submittedAmount });
+      const onSuccess = () => {
+        setFeePaid(true);
+        setFeeLoading(false);
+        toast.success("Fee paid");
+      };
+      if (isDevnetEnvironment()) {
+        await executeContractCall(txOptions, devnetWallet);
+        onSuccess();
+      } else {
+        await openContractCall({
+          ...txOptions,
+          onFinish: () => onSuccess(),
+          onCancel: () => setFeeLoading(false),
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      setFeeLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setSuccessTxId(null);
+    setSubmittedAmount(0);
+    setFeePaid(false);
     setCustomAmount("");
     setSelectedAmount(null);
     onClose();
@@ -314,6 +349,29 @@ export default function DonationModal({
                     TxID: {successTxId.slice(0, 8)}...{successTxId.slice(-8)}
                   </Text>
                 </VStack>
+
+                {(() => {
+                  const feeAmt = computeFee(BigInt(submittedAmount));
+                  const feeDisplay = paymentMethod === "sbtc"
+                    ? `${feeAmt} sats`
+                    : `${(Number(feeAmt) / 1_000_000).toFixed(4)} STX`;
+                  return feeAmt > BigInt(0) && !feePaid ? (
+                    <Button
+                      size="md"
+                      variant="outline"
+                      colorScheme="primary"
+                      width="100%"
+                      onClick={handlePayFee}
+                      isLoading={feeLoading}
+                    >
+                      Support FundStacks — pay {feeDisplay} platform fee
+                    </Button>
+                  ) : feePaid ? (
+                    <Text fontSize="sm" color="text.secondary" textAlign="center">
+                      Platform fee paid. Thank you!
+                    </Text>
+                  ) : null;
+                })()}
 
                 <Button
                   onClick={handleShare}

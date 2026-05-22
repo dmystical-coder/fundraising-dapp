@@ -92,14 +92,19 @@ plan:
             path: contracts/donor-badges.clar
             clarity-version: 4
         - emulated-contract-publish:
-            contract-name: fundraising
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/fundraising.clar
-            clarity-version: 4
-        - emulated-contract-publish:
             contract-name: fundstacks-source-trait
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/fundstacks-source-trait.clar
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: fee-splitter
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fee-splitter.clar
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: fundraising
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fundraising.clar
             clarity-version: 4
         - emulated-contract-publish:
             contract-name: fundstacks-rewards
