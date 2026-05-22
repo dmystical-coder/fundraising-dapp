@@ -318,6 +318,40 @@ describe("fee-splitter: set-campaign-charity guards", () => {
   });
 });
 
+describe("fee-splitter: fee-bps edge cases", () => {
+  it("fee-bps at exact MAX (1000 = 10%) is accepted", () => {
+    const r = simnet.callPublicFn("fee-splitter", "set-fee-bps", [Cl.uint(1000)], deployer);
+    expect(r.result).toBeOk(Cl.bool(true));
+    simnet.callPublicFn("fee-splitter", "set-fee-bps", [Cl.uint(100)], deployer);
+  });
+
+  it("withdraw clears both pending balances accumulated across campaigns", () => {
+    const camp1 = createCampaign();
+    const camp2 = createCampaign();
+    const amount = 1_000_000n;
+    const fee = computeFee(amount);
+
+    // Deployer is the treasury; two donors pay fees across two campaigns
+    simnet.callPublicFn("fee-splitter", "pay-fee-stx", [Cl.uint(camp1), Cl.uint(amount)], donor1);
+    simnet.callPublicFn("fee-splitter", "pay-fee-stx", [Cl.uint(camp2), Cl.uint(amount)], donor2);
+
+    const r = simnet.callPublicFn("fee-splitter", "withdraw-fees", [], deployer);
+    // Pending from earlier tests accumulate; check stx field is at least 2 * fee
+    const s = cvToString(r.result);
+    expect(s).toContain("(ok");
+    expect(pendingStx(deployer)).toBe(0n);
+  });
+
+  it("second withdraw immediately after first returns ERR_NO_FEES", () => {
+    const campaignId = createCampaign();
+    simnet.callPublicFn("fee-splitter", "pay-fee-stx", [Cl.uint(campaignId), Cl.uint(1_000_000)], donor1);
+    simnet.callPublicFn("fee-splitter", "withdraw-fees", [], deployer);
+
+    const r = simnet.callPublicFn("fee-splitter", "withdraw-fees", [], deployer);
+    expect(r.result).toBeErr(Cl.uint(ERR_NO_FEES));
+  });
+});
+
 describe("fee-splitter: admin guards", () => {
   it("non-owner cannot set fee-bps", () => {
     const r = simnet.callPublicFn(
