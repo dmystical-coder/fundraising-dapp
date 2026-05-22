@@ -42,6 +42,7 @@ import { ConnectWalletButton } from "./ConnectWallet";
 import { DevnetWalletButton } from "./DevnetWalletButton";
 import { buildFundstacksDonateTx } from "@/lib/fundstacks-sdk";
 import { BADGE_QUERY_PREFIX } from "@/hooks/donorBadgeQueries";
+import { REWARDS_QUERY_PREFIX } from "@/hooks/rewardsQueries";
 import { FundstacksError } from "@dmystical-coder/fundstacks-headless-sdk";
 import {
   btcToSats,
@@ -176,6 +177,7 @@ export default function DonationModal({
         // Refresh donor-badge state so the panel reflects the new
         // contribution (and a possible tier upgrade) without a page reload.
         queryClient.invalidateQueries({ queryKey: BADGE_QUERY_PREFIX });
+        queryClient.invalidateQueries({ queryKey: REWARDS_QUERY_PREFIX });
       };
 
       if (useDevnetExecution) {

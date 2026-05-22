@@ -4,25 +4,21 @@
 
 ;; Constants
 ;; NOTE: `contract-owner` is the deployer and is intended only for platform-level admin.
-(define-constant contract-owner tx-sender)
-
-(define-constant err-not-authorized (err u100))
-(define-constant err-campaign-ended (err u101))
-(define-constant err-not-initialized (err u102))
-(define-constant err-not-cancelled (err u103))
-(define-constant err-campaign-not-ended (err u104))
-(define-constant err-campaign-cancelled (err u105))
-(define-constant err-already-initialized (err u106))
-(define-constant err-already-withdrawn (err u107))
-(define-constant err-invalid-amount (err u108))
-(define-constant err-campaign-not-found (err u109))
-(define-constant err-invalid-end-at (err u110))
+(define-constant ERR_NOT_AUTHORIZED (err u100))
+(define-constant ERR_CAMPAIGN_ENDED (err u101))
+(define-constant ERR_NOT_CANCELLED (err u103))
+(define-constant ERR_CAMPAIGN_NOT_ENDED (err u104))
+(define-constant ERR_CAMPAIGN_CANCELLED (err u105))
+(define-constant ERR_ALREADY_WITHDRAWN (err u107))
+(define-constant ERR_INVALID_AMOUNT (err u108))
+(define-constant ERR_CAMPAIGN_NOT_FOUND (err u109))
+(define-constant ERR_INVALID_END_AT (err u110))
 
 ;; sBTC token contract (static identifier required by Clarity for contract-call?)
-(define-constant sbtc-token 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
+(define-constant SBTC_TOKEN 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
 
 ;; Default campaign duration in seconds (30 days).
-(define-constant default-duration-secs u2592000)
+(define-constant DEFAULT_DURATION_SECS u2592000)
 
 ;; Data vars
 (define-data-var last-campaign-id uint u0)
@@ -48,56 +44,50 @@
 
 (define-map stx-donations
   {
-    campaignId: uint,
+    campaign-id: uint,
     donor: principal,
   }
   uint
 )
-;; (campaignId, donor) -> amount
+;; (campaign-id, donor) -> amount
 
 (define-map sbtc-donations
   {
-    campaignId: uint,
+    campaign-id: uint,
     donor: principal,
   }
   uint
 )
-;; (campaignId, donor) -> amount
-
-;; In Clarity 4, `as-contract` was replaced by `as-contract?`.
-;; We use it (with no allowances) to safely obtain the contract principal.
-(define-private (get-contract-principal)
-  (unwrap-panic (as-contract? () tx-sender))
-)
+;; (campaign-id, donor) -> amount
 
 ;; Create a new campaign.
 ;; goal is informational (e.g. USD in UI).
-;; endAt is an absolute timestamp in seconds (same basis as stacks-block-time).
+;; end-at is an absolute timestamp in seconds (same basis as stacks-block-time).
 ;; Pass u0 to use default duration (30 days).
 (define-public (create-campaign
     (goal uint)
-    (endAt uint)
+    (end-at uint)
     (beneficiary principal)
   )
   (let (
-      (campaignId (+ (var-get last-campaign-id) u1))
-      (startAt stacks-block-time)
-      (actual-end-at (if (is-eq endAt u0)
-        (+ stacks-block-time default-duration-secs)
-        endAt
+      (campaign-id (+ (var-get last-campaign-id) u1))
+      (start-at stacks-block-time)
+      (actual-end-at (if (is-eq end-at u0)
+        (+ stacks-block-time DEFAULT_DURATION_SECS)
+        end-at
       ))
     )
-    (asserts! (> goal u0) err-invalid-amount)
-    (asserts! (> actual-end-at startAt) err-invalid-end-at)
-    (var-set last-campaign-id campaignId)
-    (map-set campaigns campaignId {
+    (asserts! (> goal u0) ERR_INVALID_AMOUNT)
+    (asserts! (> actual-end-at start-at) ERR_INVALID_END_AT)
+    (var-set last-campaign-id campaign-id)
+    (map-set campaigns campaign-id {
       owner: tx-sender,
       beneficiary: beneficiary,
       goal: goal,
       start: burn-block-height,
-      createdAt: startAt,
+      createdAt: start-at,
       endAt: actual-end-at,
-      duration: (- actual-end-at startAt),
+      duration: (- actual-end-at start-at),
       totalStx: u0,
       totalSbtc: u0,
       donationCount: u0,
@@ -106,26 +96,26 @@
     })
     (print {
       event: "campaign-created",
-      campaignId: campaignId,
+      campaignId: campaign-id,
       owner: tx-sender,
       beneficiary: beneficiary,
       goal: goal,
     })
-    (ok campaignId)
+    (ok campaign-id)
   )
 )
 
 ;; Cancel a campaign.
 ;; Only the campaign owner can call this, if not withdrawn.
-(define-public (cancel-campaign (campaignId uint))
-  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+(define-public (cancel-campaign (campaign-id uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND)))
     (begin
-      (asserts! (is-eq tx-sender (get owner campaign)) err-not-authorized)
-      (asserts! (not (get isWithdrawn campaign)) err-already-withdrawn)
-      (map-set campaigns campaignId (merge campaign { isCancelled: true }))
+      (asserts! (is-eq tx-sender (get owner campaign)) ERR_NOT_AUTHORIZED)
+      (asserts! (not (get isWithdrawn campaign)) ERR_ALREADY_WITHDRAWN)
+      (map-set campaigns campaign-id (merge campaign { isCancelled: true }))
       (print {
         event: "campaign-cancelled",
-        campaignId: campaignId,
+        campaignId: campaign-id,
       })
       (ok true)
     )
@@ -134,26 +124,26 @@
 
 ;; Donate STX. Pass amount in microstacks.
 (define-public (donate-stx
-    (campaignId uint)
+    (campaign-id uint)
     (amount uint)
   )
   (let (
-      (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
+      (campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND))
       (end (get endAt campaign))
-      (donationKey {
-        campaignId: campaignId,
+      (donation-key {
+        campaign-id: campaign-id,
         donor: tx-sender,
       })
     )
     (begin
-      (asserts! (> amount u0) err-invalid-amount)
-      (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
-      (asserts! (< stacks-block-time end) err-campaign-ended)
-      (try! (stx-transfer? amount tx-sender (get-contract-principal)))
-      (map-set stx-donations donationKey
-        (+ (default-to u0 (map-get? stx-donations donationKey)) amount)
+      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+      (asserts! (not (get isCancelled campaign)) ERR_CAMPAIGN_CANCELLED)
+      (asserts! (< stacks-block-time end) ERR_CAMPAIGN_ENDED)
+      (try! (stx-transfer? amount tx-sender (try! (as-contract? () tx-sender))))
+      (map-set stx-donations donation-key
+        (+ (default-to u0 (map-get? stx-donations donation-key)) amount)
       )
-      (map-set campaigns campaignId
+      (map-set campaigns campaign-id
         (merge campaign {
           totalStx: (+ (get totalStx campaign) amount),
           donationCount: (+ (get donationCount campaign) u1),
@@ -161,7 +151,7 @@
       )
       (print {
         event: "donated-stx",
-        campaignId: campaignId,
+        campaignId: campaign-id,
         donor: tx-sender,
         amount: amount,
       })
@@ -172,28 +162,28 @@
 
 ;; Donate sBTC. Pass amount in Satoshis.
 (define-public (donate-sbtc
-    (campaignId uint)
+    (campaign-id uint)
     (amount uint)
   )
   (let (
-      (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
+      (campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND))
       (end (get endAt campaign))
-      (donationKey {
-        campaignId: campaignId,
+      (donation-key {
+        campaign-id: campaign-id,
         donor: tx-sender,
       })
     )
     (begin
-      (asserts! (> amount u0) err-invalid-amount)
-      (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
-      (asserts! (< stacks-block-time end) err-campaign-ended)
-      (try! (contract-call? sbtc-token transfer amount tx-sender
-        (get-contract-principal) none
+      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+      (asserts! (not (get isCancelled campaign)) ERR_CAMPAIGN_CANCELLED)
+      (asserts! (< stacks-block-time end) ERR_CAMPAIGN_ENDED)
+      (try! (contract-call? SBTC_TOKEN transfer amount tx-sender
+        (try! (as-contract? () tx-sender)) none
       ))
-      (map-set sbtc-donations donationKey
-        (+ (default-to u0 (map-get? sbtc-donations donationKey)) amount)
+      (map-set sbtc-donations donation-key
+        (+ (default-to u0 (map-get? sbtc-donations donation-key)) amount)
       )
-      (map-set campaigns campaignId
+      (map-set campaigns campaign-id
         (merge campaign {
           totalSbtc: (+ (get totalSbtc campaign) amount),
           donationCount: (+ (get donationCount campaign) u1),
@@ -201,7 +191,7 @@
       )
       (print {
         event: "donated-sbtc",
-        campaignId: campaignId,
+        campaignId: campaign-id,
         donor: tx-sender,
         amount: amount,
       })
@@ -211,35 +201,35 @@
 )
 
 ;; Withdraw funds for a campaign (only beneficiary, only if campaign is ended)
-(define-public (withdraw (campaignId uint))
+(define-public (withdraw (campaign-id uint))
   (let (
-      (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
+      (campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND))
       (end (get endAt campaign))
       (total-stx-amount (get totalStx campaign))
       (total-sbtc-amount (get totalSbtc campaign))
       (beneficiary (get beneficiary campaign))
     )
     (begin
-      (asserts! (not (get isCancelled campaign)) err-campaign-cancelled)
-      (asserts! (not (get isWithdrawn campaign)) err-already-withdrawn)
-      (asserts! (is-eq tx-sender beneficiary) err-not-authorized)
-      (asserts! (>= stacks-block-time end) err-campaign-not-ended)
+      (asserts! (not (get isCancelled campaign)) ERR_CAMPAIGN_CANCELLED)
+      (asserts! (not (get isWithdrawn campaign)) ERR_ALREADY_WITHDRAWN)
+      (asserts! (is-eq tx-sender beneficiary) ERR_NOT_AUTHORIZED)
+      (asserts! (>= stacks-block-time end) ERR_CAMPAIGN_NOT_ENDED)
       (try! (as-contract?
-        ((with-stx total-stx-amount) (with-ft sbtc-token "*" total-sbtc-amount))
+        ((with-stx total-stx-amount) (with-ft SBTC_TOKEN "*" total-sbtc-amount))
         (begin
           (if (> total-stx-amount u0)
             (try! (stx-transfer? total-stx-amount tx-sender beneficiary))
             true
           )
           (if (> total-sbtc-amount u0)
-            (try! (contract-call? sbtc-token transfer total-sbtc-amount tx-sender
+            (try! (contract-call? SBTC_TOKEN transfer total-sbtc-amount tx-sender
               beneficiary none
             ))
             true
           )
           true
         )))
-      (map-set campaigns campaignId
+      (map-set campaigns campaign-id
         (merge campaign {
           isWithdrawn: true,
           totalStx: u0,
@@ -248,7 +238,7 @@
       )
       (print {
         event: "campaign-withdrawn",
-        campaignId: campaignId,
+        campaignId: campaign-id,
       })
       (ok true)
     )
@@ -256,19 +246,19 @@
 )
 
 ;; Refund to donor for a cancelled campaign.
-(define-public (refund (campaignId uint))
+(define-public (refund (campaign-id uint))
   (let (
-      (campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found))
-      (donationKey {
-        campaignId: campaignId,
+      (campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND))
+      (donation-key {
+        campaign-id: campaign-id,
         donor: tx-sender,
       })
-      (stx-amount (default-to u0 (map-get? stx-donations donationKey)))
-      (sbtc-amount (default-to u0 (map-get? sbtc-donations donationKey)))
+      (stx-amount (default-to u0 (map-get? stx-donations donation-key)))
+      (sbtc-amount (default-to u0 (map-get? sbtc-donations donation-key)))
       (contributor tx-sender)
     )
     (begin
-      (asserts! (get isCancelled campaign) err-not-cancelled)
+      (asserts! (get isCancelled campaign) ERR_NOT_CANCELLED)
       (if (> stx-amount u0)
         (try! (as-contract? ((with-stx stx-amount))
           (begin
@@ -278,18 +268,18 @@
         true
       )
       (if (> sbtc-amount u0)
-        (try! (as-contract? ((with-ft sbtc-token "*" sbtc-amount))
+        (try! (as-contract? ((with-ft SBTC_TOKEN "*" sbtc-amount))
           (begin
-            (try! (contract-call? sbtc-token transfer sbtc-amount tx-sender contributor
+            (try! (contract-call? SBTC_TOKEN transfer sbtc-amount tx-sender contributor
               none
             ))
             true
           )))
         true
       )
-      (map-delete stx-donations donationKey)
-      (map-delete sbtc-donations donationKey)
-      (map-set campaigns campaignId
+      (map-delete stx-donations donation-key)
+      (map-delete sbtc-donations donation-key)
+      (map-set campaigns campaign-id
         (merge campaign {
           totalStx: (if (>= (get totalStx campaign) stx-amount)
             (- (get totalStx campaign) stx-amount)
@@ -303,7 +293,7 @@
       )
       (print {
         event: "refunded",
-        campaignId: campaignId,
+        campaignId: campaign-id,
         donor: contributor,
       })
       (ok true)
@@ -317,33 +307,33 @@
 )
 
 (define-read-only (get-stx-donation
-    (campaignId uint)
+    (campaign-id uint)
     (donor principal)
   )
   (ok (default-to u0
     (map-get? stx-donations {
-      campaignId: campaignId,
+      campaign-id: campaign-id,
       donor: donor,
     })
   ))
 )
 
 (define-read-only (get-sbtc-donation
-    (campaignId uint)
+    (campaign-id uint)
     (donor principal)
   )
   (ok (default-to u0
     (map-get? sbtc-donations {
-      campaignId: campaignId,
+      campaign-id: campaign-id,
       donor: donor,
     })
   ))
 )
 
-(define-read-only (get-campaign-info (campaignId uint))
-  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+(define-read-only (get-campaign-info (campaign-id uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND)))
     (ok {
-      id: campaignId,
+      id: campaign-id,
       owner: (get owner campaign),
       beneficiary: (get beneficiary campaign),
       startBlock: (get start campaign),
@@ -367,14 +357,14 @@
   (ok stacks-block-time)
 )
 
-(define-read-only (get-campaign-created-at (campaignId uint))
-  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+(define-read-only (get-campaign-created-at (campaign-id uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND)))
     (ok (get createdAt campaign))
   )
 )
 
-(define-read-only (get-campaign-end-at (campaignId uint))
-  (let ((campaign (unwrap! (map-get? campaigns campaignId) err-campaign-not-found)))
+(define-read-only (get-campaign-end-at (campaign-id uint))
+  (let ((campaign (unwrap! (map-get? campaigns campaign-id) ERR_CAMPAIGN_NOT_FOUND)))
     (ok (get endAt campaign))
   )
 )
@@ -384,9 +374,12 @@
 )
 
 (define-read-only (get-sbtc-token-contract)
-  (ok sbtc-token)
+  (ok SBTC_TOKEN)
 )
 
 (define-read-only (get-contract-balance)
-  (stx-get-balance (get-contract-principal))
+  (match (as-contract? () tx-sender)
+    contract-principal (stx-get-balance contract-principal)
+    err u0
+  )
 )

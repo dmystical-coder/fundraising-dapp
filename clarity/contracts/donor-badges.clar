@@ -15,28 +15,28 @@
 
 ;; -- Constants --
 
-(define-constant contract-owner tx-sender)
+(define-constant CONTRACT_OWNER tx-sender)
 
 ;; Errors
-(define-constant err-not-authorized (err u200))
-(define-constant err-no-donation (err u201))
-(define-constant err-already-at-tier (err u202))
-(define-constant err-token-not-found (err u203))
-(define-constant err-soulbound (err u204))
-(define-constant err-invalid-rate (err u205))
+(define-constant ERR_NOT_AUTHORIZED (err u200))
+(define-constant ERR_NO_DONATION (err u201))
+(define-constant ERR_ALREADY_AT_TIER (err u202))
+(define-constant ERR_TOKEN_NOT_FOUND (err u203))
+(define-constant ERR_SOULBOUND (err u204))
+(define-constant ERR_INVALID_RATE (err u205))
 
 ;; Tier identifiers
-(define-constant tier-none u0)
-(define-constant tier-bronze u1)
-(define-constant tier-silver u2)
-(define-constant tier-gold u3)
+(define-constant TIER_NONE u0)
+(define-constant TIER_BRONZE u1)
+(define-constant TIER_SILVER u2)
+(define-constant TIER_GOLD u3)
 
 ;; Tier thresholds, expressed in STX-equivalent microunits.
 ;; sBTC donations are converted to STX-equivalent via an owner-set rate
 ;; (see `sbtc-to-stx-numerator` / `sbtc-to-stx-denominator`).
-(define-constant threshold-bronze u1000000)        ;; 1 STX
-(define-constant threshold-silver u10000000)       ;; 10 STX
-(define-constant threshold-gold u100000000)        ;; 100 STX
+(define-constant THRESHOLD_BRONZE u1000000)        ;; 1 STX
+(define-constant THRESHOLD_SILVER u10000000)       ;; 10 STX
+(define-constant THRESHOLD_GOLD u100000000)        ;; 100 STX
 
 ;; -- Asset --
 
@@ -73,7 +73,7 @@
 ;; for the same campaign (tier upgrades mutate the existing badge in place).
 (define-map donor-badge-id
   {
-    campaignId: uint,
+    campaign-id: uint,
     donor: principal,
   }
   uint
@@ -86,7 +86,10 @@
 )
 
 (define-read-only (get-token-uri (id uint))
-  (ok (some (var-get token-uri)))
+  (begin
+    id
+    (ok (some (var-get token-uri)))
+  )
 )
 
 (define-read-only (get-owner (id uint))
@@ -100,11 +103,11 @@
 )
 
 (define-read-only (get-donor-badge-id
-    (campaignId uint)
+    (campaign-id uint)
     (donor principal)
   )
   (map-get? donor-badge-id {
-    campaignId: campaignId,
+    campaign-id: campaign-id,
     donor: donor,
   })
 )
@@ -118,12 +121,12 @@
 ;; get-sbtc-donation read-only functions.
 (define-public (get-donor-contribution-stx-equivalent
     (source <donation-source>)
-    (campaignId uint)
+    (campaign-id uint)
     (donor principal)
   )
   (let (
-      (stx-amount (try! (contract-call? source get-stx-donation campaignId donor)))
-      (sbtc-amount (try! (contract-call? source get-sbtc-donation campaignId donor)))
+      (stx-amount (try! (contract-call? source get-stx-donation campaign-id donor)))
+      (sbtc-amount (try! (contract-call? source get-sbtc-donation campaign-id donor)))
       (num (var-get sbtc-to-stx-numerator))
       (den (var-get sbtc-to-stx-denominator))
     )
@@ -136,10 +139,10 @@
 ;; before the donor calls `claim-badge`.
 (define-public (preview-tier
     (source <donation-source>)
-    (campaignId uint)
+    (campaign-id uint)
     (donor principal)
   )
-  (let ((amount (try! (get-donor-contribution-stx-equivalent source campaignId donor))))
+  (let ((amount (try! (get-donor-contribution-stx-equivalent source campaign-id donor))))
     (ok (tier-for-amount amount))
   )
 )
@@ -148,13 +151,13 @@
 ;; preview the tier a donor would receive before they spend gas on
 ;; `claim-badge`.
 (define-read-only (tier-for-amount (amount uint))
-  (if (>= amount threshold-gold)
-    tier-gold
-    (if (>= amount threshold-silver)
-      tier-silver
-      (if (>= amount threshold-bronze)
-        tier-bronze
-        tier-none
+  (if (>= amount THRESHOLD_GOLD)
+    TIER_GOLD
+    (if (>= amount THRESHOLD_SILVER)
+      TIER_SILVER
+      (if (>= amount THRESHOLD_BRONZE)
+        TIER_BRONZE
+        TIER_NONE
       )
     )
   )
@@ -171,27 +174,27 @@
 ;; one badge per campaign.
 (define-public (claim-badge
     (source <donation-source>)
-    (campaignId uint)
+    (campaign-id uint)
   )
   (let (
       (donor tx-sender)
-      (contribution (try! (get-donor-contribution-stx-equivalent source campaignId donor)))
+      (contribution (try! (get-donor-contribution-stx-equivalent source campaign-id donor)))
       (new-tier (tier-for-amount contribution))
       (existing-id (map-get? donor-badge-id {
-        campaignId: campaignId,
+        campaign-id: campaign-id,
         donor: donor,
       }))
     )
-    (asserts! (> new-tier tier-none) err-no-donation)
+    (asserts! (> new-tier TIER_NONE) ERR_NO_DONATION)
     (match existing-id
       prev-id
-      (let ((meta (unwrap! (map-get? badge-metadata prev-id) err-token-not-found)))
-        (asserts! (> new-tier (get tier meta)) err-already-at-tier)
+      (let ((meta (unwrap! (map-get? badge-metadata prev-id) ERR_TOKEN_NOT_FOUND)))
+        (asserts! (> new-tier (get tier meta)) ERR_ALREADY_AT_TIER)
         (map-set badge-metadata prev-id (merge meta { tier: new-tier }))
         (print {
           event: "badge-upgraded",
           tokenId: prev-id,
-          campaignId: campaignId,
+          campaignId: campaign-id,
           donor: donor,
           tier: new-tier,
           previousTier: (get tier meta),
@@ -203,18 +206,18 @@
         (var-set last-token-id id)
         (map-set badge-metadata id {
           owner: donor,
-          campaignId: campaignId,
+          campaignId: campaign-id,
           tier: new-tier,
           mintedAt: stacks-block-time,
         })
         (map-set donor-badge-id
-          { campaignId: campaignId, donor: donor }
+          { campaign-id: campaign-id, donor: donor }
           id
         )
         (print {
           event: "badge-claimed",
           tokenId: id,
-          campaignId: campaignId,
+          campaignId: campaign-id,
           donor: donor,
           tier: new-tier,
         })
@@ -236,7 +239,12 @@
     (sender principal)
     (recipient principal)
   )
-  err-soulbound
+  (begin
+    id
+    sender
+    recipient
+    ERR_SOULBOUND
+  )
 )
 
 ;; -- Owner-only admin --
@@ -246,7 +254,7 @@
 ;; conversion for every read; clients substitute `{id}` themselves.
 (define-public (set-token-uri (new-uri (string-ascii 256)))
   (begin
-    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
     (var-set token-uri new-uri)
     (print {
       event: "token-uri-updated",
@@ -265,8 +273,8 @@
     (denominator uint)
   )
   (begin
-    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
-    (asserts! (> denominator u0) err-invalid-rate)
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+    (asserts! (> denominator u0) ERR_INVALID_RATE)
     (var-set sbtc-to-stx-numerator numerator)
     (var-set sbtc-to-stx-denominator denominator)
     (print {

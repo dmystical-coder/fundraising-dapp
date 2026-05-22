@@ -38,6 +38,7 @@ import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import { ShareCard } from "@/components/campaign/ShareCard";
 import { DonorBadgePanel } from "@/components/campaign/DonorBadgePanel";
+import { RewardsPanel } from "@/components/campaign/RewardsPanel";
 import DonationModal from "@/components/DonationModal";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
@@ -341,6 +342,7 @@ export default function CampaignDetailPage() {
             </Card>
 
             <DonorBadgePanel campaignId={campaign.id} />
+            <RewardsPanel campaignId={campaign.id} />
 
             {campaign && (
               <ShareCard
