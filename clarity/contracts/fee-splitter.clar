@@ -9,9 +9,9 @@
 ;;   1. fee-splitter.pay-fee-stx(campaign-id, amount)
 ;;   2. fundraising.donate-stx(campaign-id, amount)
 ;;
-;; fee          = amount × fee-bps / 10000
-;; charity-cut  = fee × charity-share-bps / 10000
-;; protocol-cut = fee − charity-cut
+;; fee          = amount * fee-bps / 10000
+;; charity-cut  = fee * charity-share-bps / 10000
+;; protocol-cut = fee - charity-cut
 
 (use-trait fundstacks-source .fundstacks-source-trait.fundstacks-source)
 
@@ -19,7 +19,7 @@
 
 (define-constant CONTRACT_OWNER tx-sender)
 (define-constant SBTC_TOKEN 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
-(define-constant MAX_FEE_BPS u1000) ;; 10% hard cap — prevents owner from setting a ruinous fee
+(define-constant MAX_FEE_BPS u1000) ;; 10% hard cap
 
 ;; Errors
 (define-constant ERR_NOT_AUTHORIZED (err u400))
@@ -96,18 +96,20 @@
     (asserts! (or (> stx-amount u0) (> sbtc-amount u0)) ERR_NO_FEES)
     (map-delete pending-stx recipient)
     (map-delete pending-sbtc recipient)
-    (if (> stx-amount u0)
-      (try! (as-contract? ((with-stx stx-amount))
-        (stx-transfer? stx-amount tx-sender recipient)
-      ))
-      true
-    )
-    (if (> sbtc-amount u0)
-      (try! (as-contract? ((with-ft SBTC_TOKEN "*" sbtc-amount))
-        (contract-call? SBTC_TOKEN transfer sbtc-amount tx-sender recipient none)
-      ))
-      true
-    )
+    (try! (as-contract?
+      ((with-stx stx-amount) (with-ft SBTC_TOKEN "*" sbtc-amount))
+      (begin
+        (if (> stx-amount u0)
+          (try! (stx-transfer? stx-amount tx-sender recipient))
+          true
+        )
+        (if (> sbtc-amount u0)
+          (try! (contract-call? SBTC_TOKEN transfer sbtc-amount tx-sender recipient none))
+          true
+        )
+        true
+      )
+    ))
     (print {
       event: "fees-withdrawn",
       recipient: recipient,
