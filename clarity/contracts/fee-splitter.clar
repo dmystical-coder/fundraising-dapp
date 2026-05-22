@@ -142,6 +142,54 @@
   )
 )
 
+;; -- Read-only views --
+
+(define-read-only (get-fee-bps)
+  (ok (var-get fee-bps))
+)
+
+(define-read-only (get-protocol-treasury)
+  (ok (var-get protocol-treasury))
+)
+
+(define-read-only (get-campaign-charity (campaign-id uint))
+  (ok (map-get? campaign-charity campaign-id))
+)
+
+(define-read-only (get-pending-stx (who principal))
+  (ok (default-to u0 (map-get? pending-stx who)))
+)
+
+(define-read-only (get-pending-sbtc (who principal))
+  (ok (default-to u0 (map-get? pending-sbtc who)))
+)
+
+;; Preview the fee for a given donation amount at the current fee-bps.
+(define-read-only (compute-fee (amount uint))
+  (ok (/ (* amount (var-get fee-bps)) u10000))
+)
+
+;; -- Admin --
+
+(define-public (set-fee-bps (bps uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+    (asserts! (<= bps MAX_FEE_BPS) ERR_INVALID_FEE)
+    (var-set fee-bps bps)
+    (print { event: "fee-bps-updated", bps: bps })
+    (ok true)
+  )
+)
+
+(define-public (set-protocol-treasury (who principal))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+    (var-set protocol-treasury who)
+    (print { event: "treasury-updated", treasury: who })
+    (ok true)
+  )
+)
+
 ;; -- Private helpers --
 
 (define-private (credit-stx (campaign-id uint) (fee uint))
