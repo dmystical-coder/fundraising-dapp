@@ -48,3 +48,152 @@
 ;; Accumulated fees per principal. Recipients pull via withdraw-fees.
 (define-map pending-stx principal uint)
 (define-map pending-sbtc principal uint)
+
+;; -- Public functions --
+
+;; Pay the platform fee for an STX donation. Call this alongside
+;; fundraising.donate-stx in the same transaction batch.
+(define-public (pay-fee-stx
+    (campaign-id uint)
+    (amount uint)
+  )
+  (let (
+      (fee (/ (* amount (var-get fee-bps)) u10000))
+    )
+    (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+    (asserts! (> fee u0) ERR_INVALID_FEE)
+    (try! (stx-transfer? fee tx-sender (try! (as-contract? () tx-sender))))
+    (credit-stx campaign-id fee)
+  )
+)
+
+;; Pay the platform fee for an sBTC donation. Call this alongside
+;; fundraising.donate-sbtc in the same transaction batch.
+(define-public (pay-fee-sbtc
+    (campaign-id uint)
+    (amount uint)
+  )
+  (let (
+      (fee (/ (* amount (var-get fee-bps)) u10000))
+    )
+    (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+    (asserts! (> fee u0) ERR_INVALID_FEE)
+    (try! (contract-call? SBTC_TOKEN transfer fee tx-sender
+      (try! (as-contract? () tx-sender)) none
+    ))
+    (credit-sbtc campaign-id fee)
+  )
+)
+
+;; Withdraw all accumulated fees for the caller. Sends any pending STX
+;; and sBTC in a single call.
+(define-public (withdraw-fees)
+  (let (
+      (recipient tx-sender)
+      (stx-amount (default-to u0 (map-get? pending-stx recipient)))
+      (sbtc-amount (default-to u0 (map-get? pending-sbtc recipient)))
+    )
+    (asserts! (or (> stx-amount u0) (> sbtc-amount u0)) ERR_NO_FEES)
+    (map-delete pending-stx recipient)
+    (map-delete pending-sbtc recipient)
+    (if (> stx-amount u0)
+      (try! (as-contract? ((with-stx stx-amount))
+        (stx-transfer? stx-amount tx-sender recipient)
+      ))
+      true
+    )
+    (if (> sbtc-amount u0)
+      (try! (as-contract? ((with-ft SBTC_TOKEN "*" sbtc-amount))
+        (contract-call? SBTC_TOKEN transfer sbtc-amount tx-sender recipient none)
+      ))
+      true
+    )
+    (print {
+      event: "fees-withdrawn",
+      recipient: recipient,
+      stx: stx-amount,
+      sbtc: sbtc-amount,
+    })
+    (ok { stx: stx-amount, sbtc: sbtc-amount })
+  )
+)
+
+;; Set a charity split for a campaign. Only the campaign owner may call
+;; this. share-bps is the charity's cut of the fee, out of 10000.
+(define-public (set-campaign-charity
+    (source <fundstacks-source>)
+    (campaign-id uint)
+    (charity principal)
+    (share-bps uint)
+  )
+  (let (
+      (info (try! (contract-call? source get-campaign-info campaign-id)))
+    )
+    (asserts! (is-eq tx-sender (get owner info)) ERR_NOT_AUTHORIZED)
+    (asserts! (<= share-bps u10000) ERR_INVALID_SPLIT)
+    (map-set campaign-charity campaign-id { charity: charity, share-bps: share-bps })
+    (print {
+      event: "campaign-charity-set",
+      campaign-id: campaign-id,
+      charity: charity,
+      share-bps: share-bps,
+    })
+    (ok true)
+  )
+)
+
+;; -- Private helpers --
+
+(define-private (credit-stx (campaign-id uint) (fee uint))
+  (let (
+      (treasury (var-get protocol-treasury))
+      (config (map-get? campaign-charity campaign-id))
+      (charity-cut (match config cfg (/ (* fee (get share-bps cfg)) u10000) u0))
+      (protocol-cut (- fee charity-cut))
+    )
+    (map-set pending-stx treasury
+      (+ (default-to u0 (map-get? pending-stx treasury)) protocol-cut)
+    )
+    (match config
+      cfg (map-set pending-stx (get charity cfg)
+            (+ (default-to u0 (map-get? pending-stx (get charity cfg))) charity-cut)
+          )
+      false
+    )
+    (print {
+      event: "fee-paid-stx",
+      campaign-id: campaign-id,
+      fee: fee,
+      protocol-cut: protocol-cut,
+      charity-cut: charity-cut,
+    })
+    (ok fee)
+  )
+)
+
+(define-private (credit-sbtc (campaign-id uint) (fee uint))
+  (let (
+      (treasury (var-get protocol-treasury))
+      (config (map-get? campaign-charity campaign-id))
+      (charity-cut (match config cfg (/ (* fee (get share-bps cfg)) u10000) u0))
+      (protocol-cut (- fee charity-cut))
+    )
+    (map-set pending-sbtc treasury
+      (+ (default-to u0 (map-get? pending-sbtc treasury)) protocol-cut)
+    )
+    (match config
+      cfg (map-set pending-sbtc (get charity cfg)
+            (+ (default-to u0 (map-get? pending-sbtc (get charity cfg))) charity-cut)
+          )
+      false
+    )
+    (print {
+      event: "fee-paid-sbtc",
+      campaign-id: campaign-id,
+      fee: fee,
+      protocol-cut: protocol-cut,
+      charity-cut: charity-cut,
+    })
+    (ok fee)
+  )
+)
