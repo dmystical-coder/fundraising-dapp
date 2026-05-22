@@ -245,32 +245,31 @@ export default function DashboardPage() {
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3} mb={6}>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Total Raised
-                </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Raised</Text>
+                <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
                   ${totalRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>All campaigns</Text>
               </CardBody>
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Campaigns
-                </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns</Text>
+                <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
                   {campaigns.length}
                 </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
+                  {campaignsWithStatus.filter((c) => c.status === "active").length} active
+                </Text>
               </CardBody>
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Total Donors
-                </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Donors</Text>
+                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
                   {totalDonors}
                 </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across all campaigns</Text>
               </CardBody>
             </Card>
           </SimpleGrid>
@@ -321,10 +320,9 @@ export default function DashboardPage() {
               ) : filteredCampaigns.length === 0 ? (
                 <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                   <CardBody py={10} textAlign="center">
-                    <VStack spacing={3}>
-                      <Text fontSize="3xl">📭</Text>
-                      <Heading size="md">No campaigns in this view</Heading>
-                      <Text color="text.secondary">
+                    <VStack spacing={2}>
+                      <Heading size="md">No campaigns here</Heading>
+                      <Text color="text.secondary" fontSize="sm">
                         Try another filter or create a new campaign.
                       </Text>
                     </VStack>
@@ -346,15 +344,6 @@ export default function DashboardPage() {
                       <CardBody py={4}>
                         <HStack justify="space-between" align="center" gap={4} flexWrap="wrap">
                           <HStack spacing={3} minW={0}>
-                            <Box
-                              w={14}
-                              h={12}
-                              borderWidth="1px"
-                              borderColor="border.default"
-                              borderRadius="md"
-                              bg="bg.surfaceAlt"
-                              flexShrink={0}
-                            />
                             <VStack align="start" spacing={0} minW={0}>
                               <Text fontWeight="700" noOfLines={1}>
                                 {campaign.title || `Campaign #${campaign.campaign_id}`}
@@ -400,10 +389,9 @@ export default function DashboardPage() {
               ) : donations.length === 0 ? (
                 <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                   <CardBody py={12} textAlign="center">
-                    <VStack spacing={4}>
-                      <Text fontSize="4xl">💝</Text>
-                      <Heading size="md">No Donations Yet</Heading>
-                      <Text color="text.secondary" maxW="300px">
+                    <VStack spacing={3}>
+                      <Heading size="md">No donations yet</Heading>
+                      <Text color="text.secondary" fontSize="sm" maxW="300px">
                         You haven&apos;t made any donations yet.
                       </Text>
                       <Button as={Link} href="/" colorScheme="primary">
@@ -413,38 +401,43 @@ export default function DashboardPage() {
                   </CardBody>
                 </Card>
               ) : (
-                <VStack spacing={3} align="stretch">
-                  {donations.map((donation, index) => {
-                    const isStx = donation.event_name === "donated-stx";
-                    const explorerUrl = donation.txid
-                      ? `https://explorer.stacks.co/txid/${donation.txid}`
-                      : null;
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface">
+                  <CardBody p={0}>
+                    <VStack spacing={0} align="stretch" divider={<Divider borderColor="border.subtle" />}>
+                      {donations.map((donation, index) => {
+                        const isStx = donation.event_name === "donated-stx";
+                        const explorerUrl = donation.txid
+                          ? `https://explorer.stacks.co/txid/${donation.txid}`
+                          : null;
 
-                    return (
-                      <Card
-                        key={`${donation.txid}-${index}`}
-                        bg="bg.surface"
-                        borderWidth="1px"
-                        borderColor="border.default"
-                        borderRadius="xl"
-                      >
-                        <CardBody py={4}>
-                          <HStack justify="space-between" flexWrap="wrap" gap={3}>
+                        return (
+                          <HStack
+                            key={`${donation.txid}-${index}`}
+                            px={4}
+                            py={3}
+                            justify="space-between"
+                            flexWrap="wrap"
+                            gap={2}
+                          >
                             <VStack align="start" spacing={0}>
-                              <HStack>
-                                <Text fontWeight="600" color="chakra-body-text">
-                                  Donated to Campaign #{donation.campaign_id}
-                                </Text>
-                                <ChakraLink as={Link} href={`/campaigns/${donation.campaign_id}`} color="primary.500" fontSize="sm">
-                                  View →
+                              <HStack spacing={1.5}>
+                                <ChakraLink
+                                  as={Link}
+                                  href={`/campaigns/${donation.campaign_id}`}
+                                  fontWeight="600"
+                                  fontSize="sm"
+                                  color="chakra-body-text"
+                                  _hover={{ color: "primary.600" }}
+                                >
+                                  Campaign #{donation.campaign_id}
                                 </ChakraLink>
                               </HStack>
-                              <Text fontSize="sm" color="text.secondary">
-                                {new Date(donation.inserted_at).toLocaleString()}
+                              <Text fontSize="xs" color="text.tertiary">
+                                {new Date(donation.inserted_at).toLocaleDateString()}
                               </Text>
                             </VStack>
 
-                            <HStack spacing={3}>
+                            <HStack spacing={2}>
                               <CombinedAmountDisplay
                                 stxAmount={isStx ? donation.amount : "0"}
                                 sbtcAmount={!isStx ? donation.amount : "0"}
@@ -453,17 +446,24 @@ export default function DashboardPage() {
                                 size="sm"
                               />
                               {explorerUrl && (
-                                <ChakraLink href={explorerUrl} isExternal color="primary.500" fontSize="sm" aria-label="Open transaction in explorer">
-                                  <Icon as={ExternalLinkIcon} />
+                                <ChakraLink
+                                  href={explorerUrl}
+                                  isExternal
+                                  color="primary.500"
+                                  fontSize="sm"
+                                  aria-label="View transaction"
+                                  _hover={{ color: "primary.700" }}
+                                >
+                                  ↗
                                 </ChakraLink>
                               )}
                             </HStack>
                           </HStack>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </VStack>
+                        );
+                      })}
+                    </VStack>
+                  </CardBody>
+                </Card>
               )}
             </>
           )}
@@ -471,10 +471,9 @@ export default function DashboardPage() {
           {activePanel === "settings" && (
             <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surfaceAlt">
               <CardBody py={10}>
-                <VStack spacing={3} textAlign="center">
-                  <Text fontSize="3xl">⚙️</Text>
+                <VStack spacing={2} textAlign="center">
                   <Heading size="md">Settings coming soon</Heading>
-                  <Text color="text.secondary">Account and dashboard preferences will appear here.</Text>
+                  <Text color="text.secondary" fontSize="sm">Account and dashboard preferences will appear here.</Text>
                 </VStack>
               </CardBody>
             </Card>

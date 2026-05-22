@@ -2,34 +2,39 @@
 
 import { useParams } from "next/navigation";
 import {
-  Container,
+  AspectRatio,
   Box,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Grid,
-  GridItem,
+  Button,
   Card,
   CardBody,
   CardHeader,
+  Container,
+  Divider,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Image,
   Progress,
-  Button,
   Skeleton,
   SkeletonText,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Divider,
-  useDisclosure,
+  Text,
+  VStack,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
 import { useCampaignById } from "@/hooks/campaignQueries";
-import { useCampaignActivity, useCampaignLeaderboard, useIndexerCampaign } from "@/hooks/indexerQueries";
+import {
+  useCampaignActivity,
+  useCampaignLeaderboard,
+  useIndexerCampaign,
+} from "@/hooks/indexerQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
@@ -39,14 +44,13 @@ import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import { ShareCard } from "@/components/campaign/ShareCard";
 import { DonorBadgePanel } from "@/components/campaign/DonorBadgePanel";
 import { RewardsPanel } from "@/components/campaign/RewardsPanel";
-import DonationModal from "@/components/DonationModal";
+import { InlineDonationPanel } from "@/components/campaign/InlineDonationPanel";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
 
 export default function CampaignDetailPage() {
   const params = useParams();
   const campaignId = params?.id ? parseInt(params.id as string, 10) : null;
-  const { isOpen: isDonateOpen, onOpen: onDonateOpen, onClose: onDonateClose } = useDisclosure();
 
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
   const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
@@ -59,31 +63,34 @@ export default function CampaignDetailPage() {
     refetch: refetchActivity,
     isFetching: activityRefetching,
   } = useCampaignActivity(campaignId, 20);
-  const { data: leaderboard, isLoading: leaderboardLoading } = useCampaignLeaderboard(campaignId, 10);
+  const { data: leaderboard, isLoading: leaderboardLoading } =
+    useCampaignLeaderboard(campaignId, 10);
+
   const topDonorBg = useColorModeValue("primary.50", "primary.900");
-  
   const currentAddress = useAddress();
-  const isOwner = currentAddress && campaign?.owner && 
+  const isOwner =
+    currentAddress &&
+    campaign?.owner &&
     currentAddress.toLowerCase() === campaign.owner.toLowerCase();
+
+  // Cover image — sourced from indexer metadata when available
+  const coverUrl =
+    (indexedCampaign as any)?.cover_url ||
+    (indexedCampaign as any)?.coverUrl ||
+    null;
 
   if (isLoading || pricesLoading) {
     return (
       <Container maxW="container.xl" py={8}>
-        <Button
-          as={Link}
-          href="/campaigns"
-          leftIcon={<ArrowBackIcon />}
-          variant="ghost"
-          mb={6}
-        >
+        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" mb={6}>
           Back to Campaigns
         </Button>
         <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
           <GridItem>
+            <Skeleton height="260px" borderRadius="xl" mb={6} />
             <VStack spacing={6} align="stretch">
-              <Skeleton height="40px" width="60%" />
+              <Skeleton height="36px" width="60%" />
               <SkeletonText noOfLines={4} spacing={4} />
-              <Skeleton height="200px" borderRadius="xl" />
             </VStack>
           </GridItem>
           <GridItem>
@@ -97,13 +104,7 @@ export default function CampaignDetailPage() {
   if (error || !campaign) {
     return (
       <Container maxW="container.xl" py={8}>
-        <Button
-          as={Link}
-          href="/campaigns"
-          leftIcon={<ArrowBackIcon />}
-          variant="ghost"
-          mb={6}
-        >
+        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" mb={6}>
           Back to Campaigns
         </Button>
         <Alert
@@ -134,7 +135,6 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  // Raised amounts from chain (same source as donationCount); indexer metadata may disagree if ingestion is incomplete.
   const stxAmount = campaign.totalStx;
   const sbtcAmount = campaign.totalSbtc;
   const stxPrice = prices?.stx || 0;
@@ -142,7 +142,10 @@ export default function CampaignDetailPage() {
   const stxUsd = (stxAmount / 1_000_000) * stxPrice;
   const sbtcUsd = (sbtcAmount / 100_000_000) * sbtcPrice;
   const totalUsd = isNaN(stxUsd + sbtcUsd) ? 0 : stxUsd + sbtcUsd;
-  const progress = campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
+  const progress =
+    campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
+
+  const campaignTitle = indexedCampaign?.title || "Community Fundraiser";
 
   return (
     <Container maxW="container.xl" py={8}>
@@ -156,60 +159,67 @@ export default function CampaignDetailPage() {
         Back to Campaigns
       </Button>
 
-      <Grid 
+      <Grid
         templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
         templateAreas={{
-          base: `
-            "header"
-            "sidebar"
-            "content"
-          `,
-          lg: `
-            "header sidebar"
-            "content sidebar"
-          `
+          base: `"header" "sidebar" "content"`,
+          lg: `"header sidebar" "content sidebar"`,
         }}
         gap={8}
         alignItems="start"
       >
-        {/* Header Area */}
+        {/* ── Left: header ── */}
         <GridItem area="header">
-          <VStack spacing={4} align="stretch">
+          {coverUrl && (
+            <AspectRatio ratio={16 / 9} borderRadius="xl" overflow="hidden" mb={6}>
+              <Image
+                src={coverUrl}
+                alt={`Cover image for ${campaignTitle}`}
+                objectFit="cover"
+              />
+            </AspectRatio>
+          )}
+
+          <VStack spacing={3} align="stretch">
             <HStack spacing={3}>
               <StatusBadge status={status} size="md" />
               {status === "active" && campaign.endAt && (
                 <CountdownTimer endAt={campaign.endAt} size="md" />
               )}
             </HStack>
-            <Heading size="xl">
-              {indexedCampaign?.title || "Community Fundraiser"}
+
+            <Heading size="xl" color="chakra-body-text">
+              {campaignTitle}
             </Heading>
+
             <HStack spacing={4} flexWrap="wrap">
-              <HStack>
+              <HStack spacing={1.5}>
                 <Text color="text.secondary" fontSize="sm">Owner:</Text>
                 <AddressDisplay address={campaign.owner} size="sm" />
               </HStack>
-              <HStack>
+              <HStack spacing={1.5}>
                 <Text color="text.secondary" fontSize="sm">Beneficiary:</Text>
                 <AddressDisplay address={campaign.beneficiary} size="sm" />
               </HStack>
             </HStack>
+
+            {indexedCampaign?.description && (
+              <Text
+                color="text.secondary"
+                lineHeight="1.75"
+                whiteSpace="pre-wrap"
+                fontSize="md"
+                pt={1}
+              >
+                {indexedCampaign.description}
+              </Text>
+            )}
           </VStack>
         </GridItem>
 
-        {/* Content Area */}
+        {/* ── Left: content ── */}
         <GridItem area="content">
           <VStack spacing={6} align="stretch">
-            {indexedCampaign?.description && (
-              <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
-                <CardBody>
-                  <Text color="text.secondary" whiteSpace="pre-wrap">
-                    {indexedCampaign.description}
-                  </Text>
-                </CardBody>
-              </Card>
-            )}
-
             {isOwner && (
               <CampaignAdminControls
                 campaignId={campaign.id}
@@ -222,7 +232,12 @@ export default function CampaignDetailPage() {
               />
             )}
 
-            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+            <Card
+              bg="bg.surface"
+              borderColor="border.default"
+              borderWidth="1px"
+              borderRadius="xl"
+            >
               <CardHeader pb={0}>
                 <Heading size="md">Recent Activity</Heading>
               </CardHeader>
@@ -248,19 +263,31 @@ export default function CampaignDetailPage() {
           </VStack>
         </GridItem>
 
-        {/* Sidebar Area */}
+        {/* ── Right: sidebar ── */}
         <GridItem area="sidebar" position={{ lg: "sticky" }} top={{ lg: 6 }}>
-          <VStack spacing={6} align="stretch">
-            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+          <VStack spacing={5} align="stretch">
+
+            {/* Progress card */}
+            <Card
+              bg="bg.surface"
+              borderColor="border.default"
+              borderWidth="1px"
+              borderRadius="xl"
+            >
               <CardBody>
                 <VStack spacing={4} align="stretch">
-                  <HStack justify="space-between">
-                    <Text fontWeight="600" color="text.secondary">Amount Raised</Text>
-                    <Text fontWeight="700" color="primary.600" fontSize="lg">
-                      ${totalUsd.toFixed(2)} USD
+                  <Box>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary" mb={0.5}>
+                      Amount Raised
                     </Text>
-                  </HStack>
-                  
+                    <Text fontWeight="800" color="primary.600" fontSize="2xl" lineHeight="1.1">
+                      ${totalUsd.toFixed(2)}
+                      <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
+                        USD
+                      </Text>
+                    </Text>
+                  </Box>
+
                   <CombinedAmountDisplay
                     stxAmount={stxAmount}
                     sbtcAmount={sbtcAmount}
@@ -275,7 +302,7 @@ export default function CampaignDetailPage() {
                         <Text fontSize="sm" color="text.secondary">
                           Goal: ${campaign.goal.toLocaleString()}
                         </Text>
-                        <Text fontSize="sm" fontWeight="600" color="text.secondary">
+                        <Text fontSize="sm" fontWeight="700" color="text.secondary">
                           {progress.toFixed(0)}%
                         </Text>
                       </HStack>
@@ -293,65 +320,70 @@ export default function CampaignDetailPage() {
                     </Box>
                   )}
 
-                  <HStack justify="space-around" pt={4} borderTop="1px" borderColor="border.default">
+                  <HStack
+                    justify="space-around"
+                    pt={3}
+                    borderTop="1px"
+                    borderColor="border.default"
+                  >
                     <VStack spacing={0}>
                       <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
                         {campaign.donationCount}
                       </Text>
-                      <Text fontSize="sm" color="text.secondary">Donations</Text>
+                      <Text fontSize="sm" color="text.secondary">
+                        Donations
+                      </Text>
                     </VStack>
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
                       <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
                         {(() => {
                           if (!campaign.endAt) return "Ongoing";
-                          const durationSecs = campaign.endAt - campaign.createdAt;
-                          const days = Math.floor(durationSecs / 86400);
-                          const hours = Math.floor((durationSecs % 86400) / 3600);
-                          const minutes = Math.floor((durationSecs % 3600) / 60);
-                          if (days > 0) return `${days} day${days !== 1 ? "s" : ""}`;
-                          if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
-                          if (minutes > 0) return `${minutes} min${minutes !== 1 ? "s" : ""}`;
-                          return "< 1 min";
+                          const secs = campaign.endAt - campaign.createdAt;
+                          const days = Math.floor(secs / 86400);
+                          const hours = Math.floor((secs % 86400) / 3600);
+                          const mins = Math.floor((secs % 3600) / 60);
+                          if (days > 0) return `${days}d`;
+                          if (hours > 0) return `${hours}h`;
+                          if (mins > 0) return `${mins}m`;
+                          return "< 1m";
                         })()}
                       </Text>
-                      <Text fontSize="sm" color="text.secondary">Duration</Text>
+                      <Text fontSize="sm" color="text.secondary">
+                        Duration
+                      </Text>
                     </VStack>
                   </HStack>
-
-                  {status === "active" && !isOwner && (
-                    <Box pt={4}>
-                      <Button
-                        colorScheme="primary"
-                        size="lg"
-                        width="100%"
-                        onClick={onDonateOpen}
-                      >
-                        Donate Now
-                      </Button>
-                      <DonationModal
-                        isOpen={isDonateOpen}
-                        campaignId={campaign.id}
-                        campaignTitle={indexedCampaign?.title || "Community Fundraiser"}
-                        onClose={onDonateClose}
-                      />
-                    </Box>
-                  )}
                 </VStack>
               </CardBody>
             </Card>
+
+            {/* Inline donation / refund panel */}
+            {(status === "active" || status === "cancelled") && !isOwner && (
+              <InlineDonationPanel
+                campaignId={campaign.id}
+                campaignTitle={campaignTitle}
+                status={status}
+              />
+            )}
 
             <DonorBadgePanel campaignId={campaign.id} />
             <RewardsPanel campaignId={campaign.id} />
 
             {campaign && (
               <ShareCard
-                title={indexedCampaign?.title || "Community Fundraiser"}
+                title={campaignTitle}
                 campaignId={campaign.id}
               />
             )}
 
-            <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+            {/* Top donors */}
+            <Card
+              bg="bg.surface"
+              borderColor="border.default"
+              borderWidth="1px"
+              borderRadius="xl"
+            >
               <CardHeader pb={2}>
                 <Heading size="md">Top Donors</Heading>
               </CardHeader>

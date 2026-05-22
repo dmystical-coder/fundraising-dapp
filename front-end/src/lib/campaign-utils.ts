@@ -99,17 +99,42 @@ export const getCancelTx = (
 export const getRefundTx = (
   network: Network,
   address: string,
-  campaignId: number
+  campaignId: number,
+  stxAmount: number = 0, // micro-STX the contract will return
+  sbtcAmount: number = 0, // sats the contract will return
 ): ContractCallOptions => {
+  const contractPrincipal = `${FUNDRAISING_CONTRACT.address}.${FUNDRAISING_CONTRACT.name}`;
+  const postConditions: PostCondition[] = [];
+
+  if (stxAmount > 0) {
+    postConditions.push(
+      Pc.principal(contractPrincipal).willSendEq(stxAmount).ustx()
+    );
+  }
+
+  if (sbtcAmount > 0) {
+    const ftPc: FungiblePostCondition = {
+      type: "ft-postcondition",
+      address: contractPrincipal,
+      condition: "eq",
+      asset: `${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}::sbtc-token`,
+      amount: sbtcAmount,
+    };
+    postConditions.push(ftPc);
+  }
+
   return {
     anchorMode: AnchorMode.Any,
-    postConditionMode: PostConditionMode.Deny,
+    // Use Allow when amounts are unknown so the tx isn't blocked; Deny when we
+    // have exact amounts and can assert the contract sends precisely that much.
+    postConditionMode:
+      postConditions.length > 0 ? PostConditionMode.Deny : PostConditionMode.Allow,
     contractAddress: FUNDRAISING_CONTRACT.address || "",
     contractName: FUNDRAISING_CONTRACT.name,
     network,
     functionName: "refund",
     functionArgs: [uintCV(campaignId)],
-    postConditions: [Pc.principal(address).willSendEq(0).ustx()],
+    postConditions,
   };
 };
 
