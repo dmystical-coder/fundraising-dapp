@@ -96,4 +96,14 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/fundraising.clar
             clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: fundstacks-source-trait
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fundstacks-source-trait.clar
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: fundstacks-rewards
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fundstacks-rewards.clar
+            clarity-version: 4
       epoch: "3.3"
