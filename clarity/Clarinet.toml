@@ -36,5 +36,10 @@ path = 'contracts/fundstacks-rewards.clar'
 clarity_version = 4
 epoch = "3.3"
 
+[contracts.fee-splitter]
+path = 'contracts/fee-splitter.clar'
+clarity_version = 4
+epoch = "3.3"
+
 [repl.analysis]
 passes = []

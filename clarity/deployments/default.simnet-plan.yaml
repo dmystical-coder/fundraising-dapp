@@ -106,4 +106,9 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/fundstacks-rewards.clar
             clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: fee-splitter
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fee-splitter.clar
+            clarity-version: 4
       epoch: "3.3"
