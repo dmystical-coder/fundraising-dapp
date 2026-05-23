@@ -74,10 +74,11 @@ export default function CampaignDetailPage() {
     currentAddress.toLowerCase() === campaign.owner.toLowerCase();
 
   // Cover image — sourced from indexer metadata when available
-  const coverUrl =
-    (indexedCampaign as any)?.cover_url ||
-    (indexedCampaign as any)?.coverUrl ||
-    null;
+  const indexedExtra = indexedCampaign as
+    | { cover_url?: string | null; coverUrl?: string | null }
+    | null
+    | undefined;
+  const coverUrl = indexedExtra?.cover_url || indexedExtra?.coverUrl || null;
 
   if (isLoading || pricesLoading) {
     return (

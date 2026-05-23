@@ -11,14 +11,13 @@ import {
   GridItem,
   Heading,
   HStack,
-  Icon,
   Link as ChakraLink,
   Skeleton,
   SimpleGrid,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { AddIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
