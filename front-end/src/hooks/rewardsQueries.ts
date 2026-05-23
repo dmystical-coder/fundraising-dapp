@@ -2,6 +2,7 @@ import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import {
   computeRewards,
   computeStxEquivalent,
+  getClaimedRewardsAmount,
   getFstrBalance,
   hasClaimed,
   previewRewardsOnChain,
@@ -21,7 +22,12 @@ const hasClaimedKey = (campaignId: number | null, donor: string | null) =>
 export type RewardsClaimState =
   | { status: "not-eligible"; contributionStxEq: bigint }
   | { status: "claimable"; previewTokens: bigint; contributionStxEq: bigint }
-  | { status: "claimed"; previewTokens: bigint; contributionStxEq: bigint };
+  | {
+      status: "claimed";
+      previewTokens: bigint;
+      claimedTokens: bigint;
+      contributionStxEq: bigint;
+    };
 
 // Composite hook driving the rewards panel. Resolves the donor's contribution,
 // whether they've already claimed, and how many FSTR they'd earn (or earned).
@@ -60,7 +66,8 @@ export const useRewardsClaimState = (
         computeRewards(contributionStxEq, goal, totalStx);
 
       if (claimed) {
-        return { status: "claimed", previewTokens, contributionStxEq };
+        const claimedTokens = (await getClaimedRewardsAmount(cid, d)) ?? previewTokens;
+        return { status: "claimed", previewTokens, claimedTokens, contributionStxEq };
       }
       return { status: "claimable", previewTokens, contributionStxEq };
     },
