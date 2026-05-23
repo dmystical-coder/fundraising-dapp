@@ -52,8 +52,9 @@
 ;; One escrow per campaign-id. The owner is captured from get-campaign-info
 ;; at create time and stored, so a later transfer of the campaign-owner
 ;; principal on the source contract cannot redirect remaining tranche
-;; payouts. tranche-amount = floor(deposit / tranche-count); any
-;; remainder stays in balance and is paid out with the final tranche.
+;; payouts. tranche-amount = floor(deposit / tranche-count); each claim
+;; pays exactly tranche-amount and any floor-division remainder is
+;; locked dust (the FE warns creators to use evenly-divisible amounts).
 (define-map escrows
   uint
   {
@@ -200,5 +201,63 @@
       true
     )
     (ok weight)
+  )
+)
+
+;; Owner claims a tranche once its accumulated vote-weight has cleared
+;; the release-threshold set at create time. Tranches can be claimed in
+;; any order -- donor votes determine release readiness independently
+;; per tranche. Each successful claim pays out exactly tranche-amount;
+;; floor-division dust from create stays permanently locked.
+(define-public (claim-tranche
+    (campaign-id uint)
+    (tranche-id uint)
+  )
+  (let (
+      (escrow (unwrap! (map-get? escrows campaign-id) ERR_ESCROW_NOT_FOUND))
+      (tranche-count (get tranche-count escrow))
+      (recipient (get owner escrow))
+      (tranche-amount (get tranche-amount escrow))
+      (tranche (default-to
+                  {
+                    vote-weight: u0,
+                    released: false,
+                    claimed: false,
+                  }
+                  (map-get? tranche-votes {
+                    campaign-id: campaign-id,
+                    tranche-id: tranche-id,
+                  })
+                ))
+    )
+    (asserts! (is-eq tx-sender recipient) ERR_NOT_AUTHORIZED)
+    (asserts! (< tranche-id tranche-count) ERR_TRANCHE_NOT_FOUND)
+    (asserts! (not (get claimed tranche)) ERR_ALREADY_CLAIMED)
+    (asserts!
+      (>= (get vote-weight tranche) (get release-threshold escrow))
+      ERR_INSUFFICIENT_VOTES
+    )
+    (try! (as-contract? ((with-stx tranche-amount))
+      (begin
+        (try! (stx-transfer? tranche-amount tx-sender recipient))
+        true
+      )
+    ))
+    (map-set tranche-votes
+      {
+        campaign-id: campaign-id,
+        tranche-id: tranche-id,
+      }
+      (merge tranche {
+        released: true,
+        claimed: true,
+      })
+    )
+    (map-set escrows campaign-id
+      (merge escrow {
+        balance: (- (get balance escrow) tranche-amount),
+      })
+    )
+    (ok tranche-amount)
   )
 )
