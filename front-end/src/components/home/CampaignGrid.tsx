@@ -232,6 +232,7 @@ export function CampaignGrid({
         beneficiary: meta.owner,
         title: meta.title,
         description: meta.description,
+        cover_url: null,
         total_stx: "0",
         total_sbtc: "0",
         donation_count: 0,
@@ -712,6 +713,7 @@ export function CampaignGrid({
                 sbtcPrice={prices?.sbtc}
                 title={campaign.title ?? undefined}
                 isPending={campaign.isPending}
+                coverUrl={campaign.cover_url ?? undefined}
               />
             ))}
           </SimpleGrid>

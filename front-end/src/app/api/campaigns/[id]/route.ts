@@ -19,8 +19,8 @@ export async function GET(
     const [chain, events, metadataResult] = await Promise.all([
       getCampaignInfo(campaignId),
       fetchEventsForCampaign(campaignId),
-      getDb().query<{ title: string | null; description: string | null }>(
-        `SELECT title, description FROM campaign_metadata WHERE campaign_id = $1`,
+      getDb().query<{ title: string | null; description: string | null; cover_url: string | null }>(
+        `SELECT title, description, cover_url FROM campaign_metadata WHERE campaign_id = $1`,
         [campaignId]
       ),
     ]);
@@ -49,7 +49,7 @@ export async function GET(
     const total_stx = chain.isWithdrawn ? event_total_stx : chain.totalStx;
     const total_sbtc = chain.isWithdrawn ? event_total_sbtc : chain.totalSbtc;
 
-    const meta = metadataResult.rows[0] ?? { title: null, description: null };
+    const meta = metadataResult.rows[0] ?? { title: null, description: null, cover_url: null };
     const created_at = new Date(Number(chain.createdAt) * 1000).toISOString();
 
     return NextResponse.json({
@@ -69,6 +69,7 @@ export async function GET(
         created_at,
         title: meta.title,
         description: meta.description,
+        cover_url: meta.cover_url,
       },
     });
   } catch (err) {

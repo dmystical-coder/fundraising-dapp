@@ -19,6 +19,7 @@ export interface IndexedCampaign {
   created_at: string;
   title: string | null;
   description: string | null;
+  cover_url: string | null;
 }
 
 export interface CampaignEvent {
