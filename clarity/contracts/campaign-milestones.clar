@@ -261,3 +261,45 @@
     (ok tranche-amount)
   )
 )
+
+;; -- Read-only views --
+
+(define-read-only (get-escrow-info (campaign-id uint))
+  (map-get? escrows campaign-id)
+)
+
+(define-read-only (get-tranche-info
+    (campaign-id uint)
+    (tranche-id uint)
+  )
+  (map-get? tranche-votes {
+    campaign-id: campaign-id,
+    tranche-id: tranche-id,
+  })
+)
+
+(define-read-only (has-voted
+    (campaign-id uint)
+    (tranche-id uint)
+    (donor principal)
+  )
+  (is-some (map-get? donor-votes {
+    campaign-id: campaign-id,
+    tranche-id: tranche-id,
+    donor: donor,
+  }))
+)
+
+;; Surfaces the per-donor vote-weight cap so the FE has a single
+;; source of truth without hardcoding the constant.
+(define-read-only (get-vote-cap)
+  VOTE_CAP_USTX
+)
+
+;; Allowed range for tranche-count at create time.
+(define-read-only (get-tranche-bounds)
+  {
+    min: MIN_TRANCHE_COUNT,
+    max: MAX_TRANCHE_COUNT,
+  }
+)
