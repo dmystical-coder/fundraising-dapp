@@ -297,3 +297,180 @@ describe("campaign-milestones: read-only constants", () => {
     expect(s).toContain("(max u4)");
   });
 });
+
+// -- Edge-case tests --
+
+describe("campaign-milestones: create-escrow edge cases", () => {
+  it("rejects non-owner with ERR_NOT_AUTHORIZED", () => {
+    const campaignId = createCampaign();
+    const r = createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_NOT_AUTHORIZED));
+  });
+
+  it("rejects zero amount with ERR_INVALID_AMOUNT", () => {
+    const campaignId = createCampaign();
+    const r = createEscrow(campaignId, 0n, 3n, 50_000_000n);
+    expect(r.result).toBeErr(Cl.uint(ERR_INVALID_AMOUNT));
+  });
+
+  it("rejects tranche-count = 0 with ERR_INVALID_TRANCHE_COUNT", () => {
+    const campaignId = createCampaign();
+    const r = createEscrow(campaignId, 12_000_000n, 0n, 50_000_000n);
+    expect(r.result).toBeErr(Cl.uint(ERR_INVALID_TRANCHE_COUNT));
+  });
+
+  it("rejects tranche-count > MAX with ERR_INVALID_TRANCHE_COUNT", () => {
+    const campaignId = createCampaign();
+    const r = createEscrow(campaignId, 12_000_000n, 5n, 50_000_000n);
+    expect(r.result).toBeErr(Cl.uint(ERR_INVALID_TRANCHE_COUNT));
+  });
+
+  it("rejects zero release-threshold with ERR_INVALID_THRESHOLD", () => {
+    const campaignId = createCampaign();
+    const r = createEscrow(campaignId, 12_000_000n, 3n, 0n);
+    expect(r.result).toBeErr(Cl.uint(ERR_INVALID_THRESHOLD));
+  });
+
+  it("rejects duplicate create on the same campaign with ERR_ESCROW_EXISTS", () => {
+    const campaignId = createCampaign();
+    const first = createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    expect(first.result).toBeOk(Cl.bool(true));
+
+    const second = createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    expect(second.result).toBeErr(Cl.uint(ERR_ESCROW_EXISTS));
+  });
+});
+
+describe("campaign-milestones: vote-release edge cases", () => {
+  it("rejects vote on non-existent escrow with ERR_ESCROW_NOT_FOUND", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 30_000_000n);
+
+    // No escrow created
+    const r = voteRelease(campaignId, 0, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_ESCROW_NOT_FOUND));
+  });
+
+  it("rejects non-donor with ERR_NOT_A_DONOR", () => {
+    const campaignId = createCampaign();
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+
+    // donor3 never donated to this campaign
+    const r = voteRelease(campaignId, 0, donor3);
+    expect(r.result).toBeErr(Cl.uint(ERR_NOT_A_DONOR));
+  });
+
+  it("rejects double-vote on the same tranche with ERR_ALREADY_VOTED", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 30_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+
+    const first = voteRelease(campaignId, 0, donor1);
+    expect(first.result).toBeOk(Cl.uint(30_000_000n));
+
+    const second = voteRelease(campaignId, 0, donor1);
+    expect(second.result).toBeErr(Cl.uint(ERR_ALREADY_VOTED));
+  });
+
+  it("rejects vote on out-of-range tranche-id with ERR_TRANCHE_NOT_FOUND", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 30_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+
+    // Valid tranches are 0, 1, 2 -- 3 is out of range
+    const r = voteRelease(campaignId, 3, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_TRANCHE_NOT_FOUND));
+  });
+
+  it("same donor can vote on different tranches", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 30_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+
+    expect(voteRelease(campaignId, 0, donor1).result).toBeOk(
+      Cl.uint(30_000_000n)
+    );
+    expect(voteRelease(campaignId, 1, donor1).result).toBeOk(
+      Cl.uint(30_000_000n)
+    );
+    expect(voteRelease(campaignId, 2, donor1).result).toBeOk(
+      Cl.uint(30_000_000n)
+    );
+  });
+});
+
+describe("campaign-milestones: claim-tranche edge cases", () => {
+  it("rejects claim on non-existent escrow with ERR_ESCROW_NOT_FOUND", () => {
+    const campaignId = createCampaign();
+    const r = claimTranche(campaignId, 0);
+    expect(r.result).toBeErr(Cl.uint(ERR_ESCROW_NOT_FOUND));
+  });
+
+  it("rejects non-owner with ERR_NOT_AUTHORIZED", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 60_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    voteRelease(campaignId, 0, donor1);
+
+    const r = claimTranche(campaignId, 0, donor1);
+    expect(r.result).toBeErr(Cl.uint(ERR_NOT_AUTHORIZED));
+  });
+
+  it("rejects claim on out-of-range tranche-id with ERR_TRANCHE_NOT_FOUND", () => {
+    const campaignId = createCampaign();
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    const r = claimTranche(campaignId, 3);
+    expect(r.result).toBeErr(Cl.uint(ERR_TRANCHE_NOT_FOUND));
+  });
+
+  it("rejects claim before threshold met with ERR_INSUFFICIENT_VOTES", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 30_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 100_000_000n); // threshold 100M
+
+    // donor1 only has 30M of voting weight, threshold is 100M
+    voteRelease(campaignId, 0, donor1);
+    const r = claimTranche(campaignId, 0);
+    expect(r.result).toBeErr(Cl.uint(ERR_INSUFFICIENT_VOTES));
+  });
+
+  it("rejects claim with no votes at all on the tranche with ERR_INSUFFICIENT_VOTES", () => {
+    const campaignId = createCampaign();
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    // No votes cast on any tranche
+    const r = claimTranche(campaignId, 0);
+    expect(r.result).toBeErr(Cl.uint(ERR_INSUFFICIENT_VOTES));
+  });
+
+  it("rejects double-claim on the same tranche with ERR_ALREADY_CLAIMED", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 60_000_000n);
+    createEscrow(campaignId, 12_000_000n, 3n, 50_000_000n);
+    voteRelease(campaignId, 0, donor1);
+
+    const first = claimTranche(campaignId, 0);
+    expect(first.result).toBeOk(Cl.uint(4_000_000n));
+
+    const second = claimTranche(campaignId, 0);
+    expect(second.result).toBeErr(Cl.uint(ERR_ALREADY_CLAIMED));
+  });
+});
+
+describe("campaign-milestones: floor-division remainder is locked dust", () => {
+  it("10 STX across 3 tranches leaves 1 microSTX of dust after all claims", () => {
+    const campaignId = createCampaign();
+    donateStx(campaignId, donor1, 60_000_000n);
+
+    const amount = 10n; // 10 microSTX, divides as 3, 3, 3 with 1 remainder
+    createEscrow(campaignId, amount, 3n, 50_000_000n);
+
+    for (let trancheId = 0; trancheId < 3; trancheId++) {
+      voteRelease(campaignId, trancheId, donor1);
+      const r = claimTranche(campaignId, trancheId);
+      expect(r.result).toBeOk(Cl.uint(3n));
+    }
+
+    const s = escrowInfoStr(campaignId);
+    expect(s).toContain("(balance u1)"); // 1 microSTX dust locked
+  });
+});
