@@ -130,9 +130,9 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
         {state.status === "claimed" && (
           <VStack align="stretch" spacing={1}>
             <Text fontSize="sm" color="text.secondary">
-              You&apos;ve earned{" "}
+              You&apos;ve claimed{" "}
               <Text as="span" fontWeight="semibold" color="text.primary">
-                {formatFstr(state.previewTokens)} FSTR
+                {formatFstr(state.claimedTokens)} FSTR
               </Text>{" "}
               for this campaign.
             </Text>

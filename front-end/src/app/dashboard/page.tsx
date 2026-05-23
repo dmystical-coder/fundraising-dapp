@@ -11,26 +11,40 @@ import {
   GridItem,
   Heading,
   HStack,
-  Icon,
   Link as ChakraLink,
   Skeleton,
   SimpleGrid,
   Text,
   VStack,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
-import { AddIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
-import { useMyCampaigns, useMyDonations } from "@/hooks/indexerQueries";
+import {
+  useMyCampaigns,
+  useMyDonations,
+  useMyUniqueSupporters,
+} from "@/hooks/indexerQueries";
+import { useFstrBalance } from "@/hooks/rewardsQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { isMainnetEnvironment } from "@/lib/contract-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { SimpleAddress } from "@/components/common/AddressDisplay";
+import { hasClaimed } from "@/lib/fundstacks-rewards-reads";
+import {
+  getBadgeMetadata,
+  getDonorBadgeId,
+  getDonorContributionStxEquivalent,
+  tierForAmount,
+  TIER_NONE,
+} from "@/lib/donor-badges-reads";
 
 type DashboardPanel = "campaigns" | "donations" | "settings";
 type CampaignFilter = "active" | "ended" | "all";
@@ -49,6 +63,8 @@ export default function DashboardPage() {
   const { data: prices } = useCurrentPrices();
   const { data: myCampaigns, isLoading: campaignsLoading } = useMyCampaigns(address);
   const { data: myDonations, isLoading: donationsLoading } = useMyDonations(address);
+  const { data: uniqueSupporters } = useMyUniqueSupporters(address);
+  const { data: fstrBalance } = useFstrBalance(address);
 
   const campaigns = useMemo(() => myCampaigns || [], [myCampaigns]);
   const donations = useMemo(() => myDonations || [], [myDonations]);
@@ -83,6 +99,79 @@ export default function DashboardPage() {
     });
   }, [campaigns, onChainMap]);
 
+  const supportedCampaignIds = useMemo(
+    () => Array.from(new Set(donations.map((d) => d.campaign_id))),
+    [donations]
+  );
+
+  const { data: donorEngagement } = useQuery<{
+    claimableRewardsCount: number;
+    badgesOwnedCount: number;
+    claimableBadgesCount: number;
+    upgradableBadgesCount: number;
+    claimableRewardCampaignIds: number[];
+    claimableBadgeCampaignIds: number[];
+    upgradableBadgeCampaignIds: number[];
+  }>({
+    queryKey: ["dashboard", "donor-engagement", address, supportedCampaignIds],
+    queryFn: async () => {
+      if (!address || supportedCampaignIds.length === 0) {
+        return {
+          claimableRewardsCount: 0,
+          badgesOwnedCount: 0,
+          claimableBadgesCount: 0,
+          upgradableBadgesCount: 0,
+          claimableRewardCampaignIds: [],
+          claimableBadgeCampaignIds: [],
+          upgradableBadgeCampaignIds: [],
+        };
+      }
+
+      const rows = await Promise.all(
+        supportedCampaignIds.map(async (campaignId) => {
+          const [claimedRewards, badgeId, stxEq] = await Promise.all([
+            hasClaimed(campaignId, address),
+            getDonorBadgeId(campaignId, address),
+            getDonorContributionStxEquivalent(campaignId, address),
+          ]);
+
+          const previewTier = tierForAmount(stxEq ?? BigInt(0));
+          let upgradable = false;
+          if (badgeId !== null) {
+            const md = await getBadgeMetadata(badgeId);
+            if (md && previewTier > md.tier) upgradable = true;
+          }
+
+          return {
+            claimedRewards,
+            badgeOwned: badgeId !== null,
+            claimableBadge: badgeId === null && previewTier > TIER_NONE,
+            upgradable,
+          };
+        })
+      );
+
+      return {
+        claimableRewardsCount: rows.filter((r) => !r.claimedRewards).length,
+        badgesOwnedCount: rows.filter((r) => r.badgeOwned).length,
+        claimableBadgesCount: rows.filter((r) => r.claimableBadge).length,
+        upgradableBadgesCount: rows.filter((r) => r.upgradable).length,
+        claimableRewardCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => !rows[idx].claimedRewards
+        ),
+        claimableBadgeCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => rows[idx].claimableBadge
+        ),
+        upgradableBadgeCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => rows[idx].upgradable
+        ),
+      };
+    },
+    enabled: !!address,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
   const filteredCampaigns = useMemo(() => {
     if (campaignFilter === "all") return campaignsWithStatus;
     if (campaignFilter === "active") {
@@ -93,7 +182,7 @@ export default function DashboardPage() {
     );
   }, [campaignFilter, campaignsWithStatus]);
 
-  const totalRaisedUsd = useMemo(() => {
+  const lifetimeRaisedUsd = useMemo(() => {
     return campaigns.reduce((sum, campaign) => {
       const stxRaw = parseRawAmount(campaign.total_stx);
       const sbtcRaw = parseRawAmount(campaign.total_sbtc);
@@ -103,11 +192,46 @@ export default function DashboardPage() {
     }, 0);
   }, [campaigns, prices]);
 
-  /** Sum of per-campaign unique donors (same person across multiple campaigns may be counted more than once). */
-  const totalDonors = useMemo(
+  const currentlyHeldUsd = useMemo(() => {
+    if (!onChainMap) return 0;
+    return Array.from(onChainMap.values()).reduce((sum, c) => {
+      const stxUsd = (c.totalStx / 1_000_000) * (prices?.stx || 0);
+      const sbtcUsd = (c.totalSbtc / 100_000_000) * (prices?.sbtc || 0);
+      return sum + stxUsd + sbtcUsd;
+    }, 0);
+  }, [onChainMap, prices]);
+
+  const donorAppearances = useMemo(
     () => campaigns.reduce((sum, campaign) => sum + (campaign.donor_count ?? 0), 0),
     [campaigns]
   );
+
+  const endedAwaitingWithdrawal = useMemo(() => {
+    return campaignsWithStatus.filter((c) => {
+      if (c.status !== "ended") return false;
+      const onChain = onChainMap?.get(c.campaign_id);
+      return !(onChain?.isWithdrawn ?? c.is_withdrawn);
+    });
+  }, [campaignsWithStatus, onChainMap]);
+
+  const cancelledWithDonors = useMemo(() => {
+    return campaignsWithStatus.filter(
+      (c) => c.status === "cancelled" && (c.donor_count ?? 0) > 0
+    );
+  }, [campaignsWithStatus]);
+
+  const totalDonatedUsd = useMemo(() => {
+    return donations.reduce((sum, donation) => {
+      const raw = parseRawAmount(donation.amount);
+      if (donation.event_name === "donated-stx") {
+        return sum + (raw / 1_000_000) * (prices?.stx || 0);
+      }
+      if (donation.event_name === "donated-sbtc") {
+        return sum + (raw / 100_000_000) * (prices?.sbtc || 0);
+      }
+      return sum;
+    }, 0);
+  }, [donations, prices]);
 
   if (!address) {
     return (
@@ -242,34 +366,160 @@ export default function DashboardPage() {
             </Button>
           </HStack>
 
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3} mb={6}>
+          {(endedAwaitingWithdrawal.length > 0 ||
+            cancelledWithDonors.length > 0 ||
+            (donorEngagement?.claimableRewardsCount ?? 0) > 0 ||
+            (donorEngagement?.claimableBadgesCount ?? 0) > 0 ||
+            (donorEngagement?.upgradableBadgesCount ?? 0) > 0) && (
+            <VStack align="stretch" spacing={3} mb={6}>
+              {endedAwaitingWithdrawal.length > 0 && (
+                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <HStack justify="space-between" w="full" flexWrap="wrap" gap={3}>
+                    <Text fontSize="sm" color="chakra-body-text">
+                      {endedAwaitingWithdrawal.length} ended campaign
+                      {endedAwaitingWithdrawal.length === 1 ? "" : "s"} may be ready for withdrawal.
+                    </Text>
+                    <Button size="sm" as={Link} href={`/campaigns/${endedAwaitingWithdrawal[0].campaign_id}`} colorScheme="primary">
+                      Review
+                    </Button>
+                  </HStack>
+                </Alert>
+              )}
+              {cancelledWithDonors.length > 0 && (
+                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    {cancelledWithDonors.length} cancelled campaign{cancelledWithDonors.length === 1 ? "" : "s"} have donor refunds in progress.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.claimableRewardsCount ?? 0) > 0 && (
+                <Alert status="success" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    You can claim FSTR rewards on {donorEngagement?.claimableRewardsCount} supported campaign
+                    {(donorEngagement?.claimableRewardsCount ?? 0) === 1 ? "" : "s"}.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.claimableBadgesCount ?? 0) > 0 && (
+                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    You have {donorEngagement?.claimableBadgesCount} donor badge claim
+                    {(donorEngagement?.claimableBadgesCount ?? 0) === 1 ? "" : "s"} available.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.upgradableBadgesCount ?? 0) > 0 && (
+                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    {donorEngagement?.upgradableBadgesCount} badge
+                    {(donorEngagement?.upgradableBadgesCount ?? 0) === 1 ? " is" : "s are"} upgradable.
+                  </Text>
+                </Alert>
+              )}
+            </VStack>
+          )}
+
+          {(endedAwaitingWithdrawal.length > 0 ||
+            (donorEngagement?.claimableRewardCampaignIds.length ?? 0) > 0 ||
+            (donorEngagement?.claimableBadgeCampaignIds.length ?? 0) > 0 ||
+            (donorEngagement?.upgradableBadgeCampaignIds.length ?? 0) > 0) && (
+            <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface" mb={6}>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <Heading size="sm">Action Queue</Heading>
+                  <Text fontSize="sm" color="text.secondary">
+                    Prioritized actions that can unlock funds, rewards, or badge upgrades.
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {endedAwaitingWithdrawal.slice(0, 3).map((c) => (
+                      <HStack key={`withdraw-${c.campaign_id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Withdraw available: Campaign #{c.campaign_id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${c.campaign_id}`} size="sm" colorScheme="primary" variant="outline">
+                          Open
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.claimableRewardCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`reward-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Claim FSTR rewards: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="green" variant="outline">
+                          Claim
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.claimableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`badge-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Claim donor badge: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="blue" variant="outline">
+                          Claim
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.upgradableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`upgrade-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Upgrade badge tier: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="orange" variant="outline">
+                          Upgrade
+                        </Button>
+                      </HStack>
+                    ))}
+                  </VStack>
+                </VStack>
+              </CardBody>
+            </Card>
+          )}
+
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={6}>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Total Raised
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Lifetime Raised</Text>
+                <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
+                  ${lifetimeRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
-                  ${totalRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across all your campaigns</Text>
               </CardBody>
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Campaigns
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Currently Held</Text>
+                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
+                  ${currentlyHeldUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Still in active/cancelled contracts</Text>
+              </CardBody>
+            </Card>
+            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+              <CardBody py={4}>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns</Text>
+                <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
                   {campaigns.length}
                 </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
+                  {campaignsWithStatus.filter((c) => c.status === "active").length} active
+                </Text>
               </CardBody>
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="xs" color="text.tertiary" textTransform="uppercase" letterSpacing="0.08em">
-                  Total Donors
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Supporters</Text>
+                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
+                  {uniqueSupporters ?? donorAppearances}
                 </Text>
-                <Text fontSize="2xl" fontWeight="700" color="chakra-body-text" mt={1}>
-                  {totalDonors}
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
+                  Unique wallets across your campaigns
                 </Text>
               </CardBody>
             </Card>
@@ -321,10 +571,9 @@ export default function DashboardPage() {
               ) : filteredCampaigns.length === 0 ? (
                 <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                   <CardBody py={10} textAlign="center">
-                    <VStack spacing={3}>
-                      <Text fontSize="3xl">📭</Text>
-                      <Heading size="md">No campaigns in this view</Heading>
-                      <Text color="text.secondary">
+                    <VStack spacing={2}>
+                      <Heading size="md">No campaigns here</Heading>
+                      <Text color="text.secondary" fontSize="sm">
                         Try another filter or create a new campaign.
                       </Text>
                     </VStack>
@@ -346,15 +595,6 @@ export default function DashboardPage() {
                       <CardBody py={4}>
                         <HStack justify="space-between" align="center" gap={4} flexWrap="wrap">
                           <HStack spacing={3} minW={0}>
-                            <Box
-                              w={14}
-                              h={12}
-                              borderWidth="1px"
-                              borderColor="border.default"
-                              borderRadius="md"
-                              bg="bg.surfaceAlt"
-                              flexShrink={0}
-                            />
                             <VStack align="start" spacing={0} minW={0}>
                               <Text fontWeight="700" noOfLines={1}>
                                 {campaign.title || `Campaign #${campaign.campaign_id}`}
@@ -379,6 +619,26 @@ export default function DashboardPage() {
                             <Text fontSize="xs" color="text.tertiary">
                               Created {new Date(campaign.created_at).toLocaleDateString()}
                             </Text>
+                            <Button
+                              as={Link}
+                              href={`/campaigns/${campaign.campaign_id}`}
+                              size="xs"
+                              mt={1}
+                              colorScheme={
+                                campaign.status === "ended"
+                                  ? "primary"
+                                  : campaign.status === "cancelled"
+                                  ? "orange"
+                                  : "gray"
+                              }
+                              variant="outline"
+                            >
+                              {campaign.status === "ended"
+                                ? "Review Withdraw"
+                                : campaign.status === "cancelled"
+                                ? "View Refunds"
+                                : "Open"}
+                            </Button>
                           </VStack>
                         </HStack>
                       </CardBody>
@@ -391,6 +651,49 @@ export default function DashboardPage() {
 
           {activePanel === "donations" && (
             <>
+              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={4}>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Donated</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
+                      ${totalDonatedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Lifetime by this wallet</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns Supported</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
+                      {supportedCampaignIds.length}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Distinct campaigns donated to</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">FSTR Balance</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
+                      {fstrBalance !== null && fstrBalance !== undefined
+                        ? (Number(fstrBalance) / 1_000_000).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : "0"}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Rewards token in wallet</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Badges Owned</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
+                      {donorEngagement?.badgesOwnedCount ?? 0}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across supported campaigns</Text>
+                  </CardBody>
+                </Card>
+              </SimpleGrid>
+
               {donationsLoading ? (
                 <VStack spacing={3} align="stretch">
                   {[1, 2, 3].map((i) => (
@@ -400,10 +703,9 @@ export default function DashboardPage() {
               ) : donations.length === 0 ? (
                 <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
                   <CardBody py={12} textAlign="center">
-                    <VStack spacing={4}>
-                      <Text fontSize="4xl">💝</Text>
-                      <Heading size="md">No Donations Yet</Heading>
-                      <Text color="text.secondary" maxW="300px">
+                    <VStack spacing={3}>
+                      <Heading size="md">No donations yet</Heading>
+                      <Text color="text.secondary" fontSize="sm" maxW="300px">
                         You haven&apos;t made any donations yet.
                       </Text>
                       <Button as={Link} href="/" colorScheme="primary">
@@ -413,38 +715,43 @@ export default function DashboardPage() {
                   </CardBody>
                 </Card>
               ) : (
-                <VStack spacing={3} align="stretch">
-                  {donations.map((donation, index) => {
-                    const isStx = donation.event_name === "donated-stx";
-                    const explorerUrl = donation.txid
-                      ? `https://explorer.stacks.co/txid/${donation.txid}`
-                      : null;
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface">
+                  <CardBody p={0}>
+                    <VStack spacing={0} align="stretch" divider={<Divider borderColor="border.subtle" />}>
+                      {donations.map((donation, index) => {
+                        const isStx = donation.event_name === "donated-stx";
+                        const explorerUrl = donation.txid
+                          ? `https://explorer.stacks.co/txid/${donation.txid}`
+                          : null;
 
-                    return (
-                      <Card
-                        key={`${donation.txid}-${index}`}
-                        bg="bg.surface"
-                        borderWidth="1px"
-                        borderColor="border.default"
-                        borderRadius="xl"
-                      >
-                        <CardBody py={4}>
-                          <HStack justify="space-between" flexWrap="wrap" gap={3}>
+                        return (
+                          <HStack
+                            key={`${donation.txid}-${index}`}
+                            px={4}
+                            py={3}
+                            justify="space-between"
+                            flexWrap="wrap"
+                            gap={2}
+                          >
                             <VStack align="start" spacing={0}>
-                              <HStack>
-                                <Text fontWeight="600" color="chakra-body-text">
-                                  Donated to Campaign #{donation.campaign_id}
-                                </Text>
-                                <ChakraLink as={Link} href={`/campaigns/${donation.campaign_id}`} color="primary.500" fontSize="sm">
-                                  View →
+                              <HStack spacing={1.5}>
+                                <ChakraLink
+                                  as={Link}
+                                  href={`/campaigns/${donation.campaign_id}`}
+                                  fontWeight="600"
+                                  fontSize="sm"
+                                  color="chakra-body-text"
+                                  _hover={{ color: "primary.600" }}
+                                >
+                                  Campaign #{donation.campaign_id}
                                 </ChakraLink>
                               </HStack>
-                              <Text fontSize="sm" color="text.secondary">
-                                {new Date(donation.inserted_at).toLocaleString()}
+                              <Text fontSize="xs" color="text.tertiary">
+                                {new Date(donation.inserted_at).toLocaleDateString()}
                               </Text>
                             </VStack>
 
-                            <HStack spacing={3}>
+                            <HStack spacing={2}>
                               <CombinedAmountDisplay
                                 stxAmount={isStx ? donation.amount : "0"}
                                 sbtcAmount={!isStx ? donation.amount : "0"}
@@ -453,17 +760,24 @@ export default function DashboardPage() {
                                 size="sm"
                               />
                               {explorerUrl && (
-                                <ChakraLink href={explorerUrl} isExternal color="primary.500" fontSize="sm" aria-label="Open transaction in explorer">
-                                  <Icon as={ExternalLinkIcon} />
+                                <ChakraLink
+                                  href={explorerUrl}
+                                  isExternal
+                                  color="primary.500"
+                                  fontSize="sm"
+                                  aria-label="View transaction"
+                                  _hover={{ color: "primary.700" }}
+                                >
+                                  ↗
                                 </ChakraLink>
                               )}
                             </HStack>
                           </HStack>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </VStack>
+                        );
+                      })}
+                    </VStack>
+                  </CardBody>
+                </Card>
               )}
             </>
           )}
@@ -471,10 +785,9 @@ export default function DashboardPage() {
           {activePanel === "settings" && (
             <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surfaceAlt">
               <CardBody py={10}>
-                <VStack spacing={3} textAlign="center">
-                  <Text fontSize="3xl">⚙️</Text>
+                <VStack spacing={2} textAlign="center">
                   <Heading size="md">Settings coming soon</Heading>
-                  <Text color="text.secondary">Account and dashboard preferences will appear here.</Text>
+                  <Text color="text.secondary" fontSize="sm">Account and dashboard preferences will appear here.</Text>
                 </VStack>
               </CardBody>
             </Card>

@@ -2,9 +2,6 @@ import { useExistingDonation } from "@/hooks/campaignQueries";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Button,
   Flex,
@@ -21,7 +18,6 @@ import {
   VStack,
   RadioGroup,
   Radio,
-  ModalFooter,
   FormControl,
   FormLabel,
   FormErrorMessage,
@@ -172,7 +168,6 @@ export default function DonationModal({
         setSubmittedAmount(txAmount);
         setIsLoading(false);
 
-        // Invalidate queries so the UI updates without requiring a page refresh
         queryClient.invalidateQueries({ queryKey: ["indexer"] });
         if (campaignId) {
           queryClient.invalidateQueries({ queryKey: ["campaignInfo", campaignId] });
@@ -180,8 +175,6 @@ export default function DonationModal({
         if (campaignId && currentWalletAddress) {
           queryClient.invalidateQueries({ queryKey: ["campaignDonations", campaignId, currentWalletAddress] });
         }
-        // Refresh donor-badge state so the panel reflects the new
-        // contribution (and a possible tier upgrade) without a page reload.
         queryClient.invalidateQueries({ queryKey: BADGE_QUERY_PREFIX });
         queryClient.invalidateQueries({ queryKey: REWARDS_QUERY_PREFIX });
       };
@@ -226,7 +219,7 @@ export default function DonationModal({
   const handleShare = async () => {
     const url = window.location.origin + `/campaigns/${campaignId}`;
     const text = `I just contributed to "${campaignTitle || 'a campaign'}" on Stacks! Join me in supporting this project.`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -282,7 +275,7 @@ export default function DonationModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={successTxId ? handleReset : onClose}
       size={{ base: "full", md: "md" }}
       isCentered
       returnFocusOnClose
@@ -392,59 +385,52 @@ export default function DonationModal({
             ) : (
               <>
                 {hasMadePreviousDonation ? (
-                  <Alert mb="4" status="success" borderRadius="lg">
-                    <Box>
-                      <AlertTitle>
-                        Heads up: you&apos;ve contributed before. Thank you!
-                      </AlertTitle>
-                      <AlertDescription>
-                        <Box>
-                          STX:{" "}
-                          {Number(
-                            ustxToStx(previousDonation?.stxAmount)
-                          ).toFixed(2)}
-                        </Box>
-                        <Box>
-                          sBTC:{" "}
-                          {satsToSbtc(previousDonation?.sbtcAmount).toFixed(8)}
-                        </Box>
-                      </AlertDescription>
-                    </Box>
-                  </Alert>
-                ) : null}
-                <Box mx="auto" w="100%" p={6} borderWidth="1px" borderRadius="lg" borderColor="border.default">
-                  <VStack spacing={6} align="stretch">
-                    <FormControl as="fieldset">
-                      <FormLabel as="legend" fontSize="lg" fontWeight="bold" color="chakra-body-text">
-                        Choose Payment Method
-                      </FormLabel>
-                      <RadioGroup
-                        value={paymentMethod}
-                        onChange={setPaymentMethod}
-                      >
-                        <HStack spacing={6}>
-                          <Radio value="stx" colorScheme="primary">
-                            STX
-                          </Radio>
-                          <Radio value="sbtc" colorScheme="primary">
-                            sBTC
-                          </Radio>
-                        </HStack>
-                      </RadioGroup>
-                    </FormControl>
-
-                    <Text fontSize="lg" fontWeight="bold" color="chakra-body-text">
-                      Choose Contribution Amount
+                  <Box
+                    mb={4}
+                    px={4}
+                    py={3}
+                    bg="primary.50"
+                    borderLeft="3px solid"
+                    borderLeftColor="primary.400"
+                    borderRadius="lg"
+                  >
+                    <Text fontSize="sm" fontWeight="semibold" color="primary.700" mb={1}>
+                      You&apos;ve contributed before — thank you!
                     </Text>
+                    <HStack spacing={4}>
+                      <Text fontSize="xs" color="text.secondary">
+                        STX: {Number(ustxToStx(previousDonation?.stxAmount)).toFixed(2)}
+                      </Text>
+                      <Text fontSize="xs" color="text.secondary">
+                        sBTC: {satsToSbtc(previousDonation?.sbtcAmount).toFixed(8)}
+                      </Text>
+                    </HStack>
+                  </Box>
+                ) : null}
 
-                    <HStack spacing={3} justify="center" wrap="wrap">
+                <VStack spacing={5} align="stretch">
+                  <FormControl as="fieldset">
+                    <FormLabel as="legend" fontSize="sm" fontWeight="semibold" color="text.secondary" mb={2}>
+                      Payment method
+                    </FormLabel>
+                    <RadioGroup value={paymentMethod} onChange={setPaymentMethod}>
+                      <HStack spacing={6}>
+                        <Radio value="stx" colorScheme="primary">STX</Radio>
+                        <Radio value="sbtc" colorScheme="primary">sBTC</Radio>
+                      </HStack>
+                    </RadioGroup>
+                  </FormControl>
+
+                  <Box>
+                    <Text fontSize="sm" fontWeight="semibold" color="text.secondary" mb={3}>
+                      Amount (USD)
+                    </Text>
+                    <HStack spacing={2} justify="center" wrap="wrap">
                       {presetAmounts.map((amount) => (
                         <Button
                           key={amount}
-                          size="lg"
-                          variant={
-                            selectedAmount === amount ? "solid" : "outline"
-                          }
+                          size="md"
+                          variant={selectedAmount === amount ? "solid" : "outline"}
                           colorScheme="primary"
                           onClick={() => handlePresetClick(amount)}
                         >
@@ -452,63 +438,55 @@ export default function DonationModal({
                         </Button>
                       ))}
                     </HStack>
+                  </Box>
 
-                    <FormControl isInvalid={!!errorMsg}>
-                      <FormLabel htmlFor="custom-amount" fontSize="md" color="text.secondary">
-                        Or enter custom amount in {paymentMethod.toUpperCase()}:
-                      </FormLabel>
-                      <NumberInput
-                        id="custom-amount"
-                        min={0}
-                        value={customAmount}
-                        onChange={handleCustomAmountChange}
-                      >
-                        <NumberInputField
-                          placeholder={`Enter ${paymentMethod.toUpperCase()} amount`}
-                          textAlign="center"
-                          fontSize="lg"
-                        />
-                      </NumberInput>
-                      {errorMsg && (
-                        <FormErrorMessage>{errorMsg}</FormErrorMessage>
-                      )}
-                    </FormControl>
+                  <FormControl isInvalid={!!errorMsg}>
+                    <FormLabel htmlFor="custom-amount" fontSize="sm" fontWeight="semibold" color="text.secondary">
+                      Or enter a custom amount ({paymentMethod.toUpperCase()})
+                    </FormLabel>
+                    <NumberInput
+                      id="custom-amount"
+                      min={0}
+                      value={customAmount}
+                      onChange={handleCustomAmountChange}
+                    >
+                      <NumberInputField
+                        placeholder={`0.00`}
+                        fontSize="md"
+                      />
+                    </NumberInput>
+                    {errorMsg && <FormErrorMessage>{errorMsg}</FormErrorMessage>}
+                  </FormControl>
 
-                    <Flex direction="column" gap="1">
-                      <Button
-                        colorScheme="primary"
-                        size="lg"
-                        onClick={handleSubmit}
-                        isDisabled={
-                          (!selectedAmount && !customAmount) || isLoading
-                        }
-                        isLoading={isLoading}
-                      >
-                        Donate {selectedAmount ? `$${selectedAmount}` : customAmount ? `${customAmount} ${paymentMethod.toUpperCase()}` : "$0"}
-                      </Button>
-                      <Box mx="auto" fontSize="sm" fontWeight="bold" color="text.secondary">
-                        {selectedAmount ? (
-                          `(≈ ${paymentMethod === "stx"
-                            ? `${usdToStx(selectedAmount, prices?.stx || 0).toFixed(2)} STX`
-                            : `${usdToSbtc(selectedAmount, prices?.sbtc || 0).toFixed(8)} sBTC`})`
-                        ) : customAmount ? (
-                          `(≈ $${(Number(customAmount) * (paymentMethod === "stx" ? (prices?.stx || 0) : (prices?.sbtc || 0))).toFixed(2)})`
-                        ) : (
-                          `(≈ 0 STX)`
-                        )}
+                  <Flex direction="column" gap="1">
+                    <Button
+                      colorScheme="primary"
+                      size="lg"
+                      onClick={handleSubmit}
+                      isDisabled={(!selectedAmount && !customAmount) || isLoading}
+                      isLoading={isLoading}
+                    >
+                      {selectedAmount
+                        ? `Donate $${selectedAmount}`
+                        : customAmount
+                        ? `Donate ${customAmount} ${paymentMethod.toUpperCase()}`
+                        : "Donate"}
+                    </Button>
+                    {(selectedAmount || customAmount) && (
+                      <Box mx="auto" fontSize="sm" color="text.secondary">
+                        {selectedAmount
+                          ? `≈ ${paymentMethod === "stx"
+                              ? `${usdToStx(selectedAmount, prices?.stx || 0).toFixed(2)} STX`
+                              : `${usdToSbtc(selectedAmount, prices?.sbtc || 0).toFixed(8)} sBTC`}`
+                          : `≈ $${(Number(customAmount) * (paymentMethod === "stx" ? (prices?.stx || 0) : (prices?.sbtc || 0))).toFixed(2)}`}
                       </Box>
-                    </Flex>
-                  </VStack>
-                </Box>
+                    )}
+                  </Flex>
+                </VStack>
               </>
             )}
           </Flex>
         </ModalBody>
-        {!successTxId && (
-          <ModalFooter>
-             <Button variant="ghost" onClick={onClose}>Close</Button>
-          </ModalFooter>
-        )}
       </ModalContent>
     </Modal>
   );

@@ -66,6 +66,33 @@ interface BoolCVShape {
   type: "true" | "false";
 }
 
+interface AsciiCVShape {
+  type: "ascii";
+  value: string;
+}
+
+interface PrincipalCVShape {
+  type: "address";
+  value: string;
+}
+
+interface TupleCVShape {
+  type: "tuple";
+  value: Record<string, unknown>;
+}
+
+interface HiroContractLogEvent {
+  tx_id: string;
+  contract_log?: {
+    topic: string;
+    value: { hex: string };
+  };
+}
+
+interface HiroEventsResponse {
+  results: HiroContractLogEvent[];
+}
+
 function unwrapResponse(cv: ClarityValue): ClarityValue {
   const r = cv as unknown as ResponseCVShape;
   if (r.type === "ok") return r.value;
@@ -164,4 +191,61 @@ export async function previewRewardsOnChain(
   } catch {
     return null;
   }
+}
+
+// Reads the rewards contract print events and returns the minted amount for a
+// donor's campaign claim. Returns null when not found or if event fetch fails.
+export async function getClaimedRewardsAmount(
+  campaignId: bigint | number,
+  donor: string
+): Promise<bigint | null> {
+  const targetCampaignId = BigInt(campaignId);
+  const normalizedDonor = donor.toLowerCase();
+  const contractId = `${FUNDSTACKS_REWARDS_CONTRACT.address}.${FUNDSTACKS_REWARDS_CONTRACT.name}`;
+  const pageSize = 50;
+
+  try {
+    for (let offset = 0; offset <= 5000; offset += pageSize) {
+      const url = `${getStacksUrl()}/extended/v1/contract/${contractId}/events?limit=${pageSize}&offset=${offset}`;
+      const res = await fetch(url);
+      if (!res.ok) break;
+      const data = (await res.json()) as HiroEventsResponse;
+      const page = data.results ?? [];
+      if (page.length === 0) break;
+
+      for (const raw of page) {
+        if (!raw.contract_log || raw.contract_log.topic !== "print") continue;
+        const cv = hexToCV(raw.contract_log.value.hex) as unknown as TupleCVShape;
+        if (cv.type !== "tuple") continue;
+        const fields = cv.value;
+
+        const eventName = (fields.event as AsciiCVShape | undefined)?.value;
+        if (eventName !== "rewards-earned") continue;
+
+        const eventCampaignId = (fields.campaignId as UIntCVShape | undefined)?.value;
+        const eventDonor = (fields.donor as PrincipalCVShape | undefined)?.value;
+        const eventTokens = (fields.tokens as UIntCVShape | undefined)?.value;
+        if (
+          eventCampaignId === undefined ||
+          !eventDonor ||
+          eventTokens === undefined
+        ) {
+          continue;
+        }
+
+        if (
+          eventCampaignId === targetCampaignId &&
+          eventDonor.toLowerCase() === normalizedDonor
+        ) {
+          return eventTokens;
+        }
+      }
+
+      if (page.length < pageSize) break;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

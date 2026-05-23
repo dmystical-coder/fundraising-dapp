@@ -49,7 +49,7 @@ export default function RootLayout({
             <AppFooter />
           </Box>
         </Providers>
-        <Toaster richColors position="bottom-right" />
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

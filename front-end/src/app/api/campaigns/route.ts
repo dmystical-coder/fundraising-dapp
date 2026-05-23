@@ -26,7 +26,8 @@ export async function GET() {
         campaign_id: number;
         title: string | null;
         description: string | null;
-      }>(`SELECT campaign_id, title, description FROM campaign_metadata`),
+        cover_url: string | null;
+      }>(`SELECT campaign_id, title, description, cover_url FROM campaign_metadata`),
     ]);
 
     const aggByCampaign = new Map<number, PerCampaignAgg>();
@@ -47,7 +48,7 @@ export async function GET() {
     }
 
     const metaByCampaign = new Map(
-      metaRows.rows.map((r) => [r.campaign_id, r])
+      metaRows.rows.map((r) => [Number(r.campaign_id), r])
     );
 
     // chain order is id ASC; the previous SQL returned id DESC, so reverse.
@@ -70,6 +71,7 @@ export async function GET() {
           created_at: new Date(Number(c.createdAt) * 1000).toISOString(),
           title: meta?.title ?? null,
           description: meta?.description ?? null,
+          cover_url: meta?.cover_url ?? null,
         };
       });
 

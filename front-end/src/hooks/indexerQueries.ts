@@ -19,6 +19,7 @@ export interface IndexedCampaign {
   created_at: string;
   title: string | null;
   description: string | null;
+  cover_url: string | null;
 }
 
 export interface CampaignEvent {
@@ -64,6 +65,10 @@ export interface PlatformStats {
   total_sbtc_raised: string;
   unique_donors: number;
   total_donations: number;
+}
+
+export interface OwnerSupporters {
+  unique_supporters: number;
 }
 
 // ============================================================================
@@ -275,6 +280,27 @@ export function useMyCampaigns(
         INDEXER_CONFIG.endpoints.ownerCampaigns(address)
       );
       return data.campaigns;
+    },
+    enabled: !!address,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+/**
+ * Fetch unique supporter count for campaigns created by a specific owner.
+ */
+export function useMyUniqueSupporters(
+  address: string | null | undefined
+): UseQueryResult<number> {
+  return useQuery({
+    queryKey: ["indexer", "owner", address, "supporters"],
+    queryFn: async () => {
+      if (!address) return 0;
+      const data = await fetchFromIndexer<OwnerSupporters>(
+        INDEXER_CONFIG.endpoints.ownerSupporters(address)
+      );
+      return data.unique_supporters ?? 0;
     },
     enabled: !!address,
     staleTime: 30_000,
