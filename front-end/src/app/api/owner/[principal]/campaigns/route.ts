@@ -55,7 +55,7 @@ export async function GET(
     }
 
     const metaByCampaign = new Map(
-      metaRows.rows.map((r) => [r.campaign_id, r])
+      metaRows.rows.map((r) => [Number(r.campaign_id), r])
     );
 
     const campaigns = [...mine]
