@@ -106,11 +106,10 @@
     (tranche-count uint)
     (release-threshold uint)
   )
-  (let (
-      (info (try! (contract-call? source get-campaign-info campaign-id)))
-      (owner (get owner info))
-      (tranche-amount (/ amount tranche-count))
-    )
+  (begin
+    ;; Cheap guards first so an invalid tranche-count = 0 short-circuits
+    ;; before we evaluate the floor-division that would otherwise raise
+    ;; a DivisionByZero runtime error.
     (asserts! (> amount u0) ERR_INVALID_AMOUNT)
     (asserts!
       (and
@@ -120,21 +119,27 @@
       ERR_INVALID_TRANCHE_COUNT
     )
     (asserts! (> release-threshold u0) ERR_INVALID_THRESHOLD)
-    (asserts! (is-eq tx-sender owner) ERR_NOT_AUTHORIZED)
     (asserts!
       (is-none (map-get? escrows campaign-id))
       ERR_ESCROW_EXISTS
     )
-    (try! (stx-transfer? amount tx-sender (try! (as-contract? () tx-sender))))
-    (map-insert escrows campaign-id {
-      owner: owner,
-      balance: amount,
-      tranche-count: tranche-count,
-      tranche-amount: tranche-amount,
-      release-threshold: release-threshold,
-      created-at: stacks-block-height,
-    })
-    (ok true)
+    (let (
+        (info (try! (contract-call? source get-campaign-info campaign-id)))
+        (owner (get owner info))
+        (tranche-amount (/ amount tranche-count))
+      )
+      (asserts! (is-eq tx-sender owner) ERR_NOT_AUTHORIZED)
+      (try! (stx-transfer? amount tx-sender (try! (as-contract? () tx-sender))))
+      (map-insert escrows campaign-id {
+        owner: owner,
+        balance: amount,
+        tranche-count: tranche-count,
+        tranche-amount: tranche-amount,
+        release-threshold: release-threshold,
+        created-at: stacks-block-height,
+      })
+      (ok true)
+    )
   )
 )
 
