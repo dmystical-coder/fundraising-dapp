@@ -109,6 +109,9 @@ export default function DashboardPage() {
     badgesOwnedCount: number;
     claimableBadgesCount: number;
     upgradableBadgesCount: number;
+    claimableRewardCampaignIds: number[];
+    claimableBadgeCampaignIds: number[];
+    upgradableBadgeCampaignIds: number[];
   }>({
     queryKey: ["dashboard", "donor-engagement", address, supportedCampaignIds],
     queryFn: async () => {
@@ -118,6 +121,9 @@ export default function DashboardPage() {
           badgesOwnedCount: 0,
           claimableBadgesCount: 0,
           upgradableBadgesCount: 0,
+          claimableRewardCampaignIds: [],
+          claimableBadgeCampaignIds: [],
+          upgradableBadgeCampaignIds: [],
         };
       }
 
@@ -150,6 +156,15 @@ export default function DashboardPage() {
         badgesOwnedCount: rows.filter((r) => r.badgeOwned).length,
         claimableBadgesCount: rows.filter((r) => r.claimableBadge).length,
         upgradableBadgesCount: rows.filter((r) => r.upgradable).length,
+        claimableRewardCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => !rows[idx].claimedRewards
+        ),
+        claimableBadgeCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => rows[idx].claimableBadge
+        ),
+        upgradableBadgeCampaignIds: supportedCampaignIds.filter(
+          (_id, idx) => rows[idx].upgradable
+        ),
       };
     },
     enabled: !!address,
@@ -409,6 +424,64 @@ export default function DashboardPage() {
             </VStack>
           )}
 
+          {(endedAwaitingWithdrawal.length > 0 ||
+            (donorEngagement?.claimableRewardCampaignIds.length ?? 0) > 0 ||
+            (donorEngagement?.claimableBadgeCampaignIds.length ?? 0) > 0 ||
+            (donorEngagement?.upgradableBadgeCampaignIds.length ?? 0) > 0) && (
+            <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface" mb={6}>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <Heading size="sm">Action Queue</Heading>
+                  <Text fontSize="sm" color="text.secondary">
+                    Prioritized actions that can unlock funds, rewards, or badge upgrades.
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {endedAwaitingWithdrawal.slice(0, 3).map((c) => (
+                      <HStack key={`withdraw-${c.campaign_id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Withdraw available: Campaign #{c.campaign_id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${c.campaign_id}`} size="sm" colorScheme="primary" variant="outline">
+                          Open
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.claimableRewardCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`reward-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Claim FSTR rewards: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="green" variant="outline">
+                          Claim
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.claimableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`badge-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Claim donor badge: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="blue" variant="outline">
+                          Claim
+                        </Button>
+                      </HStack>
+                    ))}
+                    {(donorEngagement?.upgradableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
+                      <HStack key={`upgrade-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="chakra-body-text">
+                          Upgrade badge tier: Campaign #{id}
+                        </Text>
+                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="orange" variant="outline">
+                          Upgrade
+                        </Button>
+                      </HStack>
+                    ))}
+                  </VStack>
+                </VStack>
+              </CardBody>
+            </Card>
+          )}
+
           <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={6}>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
@@ -546,6 +619,26 @@ export default function DashboardPage() {
                             <Text fontSize="xs" color="text.tertiary">
                               Created {new Date(campaign.created_at).toLocaleDateString()}
                             </Text>
+                            <Button
+                              as={Link}
+                              href={`/campaigns/${campaign.campaign_id}`}
+                              size="xs"
+                              mt={1}
+                              colorScheme={
+                                campaign.status === "ended"
+                                  ? "primary"
+                                  : campaign.status === "cancelled"
+                                  ? "orange"
+                                  : "gray"
+                              }
+                              variant="outline"
+                            >
+                              {campaign.status === "ended"
+                                ? "Review Withdraw"
+                                : campaign.status === "cancelled"
+                                ? "View Refunds"
+                                : "Open"}
+                            </Button>
                           </VStack>
                         </HStack>
                       </CardBody>
