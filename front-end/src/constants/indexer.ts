@@ -36,5 +36,7 @@ export const INDEXER_CONFIG = {
     stats: "/api/stats",
     ownerCampaigns: (principal: string) =>
       `/api/owner/${encodeURIComponent(principal)}/campaigns`,
+    ownerSupporters: (principal: string) =>
+      `/api/owner/${encodeURIComponent(principal)}/supporters`,
   },
 } as const;

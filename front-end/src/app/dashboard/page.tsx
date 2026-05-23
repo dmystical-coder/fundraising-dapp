@@ -16,6 +16,8 @@ import {
   SimpleGrid,
   Text,
   VStack,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -23,7 +25,11 @@ import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
-import { useMyCampaigns, useMyDonations } from "@/hooks/indexerQueries";
+import {
+  useMyCampaigns,
+  useMyDonations,
+  useMyUniqueSupporters,
+} from "@/hooks/indexerQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { isMainnetEnvironment } from "@/lib/contract-utils";
@@ -48,6 +54,7 @@ export default function DashboardPage() {
   const { data: prices } = useCurrentPrices();
   const { data: myCampaigns, isLoading: campaignsLoading } = useMyCampaigns(address);
   const { data: myDonations, isLoading: donationsLoading } = useMyDonations(address);
+  const { data: uniqueSupporters } = useMyUniqueSupporters(address);
 
   const campaigns = useMemo(() => myCampaigns || [], [myCampaigns]);
   const donations = useMemo(() => myDonations || [], [myDonations]);
@@ -92,7 +99,7 @@ export default function DashboardPage() {
     );
   }, [campaignFilter, campaignsWithStatus]);
 
-  const totalRaisedUsd = useMemo(() => {
+  const lifetimeRaisedUsd = useMemo(() => {
     return campaigns.reduce((sum, campaign) => {
       const stxRaw = parseRawAmount(campaign.total_stx);
       const sbtcRaw = parseRawAmount(campaign.total_sbtc);
@@ -102,11 +109,33 @@ export default function DashboardPage() {
     }, 0);
   }, [campaigns, prices]);
 
-  /** Sum of per-campaign unique donors (same person across multiple campaigns may be counted more than once). */
-  const totalDonors = useMemo(
+  const currentlyHeldUsd = useMemo(() => {
+    if (!onChainMap) return 0;
+    return Array.from(onChainMap.values()).reduce((sum, c) => {
+      const stxUsd = (c.totalStx / 1_000_000) * (prices?.stx || 0);
+      const sbtcUsd = (c.totalSbtc / 100_000_000) * (prices?.sbtc || 0);
+      return sum + stxUsd + sbtcUsd;
+    }, 0);
+  }, [onChainMap, prices]);
+
+  const donorAppearances = useMemo(
     () => campaigns.reduce((sum, campaign) => sum + (campaign.donor_count ?? 0), 0),
     [campaigns]
   );
+
+  const endedAwaitingWithdrawal = useMemo(() => {
+    return campaignsWithStatus.filter((c) => {
+      if (c.status !== "ended") return false;
+      const onChain = onChainMap?.get(c.campaign_id);
+      return !(onChain?.isWithdrawn ?? c.is_withdrawn);
+    });
+  }, [campaignsWithStatus, onChainMap]);
+
+  const cancelledWithDonors = useMemo(() => {
+    return campaignsWithStatus.filter(
+      (c) => c.status === "cancelled" && (c.donor_count ?? 0) > 0
+    );
+  }, [campaignsWithStatus]);
 
   if (!address) {
     return (
@@ -241,14 +270,50 @@ export default function DashboardPage() {
             </Button>
           </HStack>
 
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3} mb={6}>
+          {(endedAwaitingWithdrawal.length > 0 || cancelledWithDonors.length > 0) && (
+            <VStack align="stretch" spacing={3} mb={6}>
+              {endedAwaitingWithdrawal.length > 0 && (
+                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <HStack justify="space-between" w="full" flexWrap="wrap" gap={3}>
+                    <Text fontSize="sm" color="chakra-body-text">
+                      {endedAwaitingWithdrawal.length} ended campaign
+                      {endedAwaitingWithdrawal.length === 1 ? "" : "s"} may be ready for withdrawal.
+                    </Text>
+                    <Button size="sm" as={Link} href={`/campaigns/${endedAwaitingWithdrawal[0].campaign_id}`} colorScheme="primary">
+                      Review
+                    </Button>
+                  </HStack>
+                </Alert>
+              )}
+              {cancelledWithDonors.length > 0 && (
+                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    {cancelledWithDonors.length} cancelled campaign{cancelledWithDonors.length === 1 ? "" : "s"} have donor refunds in progress.
+                  </Text>
+                </Alert>
+              )}
+            </VStack>
+          )}
+
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={6}>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Raised</Text>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Lifetime Raised</Text>
                 <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
-                  ${totalRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  ${lifetimeRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>All campaigns</Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across all your campaigns</Text>
+              </CardBody>
+            </Card>
+            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+              <CardBody py={4}>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Currently Held</Text>
+                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
+                  ${currentlyHeldUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Still in active/cancelled contracts</Text>
               </CardBody>
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
@@ -264,11 +329,13 @@ export default function DashboardPage() {
             </Card>
             <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
               <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Donors</Text>
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">Supporters</Text>
                 <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
-                  {totalDonors}
+                  {uniqueSupporters ?? donorAppearances}
                 </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across all campaigns</Text>
+                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
+                  Unique wallets across your campaigns
+                </Text>
               </CardBody>
             </Card>
           </SimpleGrid>
