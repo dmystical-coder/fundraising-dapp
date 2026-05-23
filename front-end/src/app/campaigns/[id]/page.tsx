@@ -79,6 +79,14 @@ export default function CampaignDetailPage() {
     | null
     | undefined;
   const coverUrl = indexedExtra?.cover_url || indexedExtra?.coverUrl || null;
+  const parseAmount = (v: unknown): number => {
+    if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+    if (typeof v === "string") {
+      const n = Number.parseInt(v, 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
 
   if (isLoading || pricesLoading) {
     return (
@@ -136,13 +144,29 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  const stxAmount = campaign.totalStx;
-  const sbtcAmount = campaign.totalSbtc;
+  const raisedStxAmount = parseAmount(
+    (indexedCampaign as { raised_stx?: string | number | null } | null | undefined)?.raised_stx
+  ) || campaign.totalStx;
+  const raisedSbtcAmount = parseAmount(
+    (indexedCampaign as { raised_sbtc?: string | number | null } | null | undefined)?.raised_sbtc
+  ) || campaign.totalSbtc;
+  const refundedStxAmount = parseAmount(
+    (indexedCampaign as { refunded_stx?: string | number | null } | null | undefined)?.refunded_stx
+  );
+  const refundedSbtcAmount = parseAmount(
+    (indexedCampaign as { refunded_sbtc?: string | number | null } | null | undefined)?.refunded_sbtc
+  );
+
+  const stxAmount = raisedStxAmount;
+  const sbtcAmount = raisedSbtcAmount;
   const stxPrice = prices?.stx || 0;
   const sbtcPrice = prices?.sbtc || 0;
   const stxUsd = (stxAmount / 1_000_000) * stxPrice;
   const sbtcUsd = (sbtcAmount / 100_000_000) * sbtcPrice;
   const totalUsd = isNaN(stxUsd + sbtcUsd) ? 0 : stxUsd + sbtcUsd;
+  const refundedUsd =
+    (refundedStxAmount / 1_000_000) * stxPrice +
+    (refundedSbtcAmount / 100_000_000) * sbtcPrice;
   const progress =
     campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
 
@@ -296,6 +320,27 @@ export default function CampaignDetailPage() {
                     sbtcPrice={prices?.sbtc}
                     size="lg"
                   />
+
+                  {campaign.isCancelled && (refundedStxAmount > 0 || refundedSbtcAmount > 0) && (
+                    <Box pt={1}>
+                      <Text fontSize="sm" fontWeight="600" color="text.secondary" mb={0.5}>
+                        Amount Refunded
+                      </Text>
+                      <Text fontWeight="700" color="warning.600" fontSize="lg" lineHeight="1.1">
+                        ${refundedUsd.toFixed(2)}
+                        <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
+                          USD
+                        </Text>
+                      </Text>
+                      <CombinedAmountDisplay
+                        stxAmount={refundedStxAmount}
+                        sbtcAmount={refundedSbtcAmount}
+                        stxPrice={prices?.stx}
+                        sbtcPrice={prices?.sbtc}
+                        size="sm"
+                      />
+                    </Box>
+                  )}
 
                   {campaign.goal > 0 && (
                     <Box>

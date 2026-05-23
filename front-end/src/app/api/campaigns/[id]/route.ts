@@ -34,20 +34,32 @@ export async function GET(
     // zeroed; totalStx/totalSbtc are zeroed on withdraw, so we fall
     // back to event sums only in that case.
     const donors = new Set<string>();
+    let raised_stx = BigInt(0);
+    let raised_sbtc = BigInt(0);
     let event_total_stx = BigInt(0);
     let event_total_sbtc = BigInt(0);
     for (const ev of events) {
       if (ev.name === "donated-stx") {
         donors.add(ev.donor);
+        raised_stx += ev.amount;
         if (chain.isWithdrawn) event_total_stx += ev.amount;
       } else if (ev.name === "donated-sbtc") {
         donors.add(ev.donor);
+        raised_sbtc += ev.amount;
         if (chain.isWithdrawn) event_total_sbtc += ev.amount;
       }
     }
 
     const total_stx = chain.isWithdrawn ? event_total_stx : chain.totalStx;
     const total_sbtc = chain.isWithdrawn ? event_total_sbtc : chain.totalSbtc;
+    const refunded_stx =
+      chain.isCancelled && raised_stx >= total_stx
+        ? raised_stx - total_stx
+        : BigInt(0);
+    const refunded_sbtc =
+      chain.isCancelled && raised_sbtc >= total_sbtc
+        ? raised_sbtc - total_sbtc
+        : BigInt(0);
 
     const meta = metadataResult.rows[0] ?? { title: null, description: null, cover_url: null };
     const created_at = new Date(Number(chain.createdAt) * 1000).toISOString();
@@ -70,6 +82,10 @@ export async function GET(
         title: meta.title,
         description: meta.description,
         cover_url: meta.cover_url,
+        raised_stx: raised_stx.toString(),
+        raised_sbtc: raised_sbtc.toString(),
+        refunded_stx: refunded_stx.toString(),
+        refunded_sbtc: refunded_sbtc.toString(),
       },
     });
   } catch (err) {
