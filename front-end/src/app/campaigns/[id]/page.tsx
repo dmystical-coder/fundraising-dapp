@@ -72,6 +72,14 @@ export default function CampaignDetailPage() {
     currentAddress &&
     campaign?.owner &&
     currentAddress.toLowerCase() === campaign.owner.toLowerCase();
+  const hasRefundClaimed = !!(
+    currentAddress &&
+    activity?.some(
+      (ev) =>
+        ev.event_name === "refunded" &&
+        ev.donor?.toLowerCase() === currentAddress.toLowerCase()
+    )
+  );
 
   // Cover image — sourced from indexer metadata when available
   const indexedExtra = indexedCampaign as
@@ -406,11 +414,12 @@ export default function CampaignDetailPage() {
 
             {/* Inline donation / refund panel */}
             {(status === "active" || status === "cancelled") && !isOwner && (
-              <InlineDonationPanel
-                campaignId={campaign.id}
-                campaignTitle={campaignTitle}
-                status={status}
-              />
+            <InlineDonationPanel
+              campaignId={campaign.id}
+              campaignTitle={campaignTitle}
+              status={status}
+              hasRefundClaimed={hasRefundClaimed}
+            />
             )}
 
             <DonorBadgePanel campaignId={campaign.id} />

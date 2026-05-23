@@ -56,12 +56,14 @@ interface Props {
   campaignId: number;
   campaignTitle?: string;
   status?: "active" | "cancelled" | "ended" | "withdrawn";
+  hasRefundClaimed?: boolean;
 }
 
 export function InlineDonationPanel({
   campaignId,
   campaignTitle,
   status = "active",
+  hasRefundClaimed = false,
 }: Props) {
   const { mainnetAddress, testnetAddress } = useContext(HiroWalletContext);
   const {
@@ -458,6 +460,42 @@ export function InlineDonationPanel({
 
               <Text fontSize="xs" color="text.tertiary" textAlign="center">
                 Signed via your connected wallet
+              </Text>
+            </VStack>
+          ) : hasRefundClaimed ? (
+            <VStack spacing={2} py={2} textAlign="center">
+              <Box
+                w="40px"
+                h="40px"
+                borderRadius="full"
+                bg="success.50"
+                border="1.5px solid"
+                borderColor="success.300"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                mx="auto"
+              >
+                <Box color="success.500">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </Box>
+              </Box>
+              <Text fontWeight="600" color="chakra-body-text" fontSize="sm">
+                Refund claimed
+              </Text>
+              <Text fontSize="xs" color="text.secondary">
+                Your refund for this cancelled campaign has already been processed.
               </Text>
             </VStack>
           ) : (
