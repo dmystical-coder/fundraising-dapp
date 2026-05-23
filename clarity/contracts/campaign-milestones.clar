@@ -24,7 +24,6 @@
 
 ;; -- Constants --
 
-(define-constant CONTRACT_OWNER tx-sender)
 (define-constant MAX_TRANCHE_COUNT u4)
 (define-constant MIN_TRANCHE_COUNT u1)
 ;; Vote-weight cap. A donor's vote weight = min(stx-contribution, VOTE_CAP_USTX).
@@ -44,8 +43,6 @@
 (define-constant ERR_ALREADY_VOTED (err u508))
 (define-constant ERR_INSUFFICIENT_VOTES (err u509))
 (define-constant ERR_ALREADY_CLAIMED (err u510))
-(define-constant ERR_INVALID_CAMPAIGN (err u511))
-(define-constant ERR_STX_TRANSFER_FAILED (err u512))
 
 ;; -- Storage --
 
@@ -99,8 +96,9 @@
 ;; call. Caller must be the campaign owner as reported by the source
 ;; contract; the owner principal is captured at create time so a later
 ;; ownership transfer on the source can't redirect future tranche
-;; payouts. tranche-amount is computed via floor division; any
-;; remainder rides along with the final tranche when claimed.
+;; payouts. tranche-amount = floor(amount / tranche-count); each claim
+;; pays exactly tranche-amount and any floor-division remainder is
+;; locked dust (FE warns creators to use evenly-divisible deposits).
 (define-public (create-escrow
     (source <fundstacks-source>)
     (campaign-id uint)
