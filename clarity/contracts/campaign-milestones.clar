@@ -138,3 +138,67 @@
     (ok true)
   )
 )
+
+;; Cast a donor vote toward releasing tranche-id of campaign-id.
+;; Vote weight = min(stx-contribution-to-campaign, VOTE_CAP_USTX). A
+;; donor with no STX contribution to the campaign cannot vote, and
+;; each donor can only vote once per tranche. Returns the weight that
+;; was added to the tally (handy as a confirmation for the caller).
+(define-public (vote-release
+    (source <fundstacks-source>)
+    (campaign-id uint)
+    (tranche-id uint)
+  )
+  (let (
+      (donor tx-sender)
+      (escrow (unwrap! (map-get? escrows campaign-id) ERR_ESCROW_NOT_FOUND))
+      (contribution (try! (contract-call? source get-stx-donation campaign-id donor)))
+      (weight (if (< contribution VOTE_CAP_USTX)
+                contribution
+                VOTE_CAP_USTX
+              ))
+      (existing (default-to
+                  {
+                    vote-weight: u0,
+                    released: false,
+                    claimed: false,
+                  }
+                  (map-get? tranche-votes {
+                    campaign-id: campaign-id,
+                    tranche-id: tranche-id,
+                  })
+                ))
+    )
+    (asserts!
+      (< tranche-id (get tranche-count escrow))
+      ERR_TRANCHE_NOT_FOUND
+    )
+    (asserts! (> contribution u0) ERR_NOT_A_DONOR)
+    (asserts!
+      (is-none (map-get? donor-votes {
+        campaign-id: campaign-id,
+        tranche-id: tranche-id,
+        donor: donor,
+      }))
+      ERR_ALREADY_VOTED
+    )
+    (map-set tranche-votes
+      {
+        campaign-id: campaign-id,
+        tranche-id: tranche-id,
+      }
+      (merge existing {
+        vote-weight: (+ (get vote-weight existing) weight),
+      })
+    )
+    (map-set donor-votes
+      {
+        campaign-id: campaign-id,
+        tranche-id: tranche-id,
+        donor: donor,
+      }
+      true
+    )
+    (ok weight)
+  )
+)
