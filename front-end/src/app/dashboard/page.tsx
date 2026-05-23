@@ -16,8 +16,6 @@ import {
   SimpleGrid,
   Text,
   VStack,
-  Alert,
-  AlertIcon,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -214,12 +212,6 @@ export default function DashboardPage() {
     });
   }, [campaignsWithStatus, onChainMap]);
 
-  const cancelledWithDonors = useMemo(() => {
-    return campaignsWithStatus.filter(
-      (c) => c.status === "cancelled" && (c.donor_count ?? 0) > 0
-    );
-  }, [campaignsWithStatus]);
-
   const totalDonatedUsd = useMemo(() => {
     return donations.reduce((sum, donation) => {
       const raw = parseRawAmount(donation.amount);
@@ -365,64 +357,6 @@ export default function DashboardPage() {
               Create Campaign
             </Button>
           </HStack>
-
-          {(endedAwaitingWithdrawal.length > 0 ||
-            cancelledWithDonors.length > 0 ||
-            (donorEngagement?.claimableRewardsCount ?? 0) > 0 ||
-            (donorEngagement?.claimableBadgesCount ?? 0) > 0 ||
-            (donorEngagement?.upgradableBadgesCount ?? 0) > 0) && (
-            <VStack align="stretch" spacing={3} mb={6}>
-              {endedAwaitingWithdrawal.length > 0 && (
-                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
-                  <AlertIcon />
-                  <HStack justify="space-between" w="full" flexWrap="wrap" gap={3}>
-                    <Text fontSize="sm" color="chakra-body-text">
-                      {endedAwaitingWithdrawal.length} ended campaign
-                      {endedAwaitingWithdrawal.length === 1 ? "" : "s"} may be ready for withdrawal.
-                    </Text>
-                    <Button size="sm" as={Link} href={`/campaigns/${endedAwaitingWithdrawal[0].campaign_id}`} colorScheme="primary">
-                      Review
-                    </Button>
-                  </HStack>
-                </Alert>
-              )}
-              {cancelledWithDonors.length > 0 && (
-                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
-                  <AlertIcon />
-                  <Text fontSize="sm" color="chakra-body-text">
-                    {cancelledWithDonors.length} cancelled campaign{cancelledWithDonors.length === 1 ? "" : "s"} have donor refunds in progress.
-                  </Text>
-                </Alert>
-              )}
-              {(donorEngagement?.claimableRewardsCount ?? 0) > 0 && (
-                <Alert status="success" borderRadius="lg" borderWidth="1px" borderColor="border.default">
-                  <AlertIcon />
-                  <Text fontSize="sm" color="chakra-body-text">
-                    You can claim FSTR rewards on {donorEngagement?.claimableRewardsCount} supported campaign
-                    {(donorEngagement?.claimableRewardsCount ?? 0) === 1 ? "" : "s"}.
-                  </Text>
-                </Alert>
-              )}
-              {(donorEngagement?.claimableBadgesCount ?? 0) > 0 && (
-                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
-                  <AlertIcon />
-                  <Text fontSize="sm" color="chakra-body-text">
-                    You have {donorEngagement?.claimableBadgesCount} donor badge claim
-                    {(donorEngagement?.claimableBadgesCount ?? 0) === 1 ? "" : "s"} available.
-                  </Text>
-                </Alert>
-              )}
-              {(donorEngagement?.upgradableBadgesCount ?? 0) > 0 && (
-                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
-                  <AlertIcon />
-                  <Text fontSize="sm" color="chakra-body-text">
-                    {donorEngagement?.upgradableBadgesCount} badge
-                    {(donorEngagement?.upgradableBadgesCount ?? 0) === 1 ? " is" : "s are"} upgradable.
-                  </Text>
-                </Alert>
-              )}
-            </VStack>
-          )}
 
           {(endedAwaitingWithdrawal.length > 0 ||
             (donorEngagement?.claimableRewardCampaignIds.length ?? 0) > 0 ||
