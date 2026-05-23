@@ -91,3 +91,50 @@
   }
   bool
 )
+
+;; -- Public functions --
+
+;; Create the escrow for a campaign and deposit the locked STX in one
+;; call. Caller must be the campaign owner as reported by the source
+;; contract; the owner principal is captured at create time so a later
+;; ownership transfer on the source can't redirect future tranche
+;; payouts. tranche-amount is computed via floor division; any
+;; remainder rides along with the final tranche when claimed.
+(define-public (create-escrow
+    (source <fundstacks-source>)
+    (campaign-id uint)
+    (amount uint)
+    (tranche-count uint)
+    (release-threshold uint)
+  )
+  (let (
+      (info (try! (contract-call? source get-campaign-info campaign-id)))
+      (owner (get owner info))
+      (tranche-amount (/ amount tranche-count))
+    )
+    (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+    (asserts!
+      (and
+        (>= tranche-count MIN_TRANCHE_COUNT)
+        (<= tranche-count MAX_TRANCHE_COUNT)
+      )
+      ERR_INVALID_TRANCHE_COUNT
+    )
+    (asserts! (> release-threshold u0) ERR_INVALID_THRESHOLD)
+    (asserts! (is-eq tx-sender owner) ERR_NOT_AUTHORIZED)
+    (asserts!
+      (is-none (map-get? escrows campaign-id))
+      ERR_ESCROW_EXISTS
+    )
+    (try! (stx-transfer? amount tx-sender (try! (as-contract? () tx-sender))))
+    (map-insert escrows campaign-id {
+      owner: owner,
+      balance: amount,
+      tranche-count: tranche-count,
+      tranche-amount: tranche-amount,
+      release-threshold: release-threshold,
+      created-at: stacks-block-height,
+    })
+    (ok true)
+  )
+)
