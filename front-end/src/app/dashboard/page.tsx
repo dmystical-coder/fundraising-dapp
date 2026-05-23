@@ -30,12 +30,21 @@ import {
   useMyDonations,
   useMyUniqueSupporters,
 } from "@/hooks/indexerQueries";
+import { useFstrBalance } from "@/hooks/rewardsQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
 import { useCurrentPrices } from "@/lib/currency-utils";
 import { isMainnetEnvironment } from "@/lib/contract-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { SimpleAddress } from "@/components/common/AddressDisplay";
+import { hasClaimed } from "@/lib/fundstacks-rewards-reads";
+import {
+  getBadgeMetadata,
+  getDonorBadgeId,
+  getDonorContributionStxEquivalent,
+  tierForAmount,
+  TIER_NONE,
+} from "@/lib/donor-badges-reads";
 
 type DashboardPanel = "campaigns" | "donations" | "settings";
 type CampaignFilter = "active" | "ended" | "all";
@@ -55,6 +64,7 @@ export default function DashboardPage() {
   const { data: myCampaigns, isLoading: campaignsLoading } = useMyCampaigns(address);
   const { data: myDonations, isLoading: donationsLoading } = useMyDonations(address);
   const { data: uniqueSupporters } = useMyUniqueSupporters(address);
+  const { data: fstrBalance } = useFstrBalance(address);
 
   const campaigns = useMemo(() => myCampaigns || [], [myCampaigns]);
   const donations = useMemo(() => myDonations || [], [myDonations]);
@@ -88,6 +98,64 @@ export default function DashboardPage() {
       return { ...campaign, status };
     });
   }, [campaigns, onChainMap]);
+
+  const supportedCampaignIds = useMemo(
+    () => Array.from(new Set(donations.map((d) => d.campaign_id))),
+    [donations]
+  );
+
+  const { data: donorEngagement } = useQuery<{
+    claimableRewardsCount: number;
+    badgesOwnedCount: number;
+    claimableBadgesCount: number;
+    upgradableBadgesCount: number;
+  }>({
+    queryKey: ["dashboard", "donor-engagement", address, supportedCampaignIds],
+    queryFn: async () => {
+      if (!address || supportedCampaignIds.length === 0) {
+        return {
+          claimableRewardsCount: 0,
+          badgesOwnedCount: 0,
+          claimableBadgesCount: 0,
+          upgradableBadgesCount: 0,
+        };
+      }
+
+      const rows = await Promise.all(
+        supportedCampaignIds.map(async (campaignId) => {
+          const [claimedRewards, badgeId, stxEq] = await Promise.all([
+            hasClaimed(campaignId, address),
+            getDonorBadgeId(campaignId, address),
+            getDonorContributionStxEquivalent(campaignId, address),
+          ]);
+
+          const previewTier = tierForAmount(stxEq ?? BigInt(0));
+          let upgradable = false;
+          if (badgeId !== null) {
+            const md = await getBadgeMetadata(badgeId);
+            if (md && previewTier > md.tier) upgradable = true;
+          }
+
+          return {
+            claimedRewards,
+            badgeOwned: badgeId !== null,
+            claimableBadge: badgeId === null && previewTier > TIER_NONE,
+            upgradable,
+          };
+        })
+      );
+
+      return {
+        claimableRewardsCount: rows.filter((r) => !r.claimedRewards).length,
+        badgesOwnedCount: rows.filter((r) => r.badgeOwned).length,
+        claimableBadgesCount: rows.filter((r) => r.claimableBadge).length,
+        upgradableBadgesCount: rows.filter((r) => r.upgradable).length,
+      };
+    },
+    enabled: !!address,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
 
   const filteredCampaigns = useMemo(() => {
     if (campaignFilter === "all") return campaignsWithStatus;
@@ -136,6 +204,19 @@ export default function DashboardPage() {
       (c) => c.status === "cancelled" && (c.donor_count ?? 0) > 0
     );
   }, [campaignsWithStatus]);
+
+  const totalDonatedUsd = useMemo(() => {
+    return donations.reduce((sum, donation) => {
+      const raw = parseRawAmount(donation.amount);
+      if (donation.event_name === "donated-stx") {
+        return sum + (raw / 1_000_000) * (prices?.stx || 0);
+      }
+      if (donation.event_name === "donated-sbtc") {
+        return sum + (raw / 100_000_000) * (prices?.sbtc || 0);
+      }
+      return sum;
+    }, 0);
+  }, [donations, prices]);
 
   if (!address) {
     return (
@@ -270,7 +351,11 @@ export default function DashboardPage() {
             </Button>
           </HStack>
 
-          {(endedAwaitingWithdrawal.length > 0 || cancelledWithDonors.length > 0) && (
+          {(endedAwaitingWithdrawal.length > 0 ||
+            cancelledWithDonors.length > 0 ||
+            (donorEngagement?.claimableRewardsCount ?? 0) > 0 ||
+            (donorEngagement?.claimableBadgesCount ?? 0) > 0 ||
+            (donorEngagement?.upgradableBadgesCount ?? 0) > 0) && (
             <VStack align="stretch" spacing={3} mb={6}>
               {endedAwaitingWithdrawal.length > 0 && (
                 <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
@@ -291,6 +376,33 @@ export default function DashboardPage() {
                   <AlertIcon />
                   <Text fontSize="sm" color="chakra-body-text">
                     {cancelledWithDonors.length} cancelled campaign{cancelledWithDonors.length === 1 ? "" : "s"} have donor refunds in progress.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.claimableRewardsCount ?? 0) > 0 && (
+                <Alert status="success" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    You can claim FSTR rewards on {donorEngagement?.claimableRewardsCount} supported campaign
+                    {(donorEngagement?.claimableRewardsCount ?? 0) === 1 ? "" : "s"}.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.claimableBadgesCount ?? 0) > 0 && (
+                <Alert status="info" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    You have {donorEngagement?.claimableBadgesCount} donor badge claim
+                    {(donorEngagement?.claimableBadgesCount ?? 0) === 1 ? "" : "s"} available.
+                  </Text>
+                </Alert>
+              )}
+              {(donorEngagement?.upgradableBadgesCount ?? 0) > 0 && (
+                <Alert status="warning" borderRadius="lg" borderWidth="1px" borderColor="border.default">
+                  <AlertIcon />
+                  <Text fontSize="sm" color="chakra-body-text">
+                    {donorEngagement?.upgradableBadgesCount} badge
+                    {(donorEngagement?.upgradableBadgesCount ?? 0) === 1 ? " is" : "s are"} upgradable.
                   </Text>
                 </Alert>
               )}
@@ -446,6 +558,49 @@ export default function DashboardPage() {
 
           {activePanel === "donations" && (
             <>
+              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={4}>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Donated</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
+                      ${totalDonatedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Lifetime by this wallet</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns Supported</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
+                      {supportedCampaignIds.length}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Distinct campaigns donated to</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">FSTR Balance</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
+                      {fstrBalance !== null && fstrBalance !== undefined
+                        ? (Number(fstrBalance) / 1_000_000).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : "0"}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Rewards token in wallet</Text>
+                  </CardBody>
+                </Card>
+                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
+                  <CardBody py={4}>
+                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Badges Owned</Text>
+                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
+                      {donorEngagement?.badgesOwnedCount ?? 0}
+                    </Text>
+                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across supported campaigns</Text>
+                  </CardBody>
+                </Card>
+              </SimpleGrid>
+
               {donationsLoading ? (
                 <VStack spacing={3} align="stretch">
                   {[1, 2, 3].map((i) => (
