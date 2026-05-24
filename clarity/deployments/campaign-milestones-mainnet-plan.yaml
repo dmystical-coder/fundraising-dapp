@@ -1,0 +1,18 @@
+---
+id: 3
+name: campaign-milestones mainnet deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: campaign-milestones
+            expected-sender: SP3R3SX667CWE61113X23CAQ03SZXXZ3D8D3A4NFH
+            cost: 95000
+            path: contracts/campaign-milestones.clar
+            anchor-block-only: true
+            clarity-version: 4
+      epoch: "3.3"

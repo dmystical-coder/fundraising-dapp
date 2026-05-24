@@ -82,6 +82,16 @@ plan:
     - id: 1
       transactions:
         - emulated-contract-publish:
+            contract-name: fundstacks-source-trait
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/fundstacks-source-trait.clar
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: campaign-milestones
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/campaign-milestones.clar
+            clarity-version: 4
+        - emulated-contract-publish:
             contract-name: donation-source-trait
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/donation-source-trait.clar
@@ -90,11 +100,6 @@ plan:
             contract-name: donor-badges
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/donor-badges.clar
-            clarity-version: 4
-        - emulated-contract-publish:
-            contract-name: fundstacks-source-trait
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/fundstacks-source-trait.clar
             clarity-version: 4
         - emulated-contract-publish:
             contract-name: fee-splitter

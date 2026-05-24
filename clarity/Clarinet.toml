@@ -41,5 +41,10 @@ path = 'contracts/fee-splitter.clar'
 clarity_version = 4
 epoch = "3.3"
 
+[contracts.campaign-milestones]
+path = 'contracts/campaign-milestones.clar'
+clarity_version = 4
+epoch = "3.3"
+
 [repl.analysis]
 passes = []
