@@ -29,9 +29,9 @@ import {
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 
-import { useCampaignById } from "@/hooks/campaignQueries";
 import {
   useCampaignActivity,
+  useCampaignFromIndexer,
   useCampaignLeaderboard,
   useIndexerCampaign,
 } from "@/hooks/indexerQueries";
@@ -53,7 +53,7 @@ export default function CampaignDetailPage() {
   const campaignId = params?.id ? parseInt(params.id as string, 10) : null;
 
   const { data: prices, isLoading: pricesLoading } = useCurrentPrices();
-  const { data: campaign, isLoading, error } = useCampaignById(campaignId, prices);
+  const { data: campaign, isLoading, error } = useCampaignFromIndexer(campaignId);
   const { data: indexedCampaign } = useIndexerCampaign(campaignId);
   const {
     data: activity,
