@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { INDEXER_CONFIG } from "@/constants/indexer";
+import type { CampaignInfo } from "@/hooks/campaignQueries";
 
 // ============================================================================
 // Types
@@ -9,6 +10,7 @@ export interface IndexedCampaign {
   campaign_id: number;
   owner: string | null;
   beneficiary: string | null;
+  goal: string;
   donation_count: number;
   /** Distinct donor principals (indexer; donation_count is total donation events). */
   donor_count: number;
@@ -16,10 +18,16 @@ export interface IndexedCampaign {
   total_sbtc: string;
   is_cancelled: boolean;
   is_withdrawn: boolean;
+  is_expired: boolean;
+  end_at: string;
   created_at: string;
   title: string | null;
   description: string | null;
   cover_url: string | null;
+  raised_stx: string;
+  raised_sbtc: string;
+  refunded_stx: string;
+  refunded_sbtc: string;
 }
 
 export interface CampaignEvent {
@@ -305,5 +313,46 @@ export function useMyUniqueSupporters(
     enabled: !!address,
     staleTime: 30_000,
     refetchInterval: 60_000,
+  });
+}
+
+/**
+ * Fetch a campaign via the server-side API route (no direct Hiro calls from the browser).
+ * Maps IndexedCampaign to CampaignInfo so it's a drop-in replacement for useCampaignById.
+ */
+export function useCampaignFromIndexer(
+  campaignId: number | null | undefined
+): UseQueryResult<CampaignInfo | null> {
+  return useQuery({
+    queryKey: ["indexer", "campaignInfo", campaignId],
+    queryFn: async () => {
+      if (!campaignId) return null;
+      const data = await fetchFromIndexer<{ campaign: IndexedCampaign }>(
+        INDEXER_CONFIG.endpoints.campaign(campaignId)
+      );
+      const c = data.campaign;
+      return {
+        id: c.campaign_id,
+        owner: c.owner ?? "",
+        beneficiary: c.beneficiary ?? "",
+        startBlock: 0,
+        start: 0,
+        end: 0,
+        createdAt: Math.floor(new Date(c.created_at).getTime() / 1000),
+        endAt: Number(c.end_at),
+        goal: Number(c.goal),
+        totalStx: Number(c.total_stx),
+        totalSbtc: Number(c.total_sbtc),
+        usdValue: 0,
+        donationCount: c.donation_count,
+        isExpired: c.is_expired,
+        isWithdrawn: c.is_withdrawn,
+        isCancelled: c.is_cancelled,
+      } satisfies CampaignInfo;
+    },
+    enabled: !!campaignId,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    retry: false,
   });
 }

@@ -39,7 +39,7 @@ const PAGE_SIZE = 9;
 type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
 type FilterOption = "all" | "active" | "ending-soon" | "fully-funded";
 
-interface CampaignWithOnChain extends IndexedCampaign {
+interface CampaignWithOnChain extends Omit<IndexedCampaign, "goal"> {
   endAt?: number;
   goal?: number;
   isExpired: boolean;
@@ -235,10 +235,16 @@ export function CampaignGrid({
         cover_url: null,
         total_stx: "0",
         total_sbtc: "0",
+        raised_stx: "0",
+        raised_sbtc: "0",
+        refunded_stx: "0",
+        refunded_sbtc: "0",
         donation_count: 0,
         donor_count: 0,
         is_cancelled: false,
         is_withdrawn: false,
+        is_expired: false,
+        end_at: "0",
         created_at: new Date(meta.createdAt).toISOString(),
         isExpired: false,
         isPending: true,
