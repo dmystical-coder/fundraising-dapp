@@ -43,6 +43,7 @@ import { AddressDisplay } from "@/components/common/AddressDisplay";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import { ShareCard } from "@/components/campaign/ShareCard";
 import { DonorBadgePanel } from "@/components/campaign/DonorBadgePanel";
+import { MilestonesPanel } from "@/components/campaign/MilestonesPanel";
 import { RewardsPanel } from "@/components/campaign/RewardsPanel";
 import { InlineDonationPanel } from "@/components/campaign/InlineDonationPanel";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
@@ -424,6 +425,7 @@ export default function CampaignDetailPage() {
 
             <DonorBadgePanel campaignId={campaign.id} />
             <RewardsPanel campaignId={campaign.id} />
+            <MilestonesPanel campaignId={campaign.id} isOwner={!!isOwner} />
 
             {campaign && (
               <ShareCard

@@ -33,6 +33,11 @@ export const FEE_SPLITTER_CONTRACT = {
   name: "fee-splitter",
 } as const;
 
+export const CAMPAIGN_MILESTONES_CONTRACT = {
+  address: DEPLOYER_ADDRESS,
+  name: "campaign-milestones",
+} as const;
+
 const sbtcMainnetAddress = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4";
 
 export const SBTC_CONTRACT = {
