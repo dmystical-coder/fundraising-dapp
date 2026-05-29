@@ -320,6 +320,8 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
               const canClaim = isOwner && isReady && !claimed;
               const canVote =
                 !!donor && !isOwner && !t.hasVoted && !claimed;
+              const showVotedBadge =
+                !!donor && !isOwner && t.hasVoted && !claimed;
 
               return (
                 <Box
@@ -351,6 +353,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                         size="xs"
                         colorScheme="primary"
                         isLoading={submittingTranche === t.id}
+                        isDisabled={submittingTranche !== null}
                         onClick={() => handleClaim(t.id)}
                       >
                         Claim
@@ -362,10 +365,22 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                         variant="outline"
                         colorScheme="primary"
                         isLoading={submittingTranche === t.id}
+                        isDisabled={submittingTranche !== null}
                         onClick={() => handleVote(t.id)}
                       >
                         Approve
                       </Button>
+                    )}
+                    {showVotedBadge && (
+                      <Badge
+                        colorScheme="blue"
+                        variant="subtle"
+                        borderRadius="full"
+                        px={2}
+                        fontSize="xs"
+                      >
+                        Voted
+                      </Badge>
                     )}
                   </HStack>
                   <Progress
