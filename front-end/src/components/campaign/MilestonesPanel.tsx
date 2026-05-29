@@ -200,10 +200,16 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
   // No escrow: only campaign owner can set one up
   if (!escrow) {
     if (!isOwner) return null;
+    const parsedMicro = amountStx ? Math.floor(parseFloat(amountStx) * 1_000_000) : 0;
+    const parsedCount = parseInt(trancheCount, 10);
     const perTranche =
-      amountStx && trancheCount
-        ? Math.floor(parseFloat(amountStx) / parseInt(trancheCount, 10)) || 0
+      parsedMicro > 0 && parsedCount > 0
+        ? Math.floor(parsedMicro / parsedCount / 1_000_000) || 0
         : null;
+    const dustStx =
+      parsedMicro > 0 && parsedCount > 0
+        ? (parsedMicro % parsedCount) / 1_000_000
+        : 0;
 
     return (
       <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
@@ -268,6 +274,12 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
             {perTranche !== null && (
               <Text fontSize="xs" color="text.tertiary">
                 Each tranche: ~{perTranche.toLocaleString()} STX
+              </Text>
+            )}
+            {dustStx > 0 && (
+              <Text fontSize="xs" color="orange.500">
+                {dustStx.toFixed(6).replace(/\.?0+$/, "")} STX remainder will
+                be permanently locked as dust — use an evenly divisible amount.
               </Text>
             )}
             <Button
