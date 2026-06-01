@@ -11,6 +11,7 @@ import {
   ButtonProps,
   Flex,
   HStack,
+  IconButton,
   Menu,
   MenuButton,
   MenuItem,
@@ -20,7 +21,9 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useContext, useState } from "react";
+import NextLink from "next/link";
 import HiroWalletContext from "./HiroWalletProvider";
+import { WalletIdenticon } from "./common/WalletIdenticon";
 import {
   getConfiguredStacksNetwork,
   isDevnetEnvironment,
@@ -64,6 +67,8 @@ function readHasTestnetInStorage(): boolean {
 
 interface ConnectWalletButtonProps extends ButtonProps {
   children?: React.ReactNode;
+  /** Render an icon-only trigger (identicon when connected, short "Connect" otherwise) — for the mobile profile slot. */
+  compact?: boolean;
 }
 
 const focusVisibleProps = {
@@ -73,7 +78,7 @@ const focusVisibleProps = {
 };
 
 export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
-  const { children, size = "md", w, ...restButtonProps } = buttonProps;
+  const { children, size = "md", w, compact = false, ...restButtonProps } = buttonProps;
   const {
     authenticate,
     disconnect,
@@ -136,6 +141,44 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
   if (isWalletConnected && currentAddress) {
     const connectLabelBase =
       network === "mainnet" ? "Stacks mainnet" : "Stacks testnet";
+    const menuAriaLabel = `Open wallet menu, ${formatStxAddress(currentAddress)}, on ${connectLabelBase}`;
+    const accountMenuList = (
+      <MenuList zIndex="popover" aria-label="Wallet actions">
+        <MenuItem as={NextLink} href="/dashboard" minH="11">
+          Dashboard
+        </MenuItem>
+        <MenuItem onClick={onCopy} minH="11">
+          Copy address
+        </MenuItem>
+        <MenuItem onClick={disconnect} minH="11">
+          Disconnect
+        </MenuItem>
+      </MenuList>
+    );
+
+    if (compact) {
+      return (
+        <Menu placement="bottom-end">
+          <MenuButton
+            as={IconButton}
+            variant="ghost"
+            borderRadius="full"
+            p={0}
+            minW="auto"
+            boxSize="36px"
+            overflow="hidden"
+            data-testid="wallet-connect-button"
+            aria-label={menuAriaLabel}
+            icon={<WalletIdenticon address={currentAddress} size={36} />}
+            _hover={{ opacity: 0.9 }}
+            _active={{ opacity: 0.8 }}
+            {...focusVisibleProps}
+          />
+          {accountMenuList}
+        </Menu>
+      );
+    }
+
     return (
       <Menu placement="bottom-end">
         <MenuButton
@@ -143,12 +186,13 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
           size={size}
           w={w}
           data-testid="wallet-connect-button"
-          aria-label={`Open wallet menu, ${formatStxAddress(currentAddress)}, on ${connectLabelBase}`}
+          aria-label={menuAriaLabel}
           minH="11"
           {...focusVisibleProps}
           {...restButtonProps}
         >
           <Flex gap="2" align="center">
+            <WalletIdenticon address={currentAddress} size={20} />
             {formatStxAddress(currentAddress)}
             {network === "mainnet" ? (
               <Tag size="sm" colorScheme="success" borderRadius="full">
@@ -161,18 +205,7 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
             ) : null}
           </Flex>
         </MenuButton>
-        <MenuList
-          zIndex="popover"
-          py={1}
-          aria-label="Wallet actions"
-        >
-          <MenuItem onClick={onCopy} minH="11">
-            Copy address
-          </MenuItem>
-          <MenuItem onClick={disconnect} minH="11">
-            Disconnect
-          </MenuItem>
-        </MenuList>
+        {accountMenuList}
       </Menu>
     );
   }
@@ -180,6 +213,22 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
   if (isWrongNetworkAccount) {
     const expected = network === "mainnet" ? "Mainnet" : "Testnet";
     const hasInstead = network === "mainnet" ? "Testnet" : "Mainnet";
+    if (compact) {
+      return (
+        <Button
+          size={size}
+          variant="outline"
+          colorScheme="warning"
+          borderRadius="full"
+          onClick={handleAuthenticate}
+          isLoading={isConnecting}
+          aria-label={`Switch to a ${expected.toLowerCase()} Stacks account`}
+          {...focusVisibleProps}
+        >
+          Wrong network
+        </Button>
+      );
+    }
     return (
       <VStack
         align="stretch"
@@ -236,6 +285,27 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
           </Button>
         </HStack>
       </VStack>
+    );
+  }
+
+  if (compact) {
+    return (
+      <Button
+        size={size}
+        borderRadius="full"
+        variant="outline"
+        colorScheme="primary"
+        data-testid="wallet-connect-button"
+        onClick={handleAuthenticate}
+        isLoading={isConnecting}
+        loadingText="…"
+        isDisabled={isConnecting}
+        aria-busy={isConnecting}
+        aria-label="Connect your Stacks wallet to FundStacks"
+        {...focusVisibleProps}
+      >
+        Connect
+      </Button>
     );
   }
 

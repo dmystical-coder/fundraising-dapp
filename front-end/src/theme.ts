@@ -379,6 +379,43 @@ const components = {
       },
     },
   },
+  Menu: {
+    baseStyle: {
+      list: {
+        bg: "surfaceBg",
+        borderWidth: "1px",
+        borderColor: "border.default",
+        borderRadius: "xl",
+        boxShadow: "card",
+        py: 2,
+        px: 2,
+        minW: "48",
+      },
+      item: {
+        borderRadius: "lg",
+        fontSize: "sm",
+        fontWeight: "600",
+        color: "text.primary",
+        bg: "transparent",
+        px: 3,
+        py: 2.5,
+        _hover: { bg: "bg.surfaceAlt" },
+        _focus: { bg: "bg.surfaceAlt" },
+        _active: { bg: "border.default" },
+      },
+      groupTitle: {
+        mx: 3,
+        my: 2,
+        fontSize: "xs",
+        fontWeight: "600",
+        color: "text.tertiary",
+      },
+      divider: {
+        borderColor: "border.subtle",
+        my: 1,
+      },
+    },
+  },
 };
 
 const config: ThemeConfig = {
