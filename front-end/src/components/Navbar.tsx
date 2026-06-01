@@ -62,6 +62,7 @@ export const Navbar = () => {
     >
       <FundStacksMark size={32} />
       <Text
+        display={{ base: "none", sm: "block" }}
         fontSize={{ base: "lg", md: "xl" }}
         fontFamily="mono"
         fontWeight="900"
