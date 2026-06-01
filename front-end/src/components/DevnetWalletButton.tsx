@@ -10,9 +10,11 @@ import {
   MenuList,
   MenuItem,
   MenuGroup,
+  MenuDivider,
   Text,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
+import NextLink from "next/link";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
 import { formatStxAddress } from "@/lib/address-utils";
 import { DEVNET_STACKS_BLOCKCHAIN_API_URL } from "@/constants/devnet";
@@ -67,7 +69,11 @@ export const DevnetWalletButton = ({
           </Tag>
         </Flex>
       </MenuButton>
-      <MenuList minW="240px" zIndex="popover" py={1}>
+      <MenuList minW="240px" zIndex="popover">
+        <MenuItem as={NextLink} href="/dashboard" minH="11">
+          Dashboard
+        </MenuItem>
+        <MenuDivider />
         <MenuGroup
           title="Local devnet (testing)"
           fontSize="xs"
