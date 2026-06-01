@@ -10,6 +10,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
+import { FundStacksMark } from "./common/FundStacksMark";
 
 // ─── Link data ────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,9 @@ const ECOSYSTEM_LINKS = [
   { label: "sBTC Docs", href: "https://docs.stacks.co/concepts/sbtc" },
 ];
 
-// ─── ExternalLinkIcon (inline SVG — no icon dep needed) ──────────────────────
+const GITHUB_URL = "https://github.com/dmystical-coder/fundraising-dapp";
+
+// ─── Inline icons (no icon dep needed) ───────────────────────────────────────
 
 function ExternalIcon() {
   return (
@@ -43,7 +46,7 @@ function ExternalIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       display="inline-block"
-      ml="3px"
+      ml="4px"
       verticalAlign="middle"
       opacity={0.6}
       flexShrink={0}
@@ -52,6 +55,21 @@ function ExternalIcon() {
       <path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7" />
       <polyline points="8 1 11 1 11 4" />
       <line x1="5" y1="7" x2="11" y2="1" />
+    </Box>
+  );
+}
+
+function GitHubIcon() {
+  return (
+    <Box
+      as="svg"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      boxSize="18px"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
     </Box>
   );
 }
@@ -66,12 +84,16 @@ function ColHeading({ children }: { children: React.ReactNode }) {
       letterSpacing="0.1em"
       textTransform="uppercase"
       color="text.tertiary"
-      mb={3}
+      mb={4}
     >
       {children}
     </Text>
   );
 }
+
+const focusRing = {
+  _focusVisible: { boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)", borderRadius: "sm" },
+};
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
@@ -79,13 +101,13 @@ export function AppFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <Box
-      as="footer"
-      aria-label="Site footer"
-      bg="bg.surface"
-      borderTopWidth="1px"
-      borderColor="border.default"
-    >
+    <Box as="footer" aria-label="Site footer" bg="bg.surface">
+      {/* Brand gradient accent (mirrors the logo mark) */}
+      <Box
+        h="2px"
+        bgGradient="linear(to-r, primary.500, secondary.500)"
+        aria-hidden="true"
+      />
       <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
         {/* Upper section */}
         <Grid
@@ -99,56 +121,36 @@ export function AppFooter() {
               <Link
                 as={NextLink}
                 href="/"
+                display="inline-flex"
+                alignItems="center"
+                gap={2.5}
                 _hover={{ textDecoration: "none", opacity: 0.85 }}
-                _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)", borderRadius: "sm" }}
+                {...focusRing}
               >
+                <FundStacksMark size={28} />
                 <Text
                   fontSize="lg"
                   fontFamily="mono"
                   fontWeight="900"
                   letterSpacing="0.08em"
                   textTransform="uppercase"
-                  color="text.primary"
+                  color="primary.700"
                   lineHeight="1"
                 >
                   FundStacks
                 </Text>
               </Link>
-              <Text fontSize="sm" color="text.secondary" lineHeight="1.65">
+              <Text fontSize="sm" color="text.secondary" lineHeight="1.7">
                 Raise funds in STX and sBTC. Transparent, on-chain crowdfunding
                 built on the Stacks blockchain — secured by Bitcoin.
               </Text>
-              {/* Trust markers */}
-              <HStack spacing={3} pt={1} flexWrap="wrap" gap={2}>
-                {["On-chain", "Non-custodial", "Open source"].map((label) => (
-                  <Box
-                    key={label}
-                    px={2.5}
-                    py={1}
-                    borderRadius="md"
-                    borderWidth="1px"
-                    borderColor="border.default"
-                    bg="bg.surfaceAlt"
-                  >
-                    <Text
-                      fontSize="10px"
-                      fontWeight="600"
-                      letterSpacing="0.05em"
-                      textTransform="uppercase"
-                      color="text.tertiary"
-                    >
-                      {label}
-                    </Text>
-                  </Box>
-                ))}
-              </HStack>
             </VStack>
           </GridItem>
 
           {/* Navigate */}
           <GridItem>
             <ColHeading>Navigate</ColHeading>
-            <VStack align="flex-start" spacing={2.5}>
+            <VStack align="flex-start" spacing={3}>
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
@@ -157,7 +159,7 @@ export function AppFooter() {
                   fontSize="sm"
                   color="text.secondary"
                   _hover={{ color: "text.accent", textDecoration: "none" }}
-                  _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)", borderRadius: "sm" }}
+                  {...focusRing}
                 >
                   {link.label}
                 </Link>
@@ -168,7 +170,7 @@ export function AppFooter() {
           {/* Ecosystem */}
           <GridItem>
             <ColHeading>Ecosystem</ColHeading>
-            <VStack align="flex-start" spacing={2.5}>
+            <VStack align="flex-start" spacing={3}>
               {ECOSYSTEM_LINKS.map((link) => (
                 <Link
                   key={link.href}
@@ -179,7 +181,7 @@ export function AppFooter() {
                   display="inline-flex"
                   alignItems="center"
                   _hover={{ color: "text.accent", textDecoration: "none" }}
-                  _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)", borderRadius: "sm" }}
+                  {...focusRing}
                 >
                   {link.label}
                   <ExternalIcon />
@@ -192,17 +194,39 @@ export function AppFooter() {
         <Divider borderColor="border.default" />
 
         {/* Bottom bar */}
-        <HStack
-          justify="space-between"
-          align="center"
-          py={5}
-          flexWrap="wrap"
-          gap={3}
-        >
+        <HStack justify="space-between" align="center" py={6} flexWrap="wrap" gap={4}>
           <Text fontSize="xs" color="text.tertiary">
             &copy; {year} FundStacks. All rights reserved.
           </Text>
-          
+          <HStack spacing={5} align="center">
+            <Link
+              href={GITHUB_URL}
+              isExternal
+              aria-label="FundStacks on GitHub"
+              color="text.tertiary"
+              display="inline-flex"
+              borderRadius="full"
+              p={1}
+              _hover={{ color: "text.accent" }}
+              {...focusRing}
+            >
+              <GitHubIcon />
+            </Link>
+            <Link
+              href="https://stacks.co"
+              isExternal
+              fontSize="xs"
+              fontWeight="600"
+              color="text.tertiary"
+              display="inline-flex"
+              alignItems="center"
+              _hover={{ color: "text.accent", textDecoration: "none" }}
+              {...focusRing}
+            >
+              Built on Stacks
+              <ExternalIcon />
+            </Link>
+          </HStack>
         </HStack>
       </Container>
     </Box>
