@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Explore Campaigns", href: "/campaigns" },
   { label: "Create Campaign", href: "/campaigns/new" },
+  { label: "Docs", href: "/docs" },
 ];
 
 const ECOSYSTEM_LINKS = [

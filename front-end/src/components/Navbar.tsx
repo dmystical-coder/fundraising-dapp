@@ -34,6 +34,7 @@ export const Navbar = () => {
   const navigationLinks = [
     { href: "/", label: "Home" },
     { href: "/campaigns", label: "Campaigns" },
+    { href: "/docs", label: "Docs" },
     ...(address ? [{ href: "/dashboard", label: "Dashboard" }] : []),
   ];
   const isActiveLink = (href: string) =>
