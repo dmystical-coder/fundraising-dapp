@@ -15,7 +15,7 @@ import {
 } from "@/lib/fundraising-reads";
 
 // React Query keys live inline with the hooks that own them; queryClient
-// cache invalidation in DonationModal targets these prefixes.
+// cache invalidation in InlineDonationPanel targets these prefixes.
 const donorBadgeIdKey = (campaignId: number | null, donor: string | null) =>
   ["donorBadge", "id", campaignId, donor] as const;
 

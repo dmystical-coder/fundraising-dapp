@@ -3,7 +3,6 @@
 import {
   Box,
   Button,
-  ButtonGroup,
   Card,
   CardBody,
   FormControl,
@@ -17,7 +16,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon, WarningIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, LockIcon, WarningIcon } from "@chakra-ui/icons";
 import { useState, useContext } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -51,6 +50,85 @@ import {
 } from "@/lib/currency-utils";
 
 const PRESETS = [10, 25, 50, 100];
+
+// ─── Trust note: a quiet, non-custodial reassurance line ─────────────────────
+function TrustNote() {
+  return (
+    <HStack spacing={1.5} justify="center" color="text.tertiary">
+      <LockIcon boxSize={2.5} />
+      <Text fontSize="xs">Non-custodial — you sign every transaction</Text>
+    </HStack>
+  );
+}
+
+// ─── Receipt row: uppercase label left, value right ──────────────────────────
+function DetailRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <HStack justify="space-between" align="center" spacing={3}>
+      <Text
+        fontSize="11px"
+        fontWeight="700"
+        letterSpacing="0.06em"
+        textTransform="uppercase"
+        color="text.tertiary"
+        flexShrink={0}
+      >
+        {label}
+      </Text>
+      <Text
+        fontSize="sm"
+        fontWeight="600"
+        color="text.primary"
+        fontFamily={mono ? "mono" : undefined}
+        noOfLines={1}
+      >
+        {value}
+      </Text>
+    </HStack>
+  );
+}
+
+// ─── Success checkmark medallion ─────────────────────────────────────────────
+function SuccessMark({ size = 52 }: { size?: number }) {
+  const icon = Math.round(size * 0.46);
+  return (
+    <Box
+      w={`${size}px`}
+      h={`${size}px`}
+      borderRadius="full"
+      bg="success.50"
+      border="1.5px solid"
+      borderColor="success.300"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      mx="auto"
+    >
+      <Box color="success.500">
+        <svg
+          width={icon}
+          height={icon}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </Box>
+    </Box>
+  );
+}
 
 interface Props {
   campaignId: number;
@@ -336,20 +414,36 @@ export function InlineDonationPanel({
       bg="bg.surface"
       borderColor="border.default"
       borderWidth="1px"
-      borderRadius="xl"
+      borderRadius="2xl"
+      boxShadow="0 1px 2px rgba(15,23,43,0.04)"
     >
-      <CardBody>
+      <CardBody p={5}>
         {/* ── Wallet gate ── */}
         {!currentWalletAddress ? (
-          <VStack spacing={3} py={2}>
-            <Text fontWeight="600" textAlign="center" color="chakra-body-text">
-              {status === "cancelled"
-                ? "Connect your wallet to claim a refund"
-                : "Connect your wallet to donate"}
-            </Text>
-            <Text fontSize="sm" color="text.secondary" textAlign="center">
-              Non-custodial — you sign every transaction.
-            </Text>
+          <VStack spacing={4} py={2}>
+            <Box
+              w="44px"
+              h="44px"
+              borderRadius="full"
+              bg="bg.accentSubtle"
+              border="1px solid"
+              borderColor="border.accent"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <LockIcon boxSize={4} color="primary.600" />
+            </Box>
+            <VStack spacing={1}>
+              <Text fontWeight="700" textAlign="center" color="text.primary">
+                {status === "cancelled"
+                  ? "Connect your wallet to claim a refund"
+                  : "Connect your wallet to donate"}
+              </Text>
+              <Text fontSize="sm" color="text.secondary" textAlign="center">
+                You stay in control — every transaction is signed by you.
+              </Text>
+            </VStack>
             {isDevnetEnvironment() ? (
               <DevnetWalletButton
                 currentWallet={devnetWallet}
@@ -364,50 +458,30 @@ export function InlineDonationPanel({
         ) : status === "cancelled" ? (
           /* ── Refund state ── */
           refundTxId ? (
-            <VStack spacing={3} py={2} textAlign="center">
-              <Box
-                w="52px"
-                h="52px"
-                borderRadius="full"
-                bg="success.50"
-                border="1.5px solid"
-                borderColor="success.300"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                mx="auto"
-              >
-                <Box color="success.500">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </Box>
-              </Box>
-              <VStack spacing={0.5}>
-                <Text fontWeight="700" fontSize="lg" color="chakra-body-text">
+            <VStack spacing={4} py={2}>
+              <SuccessMark />
+              <VStack spacing={1}>
+                <Text fontWeight="700" fontSize="lg" color="text.primary">
                   Refund submitted
                 </Text>
-                <Text fontSize="sm" color="text.secondary">
+                <Text fontSize="sm" color="text.secondary" textAlign="center">
                   Your contribution will be returned to your wallet.
                 </Text>
-                <Text
-                  fontSize="xs"
-                  color="text.tertiary"
-                  fontFamily="mono"
-                  mt={0.5}
-                >
-                  {refundTxId.slice(0, 8)}…{refundTxId.slice(-8)}
-                </Text>
               </VStack>
+              <Box
+                w="100%"
+                p={3}
+                bg="bg.accentSubtle"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="border.accent"
+              >
+                <DetailRow
+                  label="Transaction"
+                  value={`${refundTxId.slice(0, 8)}…${refundTxId.slice(-8)}`}
+                  mono
+                />
+              </Box>
             </VStack>
           ) : donationLoading ? (
             <VStack spacing={3} py={2}>
@@ -451,6 +525,8 @@ export function InlineDonationPanel({
               <Button
                 colorScheme="warning"
                 size="lg"
+                borderRadius="full"
+                fontWeight="700"
                 onClick={handleRefund}
                 isLoading={refundLoading}
                 loadingText="Submitting..."
@@ -458,9 +534,7 @@ export function InlineDonationPanel({
                 Claim Refund
               </Button>
 
-              <Text fontSize="xs" color="text.tertiary" textAlign="center">
-                Signed via your connected wallet
-              </Text>
+              <TrustNote />
             </VStack>
           ) : hasRefundClaimed ? (
             <VStack spacing={2} py={2} textAlign="center">
@@ -511,50 +585,35 @@ export function InlineDonationPanel({
           )
         ) : successTxId ? (
           /* ── Donation success ── */
-          <VStack spacing={4} py={2} textAlign="center">
-            <Box
-              w="52px"
-              h="52px"
-              borderRadius="full"
-              bg="success.50"
-              border="1.5px solid"
-              borderColor="success.300"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              mx="auto"
-            >
-              <Box color="success.500">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </Box>
-            </Box>
+          <VStack spacing={4} py={2} align="stretch">
+            <VStack spacing={3}>
+              <SuccessMark />
+              <VStack spacing={0.5}>
+                <Text fontWeight="700" fontSize="lg" color="text.primary">
+                  Thank you!
+                </Text>
+                <Text fontSize="sm" color="text.secondary" textAlign="center">
+                  Your contribution is on its way.
+                </Text>
+              </VStack>
+            </VStack>
 
-            <VStack spacing={0.5}>
-              <Text fontWeight="700" fontSize="lg" color="chakra-body-text">
-                Thank you!
-              </Text>
-              <Text fontSize="sm" color="text.secondary">
-                {submittedDisplay}
-              </Text>
-              <Text
-                fontSize="xs"
-                color="text.tertiary"
-                fontFamily="mono"
-                mt={0.5}
-              >
-                {successTxId.slice(0, 8)}…{successTxId.slice(-8)}
-              </Text>
+            {/* Receipt */}
+            <VStack
+              spacing={2.5}
+              align="stretch"
+              p={4}
+              bg="bg.accentSubtle"
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="border.accent"
+            >
+              <DetailRow label="Amount" value={submittedDisplay} />
+              <DetailRow
+                label="Transaction"
+                value={`${successTxId.slice(0, 8)}…${successTxId.slice(-8)}`}
+                mono
+              />
             </VStack>
 
             {(() => {
@@ -568,6 +627,8 @@ export function InlineDonationPanel({
                   size="sm"
                   variant="outline"
                   colorScheme="primary"
+                  borderRadius="full"
+                  fontWeight="700"
                   width="100%"
                   onClick={handlePayFee}
                   isLoading={feeLoading}
@@ -575,7 +636,7 @@ export function InlineDonationPanel({
                   Pay {feeLabel} platform fee
                 </Button>
               ) : feePaid ? (
-                <Text fontSize="sm" color="success.600">
+                <Text fontSize="sm" color="success.600" textAlign="center" fontWeight="600">
                   Platform fee paid ✓
                 </Text>
               ) : null;
@@ -585,6 +646,8 @@ export function InlineDonationPanel({
               colorScheme="primary"
               size="md"
               width="100%"
+              borderRadius="full"
+              fontWeight="700"
               leftIcon={<ExternalLinkIcon />}
               onClick={handleShare}
             >
@@ -602,87 +665,141 @@ export function InlineDonationPanel({
           </VStack>
         ) : (
           /* ── Donation form ── */
-          <VStack spacing={4} align="stretch">
-            <Heading size="sm" color="chakra-body-text">
+          <VStack spacing={5} align="stretch">
+            <Heading size="sm" color="text.primary">
               Support this campaign
             </Heading>
 
-            <ButtonGroup isAttached w="100%" size="sm">
-              <Button
-                flex={1}
-                colorScheme="primary"
-                variant={paymentMethod === "stx" ? "solid" : "outline"}
-                onClick={() => handleTokenChange("stx")}
+            {/* Token toggle — segmented control, active reads in brand violet */}
+            <Box>
+              <Text
+                fontSize="11px"
+                fontWeight="700"
+                letterSpacing="0.06em"
+                textTransform="uppercase"
+                color="text.tertiary"
+                mb={2}
               >
-                STX
-              </Button>
-              <Button
-                flex={1}
-                colorScheme="primary"
-                variant={paymentMethod === "sbtc" ? "solid" : "outline"}
-                onClick={() => handleTokenChange("sbtc")}
+                Pay with
+              </Text>
+              <HStack
+                spacing={0}
+                p="3px"
+                bg="bg.surfaceAlt"
+                borderRadius="full"
+                borderWidth="1px"
+                borderColor="border.default"
               >
-                sBTC
-              </Button>
-            </ButtonGroup>
+                {(["stx", "sbtc"] as const).map((tok) => {
+                  const active = paymentMethod === tok;
+                  return (
+                    <Button
+                      key={tok}
+                      flex={1}
+                      h="34px"
+                      variant="unstyled"
+                      borderRadius="full"
+                      fontSize="sm"
+                      fontWeight={active ? "700" : "600"}
+                      color={active ? "primary.700" : "text.secondary"}
+                      bg={active ? "bg.surface" : "transparent"}
+                      boxShadow={active ? "0 1px 3px rgba(15,23,43,0.12)" : "none"}
+                      transition="color 0.15s ease, background 0.15s ease"
+                      _hover={{ color: active ? "primary.700" : "text.primary" }}
+                      onClick={() => handleTokenChange(tok)}
+                    >
+                      {tok === "stx" ? "STX" : "sBTC"}
+                    </Button>
+                  );
+                })}
+              </HStack>
+            </Box>
 
-            <SimpleGrid columns={4} spacing={1.5}>
-              {PRESETS.map((amount) => (
-                <Button
-                  key={amount}
-                  size="sm"
-                  colorScheme="primary"
-                  variant={selectedAmount === amount ? "solid" : "outline"}
-                  onClick={() => handlePresetClick(amount)}
-                  px={1}
-                >
-                  ${amount}
-                </Button>
-              ))}
+            {/* Preset chips — selected reads as lavender fill + violet text */}
+            <SimpleGrid columns={4} spacing={2}>
+              {PRESETS.map((amount) => {
+                const selected = selectedAmount === amount;
+                return (
+                  <Button
+                    key={amount}
+                    h="40px"
+                    px={1}
+                    variant="outline"
+                    borderRadius="full"
+                    fontSize="sm"
+                    fontWeight={selected ? "700" : "600"}
+                    bg={selected ? "bg.accentSubtle" : "bg.surface"}
+                    color={selected ? "primary.700" : "text.secondary"}
+                    borderColor={selected ? "primary.300" : "border.default"}
+                    _hover={{
+                      borderColor: "border.accent",
+                      bg: selected ? "bg.accentSubtle" : "bg.surfaceAlt",
+                    }}
+                    onClick={() => handlePresetClick(amount)}
+                  >
+                    ${amount}
+                  </Button>
+                );
+              })}
             </SimpleGrid>
 
+            {/* Prominent amount field with token affix */}
             <FormControl isInvalid={!!errorMsg}>
-              <NumberInput
-                min={0}
-                value={customAmount}
-                onChange={handleCustomChange}
-                size="sm"
-              >
-                <NumberInputField
-                  placeholder={`Custom ${paymentMethod.toUpperCase()} amount`}
-                  fontSize="sm"
-                />
-              </NumberInput>
+              <Box position="relative">
+                <NumberInput
+                  min={0}
+                  value={customAmount}
+                  onChange={handleCustomChange}
+                >
+                  <NumberInputField
+                    placeholder="Custom amount"
+                    h="48px"
+                    pr="3.75rem"
+                    borderRadius="xl"
+                    fontSize="md"
+                    fontWeight="600"
+                  />
+                </NumberInput>
+                <Text
+                  position="absolute"
+                  right="16px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  fontSize="xs"
+                  fontWeight="700"
+                  letterSpacing="0.04em"
+                  color="text.tertiary"
+                  pointerEvents="none"
+                >
+                  {paymentMethod.toUpperCase()}
+                </Text>
+              </Box>
               {errorMsg && (
                 <FormErrorMessage fontSize="xs">{errorMsg}</FormErrorMessage>
               )}
+              {hint && !errorMsg && (
+                <Text fontSize="xs" color="text.secondary" textAlign="right" mt={1.5}>
+                  {hint}
+                </Text>
+              )}
             </FormControl>
 
-            {hint && (
-              <Text
-                fontSize="xs"
-                color="text.secondary"
-                textAlign="center"
-                mt={-2}
+            <VStack spacing={2.5} align="stretch">
+              <Button
+                colorScheme="primary"
+                size="lg"
+                borderRadius="full"
+                fontWeight="700"
+                onClick={handleSubmit}
+                isDisabled={(!selectedAmount && !customAmount) || isLoading}
+                isLoading={isLoading}
+                loadingText="Submitting..."
               >
-                {hint}
-              </Text>
-            )}
+                {ctaLabel}
+              </Button>
 
-            <Button
-              colorScheme="primary"
-              size="lg"
-              onClick={handleSubmit}
-              isDisabled={(!selectedAmount && !customAmount) || isLoading}
-              isLoading={isLoading}
-              loadingText="Submitting..."
-            >
-              {ctaLabel}
-            </Button>
-
-            <Text fontSize="xs" color="text.tertiary" textAlign="center">
-              Signed via your connected wallet
-            </Text>
+              <TrustNote />
+            </VStack>
           </VStack>
         )}
       </CardBody>
