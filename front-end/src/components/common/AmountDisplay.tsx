@@ -48,11 +48,19 @@ function formatAmount(value: number, maxDecimals: number = 6): string {
     });
   }
 
-  // For amounts less than 1000, show decimals
+  // Sub-unit amounts: a little more precision, but cap the noise.
+  if (value < 1) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: Math.min(maxDecimals, 4),
+    });
+  }
+
+  // For amounts less than 1000, two decimals is enough at a glance.
   if (value < 1000) {
     return value.toLocaleString(undefined, {
       minimumFractionDigits: 2,
-      maximumFractionDigits: maxDecimals,
+      maximumFractionDigits: Math.min(maxDecimals, 2),
     });
   }
 
