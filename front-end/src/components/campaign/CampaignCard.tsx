@@ -11,7 +11,6 @@ import {
   VStack,
   AspectRatio,
   Image,
-  useColorModeValue,
   usePrefersReducedMotion,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
@@ -20,6 +19,7 @@ import { StatusBadge, getCampaignStatus } from "../common/StatusBadge";
 import { CombinedAmountDisplay } from "../common/AmountDisplay";
 import { TimeRemainingDisplay } from "../common/CountdownTimer";
 import { SimpleAddress } from "../common/AddressDisplay";
+import { WalletIdenticon } from "../common/WalletIdenticon";
 
 interface CampaignCardProps {
   campaignId: number;
@@ -57,6 +57,59 @@ function calculateProgress(
   return Math.min(progress, 100);
 }
 
+function formatUsd(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 10_000) return `$${(value / 1000).toFixed(0)}K`;
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
+// ─── Uppercase micro-label used across the card ──────────────────────────────
+function MicroLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.08em"
+      textTransform="uppercase"
+      color="text.tertiary"
+    >
+      {children}
+    </Text>
+  );
+}
+
+// ─── Thin funding bar ─────────────────────────────────────────────────────────
+function Bar({
+  value,
+  color,
+  animate,
+}: {
+  value: number;
+  color: string;
+  animate: boolean;
+}) {
+  return (
+    <Box
+      w="100%"
+      h="6px"
+      borderRadius="full"
+      bg="bg.surfaceAlt"
+      borderWidth="1px"
+      borderColor="border.default"
+      overflow="hidden"
+    >
+      <Box
+        h="100%"
+        w={`${value}%`}
+        minW={value > 0 ? "8px" : "0"}
+        borderRadius="full"
+        bg={color}
+        transition={animate ? "width 0.4s ease" : undefined}
+      />
+    </Box>
+  );
+}
+
 export function CampaignCard({
   campaignId,
   beneficiary,
@@ -77,229 +130,263 @@ export function CampaignCard({
   const router = useRouter();
   const prefersReducedMotion = usePrefersReducedMotion();
   const status = getCampaignStatus({ isCancelled, isWithdrawn, isExpired });
-  const progressTrackBg = useColorModeValue("gray.300", "whiteAlpha.300");
-  const progressTrackBorder = useColorModeValue("gray.400", "whiteAlpha.400");
-  
-  const donateBtnBg = useColorModeValue("gray.800", "gray.100");
-  const donateBtnColor = useColorModeValue("white", "gray.900");
-  const donateBtnBorderColor = useColorModeValue("gray.900", "gray.300");
-  const donateBtnHoverBg = useColorModeValue("gray.900", "white");
-  const donateBtnHoverBorder = useColorModeValue("black", "gray.200");
-  const donateBtnActiveBg = useColorModeValue("black", "gray.300");
-  const donateBtnActiveBorder = useColorModeValue("black", "gray.400");
 
   const stxNum = typeof totalStx === "string" ? parseInt(totalStx, 10) : totalStx;
   const sbtcNum = typeof totalSbtc === "string" ? parseInt(totalSbtc, 10) : totalSbtc;
 
   const progress = calculateProgress(stxNum, sbtcNum, goal, stxPrice, sbtcPrice);
   const canDonate = status === "active" && !isPending;
+  const hasGoal = !!goal && goal > 0;
+
+  // A campaign whose creator has withdrawn is concluded — show a final result,
+  // not a live "raising" bar. progress > 0 implies we had prices to compute it,
+  // so we only render the goal outcome when it can be trusted.
+  const isConcluded = status === "withdrawn";
+  const goalMet = hasGoal && progress >= 100;
+  const canShowOutcome = hasGoal && progress > 0;
+  // Price-independent truth: a concluded campaign that took in nothing was not
+  // "Funded" — relabel it rather than show a contradictory badge.
+  const nothingRaised = stxNum <= 0 && sbtcNum <= 0;
+  const concludedEmpty = isConcluded && nothingRaised;
+  const progressLabel =
+    progress > 0 && progress < 1 ? "<1%" : `${progress.toFixed(0)}%`;
 
   const displayTitle = title || `Campaign #${campaignId}`;
+  const href = `/campaigns/${campaignId}`;
 
-  const cardHover = !isPending && !prefersReducedMotion
-    ? {
-        transform: "translateY(-4px)",
-        boxShadow: "0 12px 40px -15px var(--chakra-colors-primary-400)",
-        borderColor: "primary.400",
-      }
-    : undefined;
+  const cardHover =
+    !isPending && !prefersReducedMotion
+      ? {
+          transform: "translateY(-2px)",
+          boxShadow: "card",
+          borderColor: "border.accent",
+        }
+      : undefined;
 
-  const CardContent = (
+  return (
     <Card
       role="group"
       position="relative"
-      cursor="default"
-      transition={
-        prefersReducedMotion
-          ? undefined
-          : "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-      }
+      transition={prefersReducedMotion ? undefined : "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"}
       _hover={cardHover}
       bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
       borderRadius="2xl"
+      boxShadow="0 1px 2px rgba(15,23,43,0.04)"
       overflow="hidden"
       opacity={isPending ? 0.7 : 1}
+      h="100%"
     >
-      {/* Media Cover */}
-      <AspectRatio ratio={16 / 9} w="100%" borderBottomWidth="1px" borderColor="border.default">
-        {coverUrl ? (
-          <Image src={coverUrl} alt={`Cover for ${displayTitle}`} objectFit="cover" />
-        ) : (
+      {/* Media cover with overlaid status + time pills */}
+      <Box position="relative">
+        <AspectRatio ratio={16 / 9} w="100%">
+          {coverUrl ? (
+            <Image src={coverUrl} alt={`Cover for ${displayTitle}`} objectFit="cover" />
+          ) : (
+            <Box
+              bg="bg.surfaceAlt"
+              backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
+              backgroundSize="20px 20px"
+              opacity={0.8}
+            />
+          )}
+        </AspectRatio>
+
+        {/* Status — top-left */}
+        <Box position="absolute" top={3} left={3}>
+          {isPending ? (
+            <StatusBadge
+              status="active"
+              size="sm"
+              overrides={{ label: "Pending", colorScheme: "yellow" }}
+              boxShadow="0 1px 3px rgba(15,23,43,0.18)"
+            />
+          ) : (
+            <StatusBadge
+              status={status}
+              size="sm"
+              overrides={concludedEmpty ? { label: "Closed", colorScheme: "gray" } : undefined}
+              boxShadow="0 1px 3px rgba(15,23,43,0.18)"
+            />
+          )}
+        </Box>
+
+        {/* Time remaining — top-right, white chip so it reads on any image */}
+        {endAt && status === "active" && !isPending && (
           <Box
-            bg="bg.surfaceAlt"
-            backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
-            backgroundSize="20px 20px"
-            opacity={0.8}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-          />
+            position="absolute"
+            top={3}
+            right={3}
+            bg="bg.surface"
+            borderRadius="full"
+            px={2.5}
+            py={1}
+            boxShadow="0 1px 3px rgba(15,23,43,0.18)"
+          >
+            <TimeRemainingDisplay endAt={endAt} size="sm" />
+          </Box>
         )}
-      </AspectRatio>
+      </Box>
 
       <CardBody p={5}>
         <VStack align="stretch" spacing={4}>
-          <HStack justify="space-between" align="start" spacing={3}>
-            {isPending ? (
-              <StatusBadge status="active" size="sm" overrides={{ label: "Pending", colorScheme: "yellow" }} />
-            ) : (
-              <StatusBadge status={status} size="sm" />
-            )}
-            {endAt && status === "active" && !isPending && (
-              <TimeRemainingDisplay endAt={endAt} size="sm" />
-            )}
-          </HStack>
-
-            <Heading
+          <Heading
             size="md"
-            lineHeight="1.4"
+            lineHeight="1.35"
             noOfLines={2}
-            color="chakra-body-text"
-            _groupHover={
-              !prefersReducedMotion ? { color: "primary.500" } : undefined
-            }
-            transition={prefersReducedMotion ? undefined : "color 0.2s"}
+            color="text.primary"
           >
             {displayTitle}
           </Heading>
 
           {beneficiary && (
-            <HStack spacing={2}>
-              <Text fontSize="xs" fontWeight="600" color="text.tertiary" textTransform="uppercase" letterSpacing="wider">
-                Beneficiary
-              </Text>
+            <HStack spacing={2} minW={0}>
+              <WalletIdenticon address={beneficiary} size={22} />
+              <MicroLabel>To</MicroLabel>
               <SimpleAddress address={beneficiary} length={4} fontSize="sm" />
             </HStack>
           )}
 
-          <VStack 
-            spacing={4} 
-            align="stretch" 
-            p={4} 
-            bg="bg.accentSubtle" 
+          {/* Funding block — tinted surface */}
+          <VStack
+            spacing={4}
+            align="stretch"
+            p={4}
+            bg="bg.accentSubtle"
             borderRadius="xl"
             borderWidth="1px"
             borderColor="border.accent"
           >
             <Box>
-              <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em" mb={1}>
-                Raised
-              </Text>
-              <CombinedAmountDisplay
-                stxAmount={stxNum}
-                sbtcAmount={sbtcNum}
-                stxPrice={stxPrice}
-                sbtcPrice={sbtcPrice}
-                size="md"
-              />
+              <MicroLabel>Raised</MicroLabel>
+              <Box mt={1}>
+                {concludedEmpty ? (
+                  <Text fontSize="sm" color="text.tertiary" fontWeight="500">
+                    No funds raised
+                  </Text>
+                ) : (
+                  <CombinedAmountDisplay
+                    stxAmount={stxNum}
+                    sbtcAmount={sbtcNum}
+                    stxPrice={stxPrice}
+                    sbtcPrice={sbtcPrice}
+                    size="md"
+                  />
+                )}
+              </Box>
             </Box>
 
-            {goal && goal > 0 ? (
-              <Box>
-                <HStack justify="space-between" mb={1.5}>
-                  <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em">
-                    Progress
-                  </Text>
-                  <Text fontSize="xs" color="primary.600" fontWeight="700">
-                    {progress.toFixed(0)}%
-                  </Text>
-                </HStack>
-                <Box
-                  w="100%"
-                  h="8px"
-                  borderRadius="full"
-                  bg={progressTrackBg}
-                  borderWidth="1px"
-                  borderColor={progressTrackBorder}
-                  overflow="hidden"
-                >
-                  <Box
-                    h="100%"
-                    w={`${progress}%`}
-                    minW={progress > 0 ? "10px" : "0"}
-                    borderRadius="full"
-                    bgGradient={
-                      progress >= 100
-                        ? "linear(to-r, success.500, success.600)"
-                        : progress >= 75
-                        ? "linear(to-r, primary.600, success.500)"
-                        : "linear(to-r, primary.700, secondary.500)"
-                    }
+            {isConcluded ? (
+              canShowOutcome ? (
+                <Box>
+                  <HStack justify="space-between" mb={1.5}>
+                    <MicroLabel>{goalMet ? "Goal reached" : "Final result"}</MicroLabel>
+                    <Text
+                      fontSize="xs"
+                      fontWeight="700"
+                      color={goalMet ? "success.600" : "secondary.600"}
+                    >
+                      {progressLabel} of goal
+                    </Text>
+                  </HStack>
+                  <Bar
+                    value={progress}
+                    color={goalMet ? "success.500" : "secondary.500"}
+                    animate={false}
                   />
                 </Box>
+              ) : (
+                <Box>
+                  <MicroLabel>Status</MicroLabel>
+                  <Text fontSize="sm" color="text.secondary" fontWeight="600" mt={1}>
+                    Campaign completed
+                  </Text>
+                </Box>
+              )
+            ) : hasGoal ? (
+              <Box>
+                <HStack justify="space-between" mb={1.5}>
+                  <MicroLabel>Progress</MicroLabel>
+                  <Text fontSize="xs" color="primary.700" fontWeight="700">
+                    {progressLabel}
+                  </Text>
+                </HStack>
+                <Bar
+                  value={progress}
+                  color={progress >= 100 ? "success.500" : "primary.500"}
+                  animate={!prefersReducedMotion}
+                />
               </Box>
             ) : (
               <Box>
-                <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.05em" mb={1.5}>
-                  Goal
-                </Text>
-                <Text fontSize="sm" color="text.tertiary" fontWeight="500">
+                <MicroLabel>Goal</MicroLabel>
+                <Text fontSize="sm" color="text.secondary" fontWeight="500" mt={1}>
                   Open-ended
                 </Text>
               </Box>
             )}
           </VStack>
 
-          <HStack justify="space-between" pt={2} borderTop="1px" borderColor="border.default" align="center">
+          {/* Meta row — donors · goal */}
+          <HStack
+            justify="space-between"
+            align="center"
+            pt={2}
+            borderTopWidth="1px"
+            borderColor="border.default"
+            spacing={3}
+          >
             <HStack spacing={1} minW={0}>
-              <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
+              <Text fontSize="sm" fontWeight="700" color="text.primary">
                 {donorCount}
               </Text>
               <Text fontSize="sm" color="text.secondary">
                 {donorCount === 1 ? "donor" : "donors"}
               </Text>
             </HStack>
-            {isPending && (
-              <Text fontSize="xs" color="warning.500" fontWeight="bold">
-                Confirming...
+            {isPending ? (
+              <Text fontSize="xs" color="warning.600" fontWeight="700">
+                Confirming…
               </Text>
+            ) : (
+              hasGoal && (
+                <Text fontSize="sm" color="text.secondary">
+                  Goal{" "}
+                  <Text as="span" fontWeight="700" color="text.primary">
+                    {formatUsd(goal!)}
+                  </Text>
+                </Text>
+              )
             )}
           </HStack>
 
           {!isPending && (
-            <HStack spacing={2} justify="stretch">
+            <HStack spacing={2}>
               {canDonate && (
                 <Button
-                  onClick={() => router.push(`/campaigns/${campaignId}`)}
+                  onClick={() => router.push(href)}
                   size="sm"
                   flex={1}
-                  variant="solid"
-                  bg={donateBtnBg}
-                  color={donateBtnColor}
-                  borderWidth="1px"
-                  borderColor={donateBtnBorderColor}
-                  boxShadow="sm"
-                  _hover={{
-                    bg: donateBtnHoverBg,
-                    borderColor: donateBtnHoverBorder,
-                    boxShadow: "md",
-                    ...(!prefersReducedMotion
-                      ? { transform: "translateY(-1px)" }
-                      : {}),
-                  }}
-                  _active={{
-                    bg: donateBtnActiveBg,
-                    borderColor: donateBtnActiveBorder,
-                    ...(!prefersReducedMotion
-                      ? { transform: "translateY(0)" }
-                      : {}),
-                  }}
+                  colorScheme="primary"
+                  borderRadius="full"
+                  fontWeight="700"
                 >
                   Donate
                 </Button>
               )}
               <Button
-                onClick={() => router.push(`/campaigns/${campaignId}`)}
+                onClick={() => router.push(href)}
                 size="sm"
                 variant="outline"
                 colorScheme="primary"
+                borderRadius="full"
+                fontWeight="700"
                 rightIcon={<ArrowForwardIcon boxSize={3.5} />}
                 flex={canDonate ? 1 : undefined}
                 w={canDonate ? "auto" : "100%"}
               >
-                {canDonate ? "View" : "View Campaign"}
+                {canDonate ? "View" : "View campaign"}
               </Button>
             </HStack>
           )}
@@ -307,12 +394,6 @@ export function CampaignCard({
       </CardBody>
     </Card>
   );
-
-  if (isPending) {
-    return CardContent;
-  }
-
-  return CardContent;
 }
 
 export default CampaignCard;
