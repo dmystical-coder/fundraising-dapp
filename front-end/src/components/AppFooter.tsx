@@ -198,35 +198,19 @@ export function AppFooter() {
           <Text fontSize="xs" color="text.tertiary">
             &copy; {year} FundStacks. All rights reserved.
           </Text>
-          <HStack spacing={5} align="center">
-            <Link
-              href={GITHUB_URL}
-              isExternal
-              aria-label="FundStacks on GitHub"
-              color="text.tertiary"
-              display="inline-flex"
-              borderRadius="full"
-              p={1}
-              _hover={{ color: "text.accent" }}
-              {...focusRing}
-            >
-              <GitHubIcon />
-            </Link>
-            <Link
-              href="https://stacks.co"
-              isExternal
-              fontSize="xs"
-              fontWeight="600"
-              color="text.tertiary"
-              display="inline-flex"
-              alignItems="center"
-              _hover={{ color: "text.accent", textDecoration: "none" }}
-              {...focusRing}
-            >
-              Built on Stacks
-              <ExternalIcon />
-            </Link>
-          </HStack>
+          <Link
+            href={GITHUB_URL}
+            isExternal
+            aria-label="FundStacks on GitHub"
+            color="text.tertiary"
+            display="inline-flex"
+            borderRadius="full"
+            p={1}
+            _hover={{ color: "text.accent" }}
+            {...focusRing}
+          >
+            <GitHubIcon />
+          </Link>
         </HStack>
       </Container>
     </Box>
