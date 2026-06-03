@@ -255,13 +255,13 @@ export default function CampaignDetailPage() {
 
             <HStack spacing={{ base: 4, md: 6 }} flexWrap="wrap">
               <HStack spacing={2} minW={0}>
-                <WalletIdenticon address={campaign.owner} size={22} />
                 <MicroLabel>By</MicroLabel>
+                <WalletIdenticon address={campaign.owner} size={22} />
                 <AddressDisplay address={campaign.owner} size="sm" />
               </HStack>
               <HStack spacing={2} minW={0}>
-                <WalletIdenticon address={campaign.beneficiary} size={22} />
                 <MicroLabel>To</MicroLabel>
+                <WalletIdenticon address={campaign.beneficiary} size={22} />
                 <AddressDisplay address={campaign.beneficiary} size="sm" />
               </HStack>
             </HStack>
