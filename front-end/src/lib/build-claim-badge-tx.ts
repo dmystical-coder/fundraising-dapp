@@ -1,7 +1,7 @@
 // Builds the contract-call options for claim-badge on the donor-badges
 // contract. Returns a ContractCallOptions compatible with the existing
 // executeContractCall (devnet) / openContractCall (testnet/mainnet) wallet
-// flows used by DonationModal.
+// flows used by the donor badge claim UI.
 
 import {
   contractPrincipalCV,
