@@ -232,7 +232,7 @@ export function CampaignGrid({
         beneficiary: meta.owner,
         title: meta.title,
         description: meta.description,
-        cover_url: null,
+        cover_url: meta.coverUrl ?? null,
         total_stx: "0",
         total_sbtc: "0",
         raised_stx: "0",
