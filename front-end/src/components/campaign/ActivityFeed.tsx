@@ -9,7 +9,6 @@ import {
   SkeletonCircle,
   Link,
   Button,
-  Divider,
   Alert,
   AlertIcon,
   AlertTitle,
@@ -18,30 +17,27 @@ import {
 import { format } from "timeago.js";
 import { SimpleAddress } from "../common/AddressDisplay";
 import { AmountDisplay } from "../common/AmountDisplay";
+import { WalletIdenticon } from "../common/WalletIdenticon";
 import type { CampaignEvent, ActivityEvent } from "@/hooks/indexerQueries";
 
 // ── Event config ──────────────────────────────────────────────────────────────
 
-function getEventConfig(eventName: string): {
-  label: string;
-  color: string;
-  icon: string;
-} {
+function getEventConfig(eventName: string): { label: string; color: string } {
   switch (eventName) {
     case "campaign-created":
-      return { label: "Created", color: "primary.500", icon: "🎉" };
+      return { label: "Created", color: "primary.500" };
     case "donated-stx":
-      return { label: "Donated STX", color: "secondary.500", icon: "" };
+      return { label: "Donated STX", color: "secondary.500" };
     case "donated-sbtc":
-      return { label: "Donated sBTC", color: "warning.500", icon: "" };
+      return { label: "Donated sBTC", color: "warning.500" };
     case "campaign-cancelled":
-      return { label: "Cancelled", color: "error.500", icon: "✕" };
+      return { label: "Cancelled", color: "error.500" };
     case "campaign-withdrawn":
-      return { label: "Withdrawn", color: "success.500", icon: "✓" };
+      return { label: "Withdrawn", color: "success.500" };
     case "refunded":
-      return { label: "Refunded", color: "text.secondary", icon: "↩" };
+      return { label: "Refunded", color: "text.secondary" };
     default:
-      return { label: eventName, color: "text.secondary", icon: "·" };
+      return { label: eventName, color: "text.secondary" };
   }
 }
 
@@ -63,6 +59,49 @@ function getTxExplorerUrl(txid: string): string {
   return `https://explorer.stacks.co/txid/${txid}${suffix}`;
 }
 
+// ── Timeline node: identicon (or colored dot) ringed in the event color ───────
+
+function RailNode({
+  color,
+  actor,
+  isLast,
+}: {
+  color: string;
+  actor: string | null;
+  isLast: boolean;
+}) {
+  return (
+    <VStack spacing={0} align="center" flexShrink={0}>
+      <Box
+        borderRadius="full"
+        borderWidth="2px"
+        borderColor={color}
+        bg="bg.surface"
+        p="2px"
+        lineHeight="0"
+      >
+        {actor ? (
+          <WalletIdenticon address={actor} size={24} />
+        ) : (
+          <Box
+            w="24px"
+            h="24px"
+            borderRadius="full"
+            bg={color}
+            opacity={0.25}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Box w="8px" h="8px" borderRadius="full" bg={color} />
+          </Box>
+        )}
+      </Box>
+      {!isLast && <Box flex="1" w="2px" minH="20px" my="6px" bg="border.subtle" />}
+    </VStack>
+  );
+}
+
 // ── Single item ───────────────────────────────────────────────────────────────
 
 interface ActivityFeedItemProps {
@@ -77,6 +116,7 @@ interface ActivityFeedItemProps {
   showCampaignLink?: boolean;
   stxPrice?: number;
   sbtcPrice?: number;
+  isLast?: boolean;
 }
 
 export function ActivityFeedItem({
@@ -91,6 +131,7 @@ export function ActivityFeedItem({
   showCampaignLink = false,
   stxPrice,
   sbtcPrice,
+  isLast = false,
 }: ActivityFeedItemProps) {
   const config = getEventConfig(eventName);
   const actor = getEventActor(eventName, donor, owner, beneficiary);
@@ -99,84 +140,63 @@ export function ActivityFeedItem({
     eventName === "donated-stx" ? "stx" : eventName === "donated-sbtc" ? "sbtc" : null;
 
   return (
-    <HStack spacing={3} py={2.5} align="center" minW={0}>
-      {/* Indicator: dot for donations, text symbol for lifecycle events */}
-      {isDonation ? (
-        <Box
-          w="8px"
-          h="8px"
-          borderRadius="full"
-          bg={config.color}
-          flexShrink={0}
-        />
-      ) : (
-        <Text
-          fontSize="xs"
-          color={config.color}
-          fontWeight="700"
-          flexShrink={0}
-          w="8px"
-          textAlign="center"
-        >
-          {config.icon}
-        </Text>
-      )}
+    <HStack align="stretch" spacing={3} minW={0}>
+      <RailNode color={config.color} actor={actor} isLast={isLast} />
 
-      {/* Main content */}
-      <HStack spacing={2} flex={1} minW={0} flexWrap="wrap">
-        {!isDonation && (
-          <Text
-            fontSize="sm"
-            fontWeight="600"
-            color={config.color}
-            flexShrink={0}
-          >
-            {config.label}
-          </Text>
-        )}
-        {actor && (
-          <SimpleAddress address={actor} length={4} fontSize="sm" />
-        )}
+      <Box flex={1} minW={0} pb={isLast ? 0 : 5} pt="5px">
+        <HStack justify="space-between" align="flex-start" gap={3} minW={0}>
+          {/* Label + actor */}
+          <HStack spacing={2} flexWrap="wrap" minW={0}>
+            <Text fontSize="sm" fontWeight="600" color={config.color} flexShrink={0}>
+              {config.label}
+            </Text>
+            {actor && <SimpleAddress address={actor} length={4} fontSize="sm" />}
+            {showCampaignLink && campaignId && (
+              <Link
+                href={`/campaigns/${campaignId}`}
+                color="secondary.600"
+                fontSize="sm"
+                flexShrink={0}
+              >
+                Campaign #{campaignId}
+              </Link>
+            )}
+          </HStack>
+
+          {/* Timestamp + tx link */}
+          <HStack spacing={2} flexShrink={0}>
+            <Text fontSize="xs" color="text.tertiary" whiteSpace="nowrap">
+              {format(insertedAt)}
+            </Text>
+            {txid && (
+              <Link
+                href={getTxExplorerUrl(txid)}
+                isExternal
+                fontSize="xs"
+                color="primary.500"
+                _hover={{ color: "primary.700" }}
+                whiteSpace="nowrap"
+                aria-label="View transaction"
+              >
+                ↗
+              </Link>
+            )}
+          </HStack>
+        </HStack>
+
+        {/* Donation amount on its own line */}
         {isDonation && amount && token && (
-          <AmountDisplay
-            amount={amount}
-            token={token}
-            usdPrice={token === "stx" ? stxPrice : sbtcPrice}
-            showUsd={!!(stxPrice || sbtcPrice)}
-            size="sm"
-          />
+          <Box mt={1}>
+            <AmountDisplay
+              amount={amount}
+              token={token}
+              usdPrice={token === "stx" ? stxPrice : sbtcPrice}
+              showUsd={!!(stxPrice || sbtcPrice)}
+              size="sm"
+            />
+          </Box>
         )}
-        {showCampaignLink && campaignId && (
-          <Link
-            href={`/campaigns/${campaignId}`}
-            color="secondary.600"
-            fontSize="sm"
-            flexShrink={0}
-          >
-            Campaign #{campaignId}
-          </Link>
-        )}
-      </HStack>
-
-      {/* Timestamp + tx link — right-aligned, never wraps */}
-      <HStack spacing={2} flexShrink={0}>
-        <Text fontSize="xs" color="text.tertiary" whiteSpace="nowrap">
-          {format(insertedAt)}
-        </Text>
-        {txid && (
-          <Link
-            href={getTxExplorerUrl(txid)}
-            isExternal
-            fontSize="xs"
-            color="primary.500"
-            _hover={{ color: "primary.700" }}
-            whiteSpace="nowrap"
-            aria-label="View transaction"
-          >
-            ↗
-          </Link>
-        )}
-      </HStack>
+      </Box>
     </HStack>
   );
 }
@@ -250,10 +270,10 @@ export function ActivityFeed({
   if (isLoading) {
     return (
       <Box role="region" aria-label={ariaLabel}>
-        <VStack spacing={0} align="stretch" divider={<Divider borderColor="border.subtle" />}>
+        <VStack spacing={5} align="stretch">
           {[1, 2, 3].map((i) => (
-            <HStack key={i} spacing={3} py={2.5}>
-              <SkeletonCircle size="3" />
+            <HStack key={i} spacing={3} align="center">
+              <SkeletonCircle size="8" />
               <Skeleton height="14px" flex={1} />
               <Skeleton height="12px" width="48px" />
             </HStack>
@@ -285,6 +305,8 @@ export function ActivityFeed({
               size="sm"
               variant="outline"
               colorScheme="primary"
+              borderRadius="full"
+              fontWeight="700"
               onClick={onRetry}
               isLoading={isRetrying}
             >
@@ -303,7 +325,7 @@ export function ActivityFeed({
           py={8}
           textAlign="center"
           bg="bg.surfaceAlt"
-          borderRadius="lg"
+          borderRadius="xl"
           borderWidth="1px"
           borderColor="border.default"
         >
@@ -320,29 +342,20 @@ export function ActivityFeed({
   return (
     <Box role="region" aria-label={ariaLabel}>
       <VStack spacing={5} align="stretch">
-        {grouped.map((dayGroup, dayIndex) => (
+        {grouped.map((dayGroup) => (
           <Box key={dayGroup.dayKey}>
-            {/* Day separator — omit for first group */}
-            {dayIndex > 0 && (
-              <Divider borderColor="border.subtle" mb={4} />
-            )}
-
             <Text
               fontSize="xs"
               fontWeight="700"
               color="text.tertiary"
               textTransform="uppercase"
               letterSpacing="0.08em"
-              mb={1}
+              mb={3}
             >
               {dayGroup.dayLabel}
             </Text>
 
-            <VStack
-              spacing={0}
-              align="stretch"
-              divider={<Divider borderColor="border.subtle" />}
-            >
+            <VStack spacing={0} align="stretch">
               {dayGroup.events.map((event, index) => {
                 const campaignId =
                   "campaign_id" in event ? event.campaign_id : undefined;
@@ -360,6 +373,7 @@ export function ActivityFeed({
                     showCampaignLink={showCampaignLinks}
                     stxPrice={stxPrice}
                     sbtcPrice={sbtcPrice}
+                    isLast={index === dayGroup.events.length - 1}
                   />
                 );
               })}
