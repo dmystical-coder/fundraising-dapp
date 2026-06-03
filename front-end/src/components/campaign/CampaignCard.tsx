@@ -213,7 +213,9 @@ export function CampaignCard({
         </Box>
 
         {/* Time remaining — top-right, white chip so it reads on any image */}
-        {endAt && status === "active" && !isPending && (
+        {/* `!!endAt` guards the 0 case: a bare `endAt &&` would render the
+            number 0 as visible text for open-ended/concluded campaigns. */}
+        {!!endAt && status === "active" && !isPending && (
           <Box
             position="absolute"
             top={3}
@@ -242,8 +244,8 @@ export function CampaignCard({
 
           {beneficiary && (
             <HStack spacing={2} minW={0}>
-              <WalletIdenticon address={beneficiary} size={22} />
               <MicroLabel>To</MicroLabel>
+              <WalletIdenticon address={beneficiary} size={22} />
               <SimpleAddress address={beneficiary} length={4} fontSize="sm" />
             </HStack>
           )}
