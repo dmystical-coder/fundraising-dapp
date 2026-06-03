@@ -145,7 +145,7 @@ const styles = {
       color: "linkColor",
       _hover: {
         color: "linkHoverColor",
-        textDecoration: "underline",
+        textDecoration: "none",
       },
     },
     "*:focus-visible": {
