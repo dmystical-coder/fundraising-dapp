@@ -8,6 +8,7 @@ interface PendingMetadata {
   owner: string;
   title: string;
   description: string;
+  coverUrl?: string;
   createdAt: number;
 }
 
@@ -66,6 +67,7 @@ export function useSyncPendingMetadata() {
           owner: address,
           title: pending.title,
           description: pending.description,
+          coverUrl: pending.coverUrl,
         })
           .then(() => {
             console.log(`Saved metadata for campaign ${campaign.campaign_id}`);

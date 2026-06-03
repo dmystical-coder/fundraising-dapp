@@ -12,10 +12,11 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { title, description, owner } = body as {
+  const { title, description, owner, coverUrl } = body as {
     title?: string;
     description?: string;
     owner?: string;
+    coverUrl?: string;
   };
 
   if (!title || !owner) {
@@ -29,14 +30,15 @@ export async function POST(
     const db = getDb();
     await db.query(
       `
-      INSERT INTO campaign_metadata (campaign_id, owner, title, description)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO campaign_metadata (campaign_id, owner, title, description, cover_url)
+      VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (campaign_id) DO UPDATE SET
         title = EXCLUDED.title,
         description = EXCLUDED.description,
+        cover_url = EXCLUDED.cover_url,
         updated_at = now()
       `,
-      [campaignId, owner, title, description || ""]
+      [campaignId, owner, title, description || "", coverUrl?.trim() || null]
     );
 
     return NextResponse.json({ ok: true, campaignId });

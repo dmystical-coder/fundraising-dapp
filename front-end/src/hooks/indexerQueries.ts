@@ -107,9 +107,10 @@ export async function saveCampaignMetadata(params: {
   owner: string;
   title: string;
   description: string;
+  coverUrl?: string;
 }): Promise<{ ok: boolean; campaignId: number }> {
   const url = `${INDEXER_CONFIG.url}${INDEXER_CONFIG.endpoints.campaignMetadata(params.campaignId)}`;
-  
+
   const response = await fetch(url, {
     method: "POST",
     cache: "no-store",
@@ -120,6 +121,7 @@ export async function saveCampaignMetadata(params: {
       owner: params.owner,
       title: params.title,
       description: params.description,
+      coverUrl: params.coverUrl,
     }),
   });
 

@@ -21,6 +21,9 @@ import {
   InputGroup,
   InputLeftAddon,
   InputRightAddon,
+  Image,
+  AspectRatio,
+  Icon,
   Textarea,
   NumberInput,
   NumberInputField,
@@ -59,6 +62,7 @@ const steps = [
 interface FormData {
   title: string;
   description: string;
+  coverUrl: string;
   goal: number;
   endDate: string;
   beneficiary: string;
@@ -67,10 +71,42 @@ interface FormData {
 const initialFormData: FormData = {
   title: "",
   description: "",
+  coverUrl: "",
   goal: 100,
   endDate: "",
   beneficiary: "",
 };
+
+// Minimal outline "image" glyph for the empty cover-preview placeholder.
+function ImageGlyph(props: React.ComponentProps<typeof Icon>) {
+  return (
+    <Icon viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" />
+      <path
+        d="m4 17 4.5-4.5a2 2 0 0 1 2.8 0L17 18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Icon>
+  );
+}
+
+/** A cover image must be a real http(s) URL we can render in an <img>. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export default function CreateCampaignPage() {
   const router = useRouter();
@@ -84,6 +120,11 @@ export default function CreateCampaignPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Tracks whether the pasted cover URL actually resolves to a loadable image.
+  const [coverLoadFailed, setCoverLoadFailed] = useState(false);
+
+  const trimmedCover = formData.coverUrl.trim();
+  const showCoverPreview = trimmedCover.length > 0 && isHttpUrl(trimmedCover);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -102,6 +143,14 @@ export default function CreateCampaignPage() {
         }
         if (formData.description.trim().length < 20) {
           newErrors.description = "Description must be at least 20 characters";
+        }
+        // Cover is optional, but if provided it must be a usable image URL.
+        if (formData.coverUrl.trim()) {
+          if (!isHttpUrl(formData.coverUrl.trim())) {
+            newErrors.coverUrl = "Enter a valid image URL starting with http(s)://";
+          } else if (coverLoadFailed) {
+            newErrors.coverUrl = "That image couldn't be loaded — check the link";
+          }
         }
         break;
       case 1:
@@ -168,6 +217,7 @@ export default function CreateCampaignPage() {
         owner: address,
         title: formData.title,
         description: formData.description,
+        coverUrl: formData.coverUrl.trim() || undefined,
         createdAt: Date.now(),
       };
       localStorage.setItem(`pending_campaign_metadata_${address}`, JSON.stringify(pendingMetadata));
@@ -224,6 +274,7 @@ export default function CreateCampaignPage() {
                 onChange={(e) => updateField("title", e.target.value)}
                 size="lg"
                 bg="bg.field"
+                borderRadius="xl"
               />
               <FormHelperText>A clear, compelling title helps attract donors</FormHelperText>
               <FormErrorMessage>{errors.title}</FormErrorMessage>
@@ -237,11 +288,78 @@ export default function CreateCampaignPage() {
                 onChange={(e) => updateField("description", e.target.value)}
                 rows={6}
                 bg="bg.field"
+                borderRadius="xl"
               />
               <FormHelperText>
                 {formData.description.length}/500 characters (20 minimum)
               </FormHelperText>
               <FormErrorMessage>{errors.description}</FormErrorMessage>
+            </FormControl>
+
+            <FormControl isInvalid={!!errors.coverUrl}>
+              <FormLabel fontWeight="600">
+                Cover image{" "}
+                <Text as="span" fontWeight="400" color="text.tertiary" fontSize="sm">
+                  (optional)
+                </Text>
+              </FormLabel>
+              <Input
+                type="url"
+                inputMode="url"
+                placeholder="https://images.example.com/your-cover.jpg"
+                value={formData.coverUrl}
+                onChange={(e) => {
+                  setCoverLoadFailed(false);
+                  updateField("coverUrl", e.target.value);
+                }}
+                size="lg"
+                bg="bg.field"
+                borderRadius="xl"
+              />
+              <FormHelperText>
+                Paste a link to a hosted image. Shown at the top of your campaign
+                and on its card (16:9 works best).
+              </FormHelperText>
+              <FormErrorMessage>{errors.coverUrl}</FormErrorMessage>
+
+              {/* Live preview — mirrors the 16:9 cover used on the campaign card */}
+              <Box mt={3}>
+                {showCoverPreview && !coverLoadFailed ? (
+                  <AspectRatio ratio={16 / 9} w="100%">
+                    <Image
+                      src={trimmedCover}
+                      alt="Cover preview"
+                      objectFit="cover"
+                      borderRadius="xl"
+                      borderWidth="1px"
+                      borderColor="border.default"
+                      onError={() => setCoverLoadFailed(true)}
+                      onLoad={() => setCoverLoadFailed(false)}
+                    />
+                  </AspectRatio>
+                ) : (
+                  <AspectRatio ratio={16 / 9} w="100%">
+                    <VStack
+                      spacing={1}
+                      bg="bg.accentSubtle"
+                      borderWidth="1px"
+                      borderStyle="dashed"
+                      borderColor={
+                        coverLoadFailed ? "warning.400" : "border.accent"
+                      }
+                      borderRadius="xl"
+                      color="text.tertiary"
+                    >
+                      <Icon as={ImageGlyph} boxSize={6} />
+                      <Text fontSize="sm" fontWeight="500" textAlign="center" px={4}>
+                        {coverLoadFailed
+                          ? "Couldn't load that image — check the link"
+                          : "Cover preview appears here"}
+                      </Text>
+                    </VStack>
+                  </AspectRatio>
+                )}
+              </Box>
             </FormControl>
           </VStack>
         );
@@ -278,6 +396,7 @@ export default function CreateCampaignPage() {
                 onChange={(e) => updateField("endDate", e.target.value)}
                 size="lg"
                 bg="bg.field"
+                borderRadius="xl"
                 min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
               />
               <FormHelperText>
@@ -307,6 +426,7 @@ export default function CreateCampaignPage() {
                 onChange={(e) => updateField("beneficiary", e.target.value)}
                 size="lg"
                 bg="bg.field"
+                borderRadius="xl"
                 fontFamily="mono"
               />
               <FormHelperText>
@@ -320,6 +440,9 @@ export default function CreateCampaignPage() {
                 variant="outline"
                 colorScheme="primary"
                 size="sm"
+                borderRadius="full"
+                fontWeight="700"
+                alignSelf="flex-start"
                 onClick={() => updateField("beneficiary", address)}
               >
                 Use my wallet address
@@ -333,7 +456,17 @@ export default function CreateCampaignPage() {
           <VStack spacing={6} align="stretch">
             <Heading size="md">Review Your Campaign</Heading>
             
-            <Card bg="bg.surfaceAlt" borderRadius="lg">
+            <Card bg="bg.surfaceAlt" borderRadius="xl" overflow="hidden">
+              {showCoverPreview && !coverLoadFailed && (
+                <AspectRatio ratio={16 / 9} w="100%">
+                  <Image
+                    src={trimmedCover}
+                    alt="Cover preview"
+                    objectFit="cover"
+                    onError={() => setCoverLoadFailed(true)}
+                  />
+                </AspectRatio>
+              )}
               <CardBody>
                 <VStack spacing={4} align="stretch">
                   <Box>
@@ -392,6 +525,8 @@ export default function CreateCampaignPage() {
         href="/campaigns"
         leftIcon={<ArrowBackIcon />}
         variant="ghost"
+        borderRadius="full"
+        fontWeight="700"
         mb={6}
       >
         Back to Campaigns
@@ -445,7 +580,14 @@ export default function CreateCampaignPage() {
         </Stepper>
       </Box>
 
-      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl" mb={6}>
+      <Card
+        bg="bg.surface"
+        borderColor="border.default"
+        borderWidth="1px"
+        borderRadius="2xl"
+        boxShadow="0 1px 2px rgba(15,23,43,0.04)"
+        mb={6}
+      >
         <CardBody py={8}>
           {!address ? (
             <VStack spacing={4} py={8} textAlign="center">
@@ -465,6 +607,8 @@ export default function CreateCampaignPage() {
           <Button
             leftIcon={<ArrowBackIcon />}
             variant="ghost"
+            borderRadius="full"
+            fontWeight="700"
             onClick={goToPrevious}
             isDisabled={activeStep === 0}
           >
@@ -475,6 +619,8 @@ export default function CreateCampaignPage() {
             <Button
               rightIcon={<ArrowForwardIcon />}
               colorScheme="primary"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleNext}
             >
               Next
@@ -483,6 +629,8 @@ export default function CreateCampaignPage() {
             <Button
               leftIcon={isSubmitting ? <Spinner size="sm" /> : <CheckIcon />}
               colorScheme="primary"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleSubmit}
               isLoading={isSubmitting}
               loadingText="Creating..."
