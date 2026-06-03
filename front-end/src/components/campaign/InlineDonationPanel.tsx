@@ -133,7 +133,7 @@ function SuccessMark({ size = 52 }: { size?: number }) {
 interface Props {
   campaignId: number;
   campaignTitle?: string;
-  status?: "active" | "cancelled" | "ended" | "withdrawn";
+  status?: "active" | "cancelled" | "ended";
   hasRefundClaimed?: boolean;
 }
 

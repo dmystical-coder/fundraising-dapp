@@ -37,7 +37,14 @@ const PAGE_SIZE = 9;
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
-type FilterOption = "all" | "active" | "ending-soon" | "fully-funded";
+type FilterOption = "all" | "active" | "ended" | "cancelled";
+
+const FILTERS: { key: FilterOption; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "ended", label: "Ended" },
+  { key: "cancelled", label: "Cancelled" },
+];
 
 interface CampaignWithOnChain extends Omit<IndexedCampaign, "goal"> {
   endAt?: number;
@@ -76,10 +83,12 @@ function sortCampaigns(
         return bTotal - aTotal;
       });
     case "ending-soon": {
+      // Pure sort — soonest still-open deadline first, everything without a
+      // future deadline sinks to the end (never dropped from the list).
       const now = Math.floor(Date.now() / 1000);
-      return sorted
-        .filter((c) => c.endAt && c.endAt > now && !c.is_cancelled)
-        .sort((a, b) => (a.endAt ?? 0) - (b.endAt ?? 0));
+      const key = (c: CampaignWithOnChain) =>
+        c.endAt && c.endAt > now && !c.is_cancelled ? c.endAt : Infinity;
+      return sorted.sort((a, b) => key(a) - key(b));
     }
     case "most-donors":
       return sorted.sort(
@@ -312,41 +321,21 @@ export function CampaignGrid({
     if (!showFilters || filterBy === "all") return allCampaigns;
 
     const now = Math.floor(Date.now() / 1000);
-    const endingSoonThreshold = now + 7 * 24 * 60 * 60;
 
     return allCampaigns.filter((campaign) => {
-      const isActive =
-        !campaign.is_cancelled &&
-        !campaign.is_withdrawn &&
-        !campaign.isExpired &&
-        (campaign.endAt ?? 0) > now;
+      // Same three-state model as the status badge: cancelled > ended
+      // (withdrawn or past its deadline) > active.
+      const expired =
+        campaign.isExpired || (!!campaign.endAt && campaign.endAt <= now);
+      const status: FilterOption = campaign.is_cancelled
+        ? "cancelled"
+        : campaign.is_withdrawn || expired
+        ? "ended"
+        : "active";
 
-      if (filterBy === "active") {
-        return isActive;
-      }
-
-      if (filterBy === "ending-soon") {
-        return (
-          isActive &&
-          !!campaign.endAt &&
-          campaign.endAt > now &&
-          campaign.endAt <= endingSoonThreshold
-        );
-      }
-
-      if (filterBy === "fully-funded") {
-        if (!campaign.goal || campaign.goal <= 0 || !prices?.stx || !prices?.sbtc) {
-          return false;
-        }
-
-        const stxValue = (parseInt(campaign.total_stx, 10) / 1_000_000) * prices.stx;
-        const sbtcValue = (parseInt(campaign.total_sbtc, 10) / 100_000_000) * prices.sbtc;
-        return stxValue + sbtcValue >= campaign.goal;
-      }
-
-      return true;
+      return status === filterBy;
     });
-  }, [allCampaigns, filterBy, prices, showFilters]);
+  }, [allCampaigns, filterBy, showFilters]);
 
   const totalPages = limit ? 1 : Math.max(1, Math.ceil(filteredCampaigns.length / PAGE_SIZE));
   const paginatedCampaigns = useMemo(() => {
@@ -565,82 +554,30 @@ export function CampaignGrid({
             gap={3}
           >
             <Wrap spacing={2}>
-              <WrapItem>
-                <Button
-                  size="sm"
-                  borderRadius="full"
-                  px={4}
-                  minH="36px"
-                  bg={filterBy === "all" ? filterActiveBg : "bg.surface"}
-                  color={filterBy === "all" ? filterActiveColor : "text.secondary"}
-                  borderWidth="1px"
-                  borderColor={filterBy === "all" ? filterActiveBorder : "border.default"}
-                  onClick={() => setFilterBy("all")}
-                  _hover={{
-                    bg: filterBy === "all" ? filterActiveHoverBg : "bg.surfaceAlt",
-                    color: filterBy === "all" ? filterActiveHoverColor : "text.primary",
-                  }}
-                >
-                  All
-                </Button>
-              </WrapItem>
-              <WrapItem>
-                <Button
-                  size="sm"
-                  borderRadius="full"
-                  px={4}
-                  minH="36px"
-                  bg={filterBy === "active" ? filterActiveBg : "bg.surface"}
-                  color={filterBy === "active" ? filterActiveColor : "text.secondary"}
-                  borderWidth="1px"
-                  borderColor={filterBy === "active" ? filterActiveBorder : "border.default"}
-                  onClick={() => setFilterBy("active")}
-                  _hover={{
-                    bg: filterBy === "active" ? filterActiveHoverBg : "bg.surfaceAlt",
-                    color: filterBy === "active" ? filterActiveHoverColor : "text.primary",
-                  }}
-                >
-                  Active
-                </Button>
-              </WrapItem>
-              <WrapItem>
-                <Button
-                  size="sm"
-                  borderRadius="full"
-                  px={4}
-                  minH="36px"
-                  bg={filterBy === "ending-soon" ? filterActiveBg : "bg.surface"}
-                  color={filterBy === "ending-soon" ? filterActiveColor : "text.secondary"}
-                  borderWidth="1px"
-                  borderColor={filterBy === "ending-soon" ? filterActiveBorder : "border.default"}
-                  onClick={() => setFilterBy("ending-soon")}
-                  _hover={{
-                    bg: filterBy === "ending-soon" ? filterActiveHoverBg : "bg.surfaceAlt",
-                    color: filterBy === "ending-soon" ? filterActiveHoverColor : "text.primary",
-                  }}
-                >
-                  Ending Soon
-                </Button>
-              </WrapItem>
-              <WrapItem>
-                <Button
-                  size="sm"
-                  borderRadius="full"
-                  px={4}
-                  minH="36px"
-                  bg={filterBy === "fully-funded" ? filterActiveBg : "bg.surface"}
-                  color={filterBy === "fully-funded" ? filterActiveColor : "text.secondary"}
-                  borderWidth="1px"
-                  borderColor={filterBy === "fully-funded" ? filterActiveBorder : "border.default"}
-                  onClick={() => setFilterBy("fully-funded")}
-                  _hover={{
-                    bg: filterBy === "fully-funded" ? filterActiveHoverBg : "bg.surfaceAlt",
-                    color: filterBy === "fully-funded" ? filterActiveHoverColor : "text.primary",
-                  }}
-                >
-                  Fully Funded
-                </Button>
-              </WrapItem>
+              {FILTERS.map(({ key, label }) => {
+                const selected = filterBy === key;
+                return (
+                  <WrapItem key={key}>
+                    <Button
+                      size="sm"
+                      borderRadius="full"
+                      px={4}
+                      minH="36px"
+                      bg={selected ? filterActiveBg : "bg.surface"}
+                      color={selected ? filterActiveColor : "text.secondary"}
+                      borderWidth="1px"
+                      borderColor={selected ? filterActiveBorder : "border.default"}
+                      onClick={() => setFilterBy(key)}
+                      _hover={{
+                        bg: selected ? filterActiveHoverBg : "bg.surfaceAlt",
+                        color: selected ? filterActiveHoverColor : "text.primary",
+                      }}
+                    >
+                      {label}
+                    </Button>
+                  </WrapItem>
+                );
+              })}
             </Wrap>
 
             {showSort && (
