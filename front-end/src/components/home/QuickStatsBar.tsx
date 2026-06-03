@@ -39,6 +39,7 @@ interface StatCardProps {
   isLoading?: boolean;
   isError?: boolean;
   color?: string;
+  accent?: boolean;
 }
 
 function StatCard({
@@ -48,6 +49,7 @@ function StatCard({
   isLoading = false,
   isError = false,
   color = "chakra-body-text",
+  accent = false,
 }: StatCardProps) {
   const cardMinHeight = { base: "118px", md: "124px" };
 
@@ -55,11 +57,11 @@ function StatCard({
     <Stat
       px={4}
       py={3.5}
-      bg="bg.surface"
-      borderRadius="lg"
+      bg={accent ? "bg.accentSubtle" : "bg.surface"}
+      borderRadius="xl"
       borderWidth="1px"
-      borderColor="border.default"
-      boxShadow="0 12px 20px -20px rgba(15, 23, 42, 0.55)"
+      borderColor={accent ? "border.accent" : "border.default"}
+      boxShadow="0 1px 2px rgba(15,23,43,0.04)"
       minH={cardMinHeight}
       display="flex"
       flexDirection="column"
@@ -197,6 +199,7 @@ export function QuickStatsBar() {
             isLoading={totalRaisedLoading}
             isError={isError}
             color="primary.600"
+            accent
           />
           <StatCard
             label="Campaigns"

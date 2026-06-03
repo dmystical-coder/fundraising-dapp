@@ -10,9 +10,176 @@ import {
   VStack,
   HStack,
   Badge,
-  SimpleGrid,
+  AspectRatio,
+  Image,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { WalletIdenticon } from "@/components/common/WalletIdenticon";
+
+// Cover for the illustrative hero snapshot — clear flowing water, matching the
+// sample "Clean Water Initiative" campaign.
+const HERO_COVER_URL =
+  "https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80&auto=format&fit=crop";
+
+// ─── Illustrative campaign snapshot ──────────────────────────────────────────
+// Decorative only: mirrors the real CampaignCard's visual language so the hero
+// shows the product, but it is sample content (aria-hidden, non-interactive).
+function HeroPreviewCard() {
+  return (
+    <Box
+      aria-hidden="true"
+      w={{ base: "100%", lg: "420px" }}
+      maxW={{ base: "420px", lg: "420px" }}
+    >
+      <Box
+        bg="bg.surface"
+        borderRadius="2xl"
+        borderWidth="1px"
+        borderColor="border.default"
+        boxShadow="card"
+        overflow="hidden"
+      >
+        {/* Cover */}
+        <Box position="relative">
+          <AspectRatio ratio={16 / 9}>
+            <Image
+              src={HERO_COVER_URL}
+              alt=""
+              objectFit="cover"
+              fallback={
+                <Box
+                  bg="bg.surfaceAlt"
+                  backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
+                  backgroundSize="20px 20px"
+                  opacity={0.85}
+                />
+              }
+            />
+          </AspectRatio>
+          <Box position="absolute" top={3} left={3}>
+            <Badge
+              colorScheme="green"
+              variant="subtle"
+              borderRadius="full"
+              textTransform="uppercase"
+              fontWeight="600"
+              letterSpacing="0.05em"
+              px={2}
+              py={0.5}
+              fontSize="2xs"
+              boxShadow="0 1px 3px rgba(15,23,43,0.18)"
+            >
+              Active
+            </Badge>
+          </Box>
+        </Box>
+
+        <VStack align="stretch" spacing={4} p={5}>
+          <Heading size="md" color="text.primary" lineHeight="1.35">
+            Clean Water Initiative
+          </Heading>
+
+          <HStack spacing={2}>
+            <Text
+              fontSize="11px"
+              fontWeight="700"
+              letterSpacing="0.08em"
+              textTransform="uppercase"
+              color="text.tertiary"
+            >
+              To
+            </Text>
+            <WalletIdenticon address="SP6KCLEANWATER000DEMO000SNAPSHOT00PBD8" size={22} />
+            <Text fontSize="sm" fontFamily="mono" color="text.secondary">
+              SP6K…PBD8
+            </Text>
+          </HStack>
+
+          {/* Funding block */}
+          <VStack
+            spacing={4}
+            align="stretch"
+            p={4}
+            bg="bg.accentSubtle"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.accent"
+          >
+            <Box>
+              <Text
+                fontSize="11px"
+                fontWeight="700"
+                letterSpacing="0.08em"
+                textTransform="uppercase"
+                color="text.tertiary"
+              >
+                Raised
+              </Text>
+              <HStack spacing={2} align="baseline" mt={1}>
+                <Text fontFamily="mono" fontWeight="600" color="primary.600">
+                  12.4
+                </Text>
+                <Text fontSize="sm" color="text.secondary">
+                  STX
+                </Text>
+                <Text fontSize="sm" color="text.tertiary">
+                  ($2.7K)
+                </Text>
+              </HStack>
+            </Box>
+            <Box>
+              <HStack justify="space-between" mb={1.5}>
+                <Text
+                  fontSize="11px"
+                  fontWeight="700"
+                  letterSpacing="0.08em"
+                  textTransform="uppercase"
+                  color="text.tertiary"
+                >
+                  Progress
+                </Text>
+                <Text fontSize="xs" fontWeight="700" color="primary.700">
+                  68%
+                </Text>
+              </HStack>
+              <Box
+                w="100%"
+                h="6px"
+                borderRadius="full"
+                bg="bg.surfaceAlt"
+                borderWidth="1px"
+                borderColor="border.default"
+                overflow="hidden"
+              >
+                <Box w="68%" h="100%" borderRadius="full" bg="primary.500" />
+              </Box>
+            </Box>
+          </VStack>
+
+          <HStack justify="space-between" align="center">
+            <Text fontSize="sm" color="text.secondary">
+              <Text as="span" fontWeight="700" color="text.primary">
+                42
+              </Text>{" "}
+              donors
+            </Text>
+            <Box
+              px={4}
+              py={1.5}
+              borderRadius="full"
+              bg="primary.500"
+              color="text.inverse"
+              fontSize="sm"
+              fontWeight="700"
+            >
+              Donate
+            </Box>
+          </HStack>
+        </VStack>
+      </Box>
+    </Box>
+  );
+}
 
 export function HeroSection() {
   return (
@@ -106,6 +273,7 @@ export function HeroSection() {
                 href="/campaigns"
                 size={{ base: "md", md: "lg" }}
                 colorScheme="primary"
+                borderRadius="full"
                 fontWeight="700"
                 w={{ base: "100%", sm: "auto" }}
                 minH={{ base: "46px", md: "48px" }}
@@ -118,11 +286,11 @@ export function HeroSection() {
                 href="/campaigns/new"
                 size={{ base: "md", md: "lg" }}
                 variant="outline"
-                colorScheme="secondary"
+                colorScheme="primary"
+                borderRadius="full"
                 fontWeight="700"
                 w={{ base: "100%", sm: "auto" }}
                 minH={{ base: "46px", md: "48px" }}
-               
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
                 Start a Campaign
@@ -130,65 +298,7 @@ export function HeroSection() {
             </Stack>
           </VStack>
 
-          <Box w={{ base: "100%", lg: "460px" }} maxW={{ base: "100%", lg: "460px" }}>
-            <Box
-              bg="gray.900"
-              color="gray.100"
-              borderRadius="2xl"
-              borderWidth="1px"
-              borderColor="gray.700"
-              boxShadow="card"
-              overflow="hidden"
-            >
-              <HStack px={4} py={3} bg="blackAlpha.500" borderBottomWidth="1px" borderBottomColor="gray.700" spacing={2}>
-                <Box w={2.5} h={2.5} borderRadius="full" bg="error.400" />
-                <Box w={2.5} h={2.5} borderRadius="full" bg="warning.400" />
-                <Box w={2.5} h={2.5} borderRadius="full" bg="success.400" />
-                <Text fontSize="xs" color="gray.300" ml={2}>
-                  Live campaign snapshot
-                </Text>
-              </HStack>
-
-              <VStack align="stretch" spacing={4} p={{ base: 4, md: 5 }}>
-                <Text fontSize="sm" color="gray.300" lineHeight="1.6">
-                  Campaigns on FundStacks show real on-chain progress so supporters can fund with confidence.
-                </Text>
-
-                <SimpleGrid columns={2} spacing={3}>
-                  <Box p={3} borderRadius="lg" bg="whiteAlpha.100" borderWidth="1px" borderColor="whiteAlpha.200">
-                    <Text fontSize="lg" fontWeight="800" color="primary.300">
-                      24/7
-                    </Text>
-                    <Text fontSize="xs" color="gray.300">
-                      Global donation access
-                    </Text>
-                  </Box>
-                  <Box p={3} borderRadius="lg" bg="whiteAlpha.100" borderWidth="1px" borderColor="whiteAlpha.200">
-                    <Text fontSize="lg" fontWeight="800" color="secondary.300">
-                      On-chain
-                    </Text>
-                    <Text fontSize="xs" color="gray.300">
-                      Transparent records
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-
-                <Box p={3} borderRadius="lg" bg="whiteAlpha.100" borderWidth="1px" borderColor="whiteAlpha.200">
-                  <HStack justify="space-between" mb={2}>
-                    <Text fontSize="xs" color="gray.300" textTransform="uppercase" letterSpacing="0.08em">
-                      Sample campaign progress
-                    </Text>
-                    <Text fontSize="sm" color="primary.300" fontWeight="700">
-                      68%
-                    </Text>
-                  </HStack>
-                  <Box w="100%" h="2" borderRadius="full" bg="whiteAlpha.300" overflow="hidden">
-                    <Box w="68%" h="100%" bg="primary.400" />
-                  </Box>
-                </Box>
-              </VStack>
-            </Box>
-          </Box>
+          <HeroPreviewCard />
         </Stack>
       </Container>
     </Box>

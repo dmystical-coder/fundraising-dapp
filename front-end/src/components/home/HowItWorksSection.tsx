@@ -50,34 +50,29 @@ const steps: Step[] = [
   },
 ];
 
-const PANEL_BG = "#0D0F1A";
-const CARD_BG = "rgba(255,255,255,0.04)";
-const BORDER = "rgba(255,255,255,0.08)";
-const CIRCLE_BG = "rgba(255,255,255,0.06)";
-const CIRCLE_BORDER = "rgba(255,255,255,0.14)";
-const SPINE_COLOR = "rgba(255,255,255,0.1)";
-
 export function HowItWorksSection() {
   return (
     <Box py={{ base: 10, md: 14 }} bg="bg.canvas">
       <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
         <Box
-          bg={PANEL_BG}
+          bg="bg.surface"
           borderWidth="1px"
-          borderColor={BORDER}
+          borderColor="border.default"
           borderRadius={{ base: "2xl", md: "3xl" }}
+          boxShadow="0 1px 2px rgba(15,23,43,0.04)"
           overflow="hidden"
         >
           <Stack direction={{ base: "column", lg: "row" }} spacing={0} align="stretch">
 
-            {/* ─── Left: intro panel ─── */}
+            {/* ─── Left: intro panel (tinted lavender) ─── */}
             <Box
               flex={{ lg: "0 0 360px", xl: "0 0 400px" }}
               px={{ base: 6, md: 8, lg: 10 }}
               py={{ base: 8, md: 10, lg: 12 }}
+              bg="bg.accentSubtle"
               borderRightWidth={{ lg: "1px" }}
               borderBottomWidth={{ base: "1px", lg: "0" }}
-              borderColor={BORDER}
+              borderColor="border.default"
               display="flex"
               flexDirection="column"
               justifyContent="space-between"
@@ -93,10 +88,15 @@ export function HowItWorksSection() {
                   borderRadius="full"
                   borderWidth="1px"
                   borderStyle="dashed"
-                  borderColor="primary.500"
+                  borderColor="border.accent"
+                  bg="bg.surface"
                 >
                   <Text
-                    sx={{ fontSize: "10px", letterSpacing: "0.12em", color: "#A78BFA", fontWeight: 700, textTransform: "uppercase" }}
+                    fontSize="10px"
+                    letterSpacing="0.12em"
+                    color="text.accent"
+                    fontWeight="700"
+                    textTransform="uppercase"
                   >
                     How it works
                   </Text>
@@ -105,24 +105,25 @@ export function HowItWorksSection() {
                 {/* Headline */}
                 <Heading
                   as="h2"
-                  sx={{
-                    fontSize: { base: "30px", md: "36px" },
-                    fontWeight: 800,
-                    lineHeight: 1.1,
-                    letterSpacing: "-0.025em",
-                    color: "#FFFFFF",
-                  }}
+                  fontSize={{ base: "30px", md: "36px" }}
+                  fontWeight="800"
+                  lineHeight="1.1"
+                  letterSpacing="-0.025em"
+                  color="text.primary"
                 >
                   From zero to{" "}
-                  <Box as="span" sx={{ color: "#A78BFA" }}>
+                  <Box as="span" color="primary.500">
                     funded
                   </Box>
-                  ,{" "}in four steps
+                  , in four steps
                 </Heading>
 
                 {/* Body */}
                 <Text
-                  sx={{ fontSize: { base: "14px", md: "15px" }, color: "#9CA3AF", lineHeight: 1.75, maxW: "36ch" }}
+                  fontSize={{ base: "14px", md: "15px" }}
+                  color="text.secondary"
+                  lineHeight="1.75"
+                  maxW="36ch"
                 >
                   FundStacks makes it straightforward to discover credible
                   causes and move value on-chain — with full transparency at
@@ -130,7 +131,7 @@ export function HowItWorksSection() {
                 </Text>
 
                 {/* Asset footnote */}
-                <Text sx={{ fontSize: "12px", color: "#6B7280", lineHeight: 1.6 }}>
+                <Text fontSize="12px" color="text.tertiary" lineHeight="1.6">
                   STX is the Stacks network token. sBTC is a Bitcoin-backed
                   asset that settles on Bitcoin via Stacks.
                 </Text>
@@ -142,9 +143,10 @@ export function HowItWorksSection() {
                 href="/campaigns"
                 size="lg"
                 colorScheme="primary"
+                borderRadius="full"
                 rightIcon={<ArrowForwardIcon />}
                 alignSelf="flex-start"
-                fontWeight={700}
+                fontWeight="700"
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
                 Get Started
@@ -169,15 +171,15 @@ export function HowItWorksSection() {
                           w={9}
                           h={9}
                           borderRadius="full"
-                          bg={CIRCLE_BG}
+                          bg="bg.accentSubtle"
                           borderWidth="1px"
-                          borderColor={CIRCLE_BORDER}
+                          borderColor="border.accent"
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
                           flexShrink={0}
                         >
-                          <Text sx={{ fontSize: "11px", fontWeight: 800, color: "#A78BFA", fontFamily: "mono" }}>
+                          <Text fontSize="11px" fontWeight="800" color="primary.600" fontFamily="mono">
                             {String(item.step).padStart(2, "0")}
                           </Text>
                         </Box>
@@ -186,7 +188,7 @@ export function HowItWorksSection() {
                             flex="1"
                             w="1px"
                             minH="16px"
-                            bg={SPINE_COLOR}
+                            bg="border.default"
                             my="4px"
                             aria-hidden="true"
                           />
@@ -198,22 +200,22 @@ export function HowItWorksSection() {
                         flex="1"
                         mb={isLast ? 0 : 4}
                         p={{ base: 4, md: 5 }}
-                        bg={CARD_BG}
+                        bg="bg.surface"
                         borderWidth="1px"
-                        borderColor={BORDER}
+                        borderColor="border.default"
                         borderRadius="xl"
                         minW={0}
+                        transition="border-color 0.2s ease"
+                        _hover={{ borderColor: "border.accent" }}
                       >
                         {/* Step meta */}
                         <Text
-                          sx={{
-                            fontSize: "10px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            color: "#A78BFA",
-                            fontWeight: 700,
-                            mb: "6px",
-                          }}
+                          fontSize="10px"
+                          textTransform="uppercase"
+                          letterSpacing="0.1em"
+                          color="text.accent"
+                          fontWeight="700"
+                          mb="6px"
                         >
                           Step {String(item.step).padStart(2, "0")} — {item.label}
                         </Text>
@@ -221,19 +223,17 @@ export function HowItWorksSection() {
                         {/* Title */}
                         <Heading
                           as="h3"
-                          sx={{
-                            fontSize: { base: "16px", md: "18px" },
-                            fontWeight: 700,
-                            color: "#F3F4F6",
-                            lineHeight: 1.3,
-                            mb: "8px",
-                          }}
+                          fontSize={{ base: "16px", md: "18px" }}
+                          fontWeight="700"
+                          color="text.primary"
+                          lineHeight="1.3"
+                          mb="8px"
                         >
                           {item.title}
                         </Heading>
 
                         {/* Description */}
-                        <Text sx={{ fontSize: "14px", color: "#9CA3AF", lineHeight: 1.7 }}>
+                        <Text fontSize="14px" color="text.secondary" lineHeight="1.7">
                           {item.description}
                         </Text>
                       </Box>
