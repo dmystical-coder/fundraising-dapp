@@ -11,9 +11,15 @@ import {
   HStack,
   Badge,
   AspectRatio,
+  Image,
 } from "@chakra-ui/react";
 import Link from "next/link";
 import { WalletIdenticon } from "@/components/common/WalletIdenticon";
+
+// Cover for the illustrative hero snapshot — clear flowing water, matching the
+// sample "Clean Water Initiative" campaign.
+const HERO_COVER_URL =
+  "https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80&auto=format&fit=crop";
 
 // ─── Illustrative campaign snapshot ──────────────────────────────────────────
 // Decorative only: mirrors the real CampaignCard's visual language so the hero
@@ -36,11 +42,18 @@ function HeroPreviewCard() {
         {/* Cover */}
         <Box position="relative">
           <AspectRatio ratio={16 / 9}>
-            <Box
-              bg="bg.surfaceAlt"
-              backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
-              backgroundSize="20px 20px"
-              opacity={0.85}
+            <Image
+              src={HERO_COVER_URL}
+              alt=""
+              objectFit="cover"
+              fallback={
+                <Box
+                  bg="bg.surfaceAlt"
+                  backgroundImage="radial-gradient(var(--chakra-colors-primary-200) 1px, transparent 1px)"
+                  backgroundSize="20px 20px"
+                  opacity={0.85}
+                />
+              }
             />
           </AspectRatio>
           <Box position="absolute" top={3} left={3}>
