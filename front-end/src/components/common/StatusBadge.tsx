@@ -2,7 +2,7 @@
 
 import { Badge, BadgeProps } from "@chakra-ui/react";
 
-export type CampaignStatus = "active" | "ended" | "cancelled" | "withdrawn";
+export type CampaignStatus = "active" | "ended" | "cancelled";
 
 interface StatusBadgeProps extends Omit<BadgeProps, "variant"> {
   status: CampaignStatus;
@@ -32,11 +32,6 @@ const statusConfig: Record<
     colorScheme: "red",
     variant: "cancelled",
   },
-  withdrawn: {
-    label: "Funded ✓",
-    colorScheme: "teal",
-    variant: "withdrawn",
-  },
 };
 
 const sizeStyles = {
@@ -46,7 +41,9 @@ const sizeStyles = {
 };
 
 /**
- * Determines campaign status from campaign data.
+ * Determines campaign status from campaign data. Collapses to three display
+ * states: a campaign whose funds were withdrawn is treated as "ended" (it's
+ * concluded) — the raw isWithdrawn flag is still used elsewhere for stats.
  */
 export function getCampaignStatus(campaign: {
   isCancelled: boolean;
@@ -54,8 +51,7 @@ export function getCampaignStatus(campaign: {
   isExpired: boolean;
 }): CampaignStatus {
   if (campaign.isCancelled) return "cancelled";
-  if (campaign.isWithdrawn) return "withdrawn";
-  if (campaign.isExpired) return "ended";
+  if (campaign.isWithdrawn || campaign.isExpired) return "ended";
   return "active";
 }
 

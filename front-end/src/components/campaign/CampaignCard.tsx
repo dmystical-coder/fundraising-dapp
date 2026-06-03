@@ -79,19 +79,24 @@ function MicroLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Thin funding bar ─────────────────────────────────────────────────────────
+// `marks` renders quarter tick lines (25/50/75) so a concluded result reads as
+// a measured outcome against the goal rather than a live progress bar.
 function Bar({
   value,
   color,
   animate,
+  marks,
 }: {
   value: number;
   color: string;
   animate: boolean;
+  marks?: boolean;
 }) {
   return (
     <Box
+      position="relative"
       w="100%"
-      h="6px"
+      h={marks ? "8px" : "6px"}
       borderRadius="full"
       bg="bg.surfaceAlt"
       borderWidth="1px"
@@ -106,6 +111,18 @@ function Bar({
         bg={color}
         transition={animate ? "width 0.4s ease" : undefined}
       />
+      {marks &&
+        [25, 50, 75].map((m) => (
+          <Box
+            key={m}
+            position="absolute"
+            top="0"
+            bottom="0"
+            left={`${m}%`}
+            w="1px"
+            bg="rgba(15,23,43,0.15)"
+          />
+        ))}
     </Box>
   );
 }
@@ -138,14 +155,13 @@ export function CampaignCard({
   const canDonate = status === "active" && !isPending;
   const hasGoal = !!goal && goal > 0;
 
-  // A campaign whose creator has withdrawn is concluded — show a final result,
-  // not a live "raising" bar. progress > 0 implies we had prices to compute it,
-  // so we only render the goal outcome when it can be trusted.
-  const isConcluded = status === "withdrawn";
+  // Ended/cancelled campaigns are concluded — show a static, marked "Outcome"
+  // bar against the goal rather than a live progress bar.
+  const isActive = status === "active";
+  const isConcluded = !isActive;
   const goalMet = hasGoal && progress >= 100;
-  const canShowOutcome = hasGoal && progress > 0;
-  // Price-independent truth: a concluded campaign that took in nothing was not
-  // "Funded" — relabel it rather than show a contradictory badge.
+  // Price-independent truth: a concluded campaign that took in nothing reads
+  // "No funds raised" instead of a $0 amount line.
   const nothingRaised = stxNum <= 0 && sbtcNum <= 0;
   const concludedEmpty = isConcluded && nothingRaised;
   const progressLabel =
@@ -206,7 +222,6 @@ export function CampaignCard({
             <StatusBadge
               status={status}
               size="sm"
-              overrides={concludedEmpty ? { label: "Closed", colorScheme: "gray" } : undefined}
               boxShadow="0 1px 3px rgba(15,23,43,0.18)"
             />
           )}
@@ -279,45 +294,31 @@ export function CampaignCard({
               </Box>
             </Box>
 
-            {isConcluded ? (
-              canShowOutcome ? (
-                <Box>
-                  <HStack justify="space-between" mb={1.5}>
-                    <MicroLabel>{goalMet ? "Goal reached" : "Final result"}</MicroLabel>
-                    <Text
-                      fontSize="xs"
-                      fontWeight="700"
-                      color={goalMet ? "success.600" : "secondary.600"}
-                    >
-                      {progressLabel} of goal
-                    </Text>
-                  </HStack>
-                  <Bar
-                    value={progress}
-                    color={goalMet ? "success.500" : "secondary.500"}
-                    animate={false}
-                  />
-                </Box>
-              ) : (
-                <Box>
-                  <MicroLabel>Status</MicroLabel>
-                  <Text fontSize="sm" color="text.secondary" fontWeight="600" mt={1}>
-                    Campaign completed
-                  </Text>
-                </Box>
-              )
-            ) : hasGoal ? (
+            {hasGoal ? (
               <Box>
                 <HStack justify="space-between" mb={1.5}>
-                  <MicroLabel>Progress</MicroLabel>
-                  <Text fontSize="xs" color="primary.700" fontWeight="700">
-                    {progressLabel}
+                  <MicroLabel>{isActive ? "Progress" : "Outcome"}</MicroLabel>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="700"
+                    color={
+                      goalMet
+                        ? "success.600"
+                        : isActive
+                        ? "primary.700"
+                        : "secondary.600"
+                    }
+                  >
+                    {isActive ? progressLabel : `${progressLabel} of goal`}
                   </Text>
                 </HStack>
                 <Bar
                   value={progress}
-                  color={progress >= 100 ? "success.500" : "primary.500"}
-                  animate={!prefersReducedMotion}
+                  color={
+                    goalMet ? "success.500" : isActive ? "primary.500" : "secondary.500"
+                  }
+                  animate={isActive && !prefersReducedMotion}
+                  marks={!isActive}
                 />
               </Box>
             ) : (

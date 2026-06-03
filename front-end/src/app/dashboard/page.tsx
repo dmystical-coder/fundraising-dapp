@@ -176,7 +176,7 @@ export default function DashboardPage() {
       return campaignsWithStatus.filter((campaign) => campaign.status === "active");
     }
     return campaignsWithStatus.filter(
-      (campaign) => campaign.status === "ended" || campaign.status === "withdrawn" || campaign.status === "cancelled"
+      (campaign) => campaign.status === "ended" || campaign.status === "cancelled"
     );
   }, [campaignFilter, campaignsWithStatus]);
 
