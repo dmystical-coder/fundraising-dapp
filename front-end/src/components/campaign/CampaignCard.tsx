@@ -244,8 +244,8 @@ export function CampaignCard({
 
           {beneficiary && (
             <HStack spacing={2} minW={0}>
-              <WalletIdenticon address={beneficiary} size={22} />
               <MicroLabel>To</MicroLabel>
+              <WalletIdenticon address={beneficiary} size={22} />
               <SimpleAddress address={beneficiary} length={4} fontSize="sm" />
             </HStack>
           )}
