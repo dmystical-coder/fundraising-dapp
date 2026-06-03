@@ -40,6 +40,7 @@ import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge"
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
 import { AddressDisplay } from "@/components/common/AddressDisplay";
+import { WalletIdenticon } from "@/components/common/WalletIdenticon";
 import { ActivityFeed } from "@/components/campaign/ActivityFeed";
 import { ShareCard } from "@/components/campaign/ShareCard";
 import { DonorBadgePanel } from "@/components/campaign/DonorBadgePanel";
@@ -48,6 +49,30 @@ import { RewardsPanel } from "@/components/campaign/RewardsPanel";
 import { InlineDonationPanel } from "@/components/campaign/InlineDonationPanel";
 import CampaignAdminControls from "@/components/CampaignAdminControls";
 import { useAddress } from "@/components/ConnectWallet";
+
+// Shared surface treatment, matching the redesigned card/panel language.
+const SURFACE_CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
+
+// Uppercase micro-label used across the screen.
+function MicroLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.08em"
+      textTransform="uppercase"
+      color="text.tertiary"
+    >
+      {children}
+    </Text>
+  );
+}
 
 export default function CampaignDetailPage() {
   const params = useParams();
@@ -100,7 +125,7 @@ export default function CampaignDetailPage() {
   if (isLoading || pricesLoading) {
     return (
       <Container maxW="container.xl" py={8}>
-        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" mb={6}>
+        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" borderRadius="full" fontWeight="700" mb={6}>
           Back to Campaigns
         </Button>
         <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
@@ -122,7 +147,7 @@ export default function CampaignDetailPage() {
   if (error || !campaign) {
     return (
       <Container maxW="container.xl" py={8}>
-        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" mb={6}>
+        <Button as={Link} href="/campaigns" leftIcon={<ArrowBackIcon />} variant="ghost" borderRadius="full" fontWeight="700" mb={6}>
           Back to Campaigns
         </Button>
         <Alert
@@ -188,6 +213,8 @@ export default function CampaignDetailPage() {
         href="/campaigns"
         leftIcon={<ArrowBackIcon />}
         variant="ghost"
+        borderRadius="full"
+        fontWeight="700"
         mb={6}
       >
         Back to Campaigns
@@ -205,7 +232,7 @@ export default function CampaignDetailPage() {
         {/* ── Left: header ── */}
         <GridItem area="header">
           {coverUrl && (
-            <AspectRatio ratio={16 / 9} borderRadius="xl" overflow="hidden" mb={6}>
+            <AspectRatio ratio={16 / 9} borderRadius="2xl" overflow="hidden" mb={6}>
               <Image
                 src={coverUrl}
                 alt={`Cover image for ${campaignTitle}`}
@@ -222,17 +249,19 @@ export default function CampaignDetailPage() {
               )}
             </HStack>
 
-            <Heading size="xl" color="chakra-body-text">
+            <Heading size="xl" color="text.primary">
               {campaignTitle}
             </Heading>
 
-            <HStack spacing={4} flexWrap="wrap">
-              <HStack spacing={1.5}>
-                <Text color="text.secondary" fontSize="sm">Owner:</Text>
+            <HStack spacing={{ base: 4, md: 6 }} flexWrap="wrap">
+              <HStack spacing={2} minW={0}>
+                <WalletIdenticon address={campaign.owner} size={22} />
+                <MicroLabel>By</MicroLabel>
                 <AddressDisplay address={campaign.owner} size="sm" />
               </HStack>
-              <HStack spacing={1.5}>
-                <Text color="text.secondary" fontSize="sm">Beneficiary:</Text>
+              <HStack spacing={2} minW={0}>
+                <WalletIdenticon address={campaign.beneficiary} size={22} />
+                <MicroLabel>To</MicroLabel>
                 <AddressDisplay address={campaign.beneficiary} size="sm" />
               </HStack>
             </HStack>
@@ -266,12 +295,7 @@ export default function CampaignDetailPage() {
               />
             )}
 
-            <Card
-              bg="bg.surface"
-              borderColor="border.default"
-              borderWidth="1px"
-              borderRadius="xl"
-            >
+            <Card {...SURFACE_CARD}>
               <CardHeader pb={0}>
                 <Heading size="md">Recent Activity</Heading>
               </CardHeader>
@@ -302,18 +326,13 @@ export default function CampaignDetailPage() {
           <VStack spacing={5} align="stretch">
 
             {/* Progress card */}
-            <Card
-              bg="bg.surface"
-              borderColor="border.default"
-              borderWidth="1px"
-              borderRadius="xl"
-            >
+            <Card {...SURFACE_CARD}>
               <CardBody>
                 <VStack spacing={4} align="stretch">
                   <Box>
-                    <Text fontSize="sm" fontWeight="600" color="text.secondary" mb={0.5}>
-                      Amount Raised
-                    </Text>
+                    <Box mb={1}>
+                      <MicroLabel>Raised</MicroLabel>
+                    </Box>
                     <Text fontWeight="800" color="primary.600" fontSize="2xl" lineHeight="1.1">
                       ${totalUsd.toFixed(2)}
                       <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
@@ -332,9 +351,9 @@ export default function CampaignDetailPage() {
 
                   {campaign.isCancelled && (refundedStxAmount > 0 || refundedSbtcAmount > 0) && (
                     <Box pt={1}>
-                      <Text fontSize="sm" fontWeight="600" color="text.secondary" mb={0.5}>
-                        Amount Refunded
-                      </Text>
+                      <Box mb={1}>
+                        <MicroLabel>Refunded</MicroLabel>
+                      </Box>
                       <Text fontWeight="700" color="warning.600" fontSize="lg" lineHeight="1.1">
                         ${refundedUsd.toFixed(2)}
                         <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
@@ -355,9 +374,16 @@ export default function CampaignDetailPage() {
                     <Box>
                       <HStack justify="space-between" mb={2}>
                         <Text fontSize="sm" color="text.secondary">
-                          Goal: ${campaign.goal.toLocaleString()}
+                          Goal{" "}
+                          <Text as="span" fontWeight="700" color="text.primary">
+                            ${campaign.goal.toLocaleString()}
+                          </Text>
                         </Text>
-                        <Text fontSize="sm" fontWeight="700" color="text.secondary">
+                        <Text
+                          fontSize="sm"
+                          fontWeight="700"
+                          color={progress >= 100 ? "success.600" : "primary.700"}
+                        >
                           {progress.toFixed(0)}%
                         </Text>
                       </HStack>
@@ -435,12 +461,7 @@ export default function CampaignDetailPage() {
             )}
 
             {/* Top donors */}
-            <Card
-              bg="bg.surface"
-              borderColor="border.default"
-              borderWidth="1px"
-              borderRadius="xl"
-            >
+            <Card {...SURFACE_CARD}>
               <CardHeader pb={2}>
                 <Heading size="md">Top Donors</Heading>
               </CardHeader>
