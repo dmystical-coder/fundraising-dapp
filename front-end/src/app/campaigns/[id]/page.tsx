@@ -24,7 +24,6 @@ import {
   AlertDescription,
   Text,
   VStack,
-  useColorModeValue,
 } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -92,7 +91,6 @@ export default function CampaignDetailPage() {
   const { data: leaderboard, isLoading: leaderboardLoading } =
     useCampaignLeaderboard(campaignId, 10);
 
-  const topDonorBg = useColorModeValue("primary.50", "primary.900");
   const currentAddress = useAddress();
   const isOwner =
     currentAddress &&
@@ -467,9 +465,10 @@ export default function CampaignDetailPage() {
               </CardHeader>
               <CardBody pt={0}>
                 {leaderboardLoading ? (
-                  <VStack spacing={3}>
+                  <VStack spacing={3} align="stretch">
+                    <Skeleton height="64px" borderRadius="xl" />
                     {[1, 2, 3].map((i) => (
-                      <Skeleton key={i} height="40px" width="100%" borderRadius="md" />
+                      <Skeleton key={i} height="32px" borderRadius="md" />
                     ))}
                   </VStack>
                 ) : !leaderboard || leaderboard.length === 0 ? (
@@ -477,40 +476,83 @@ export default function CampaignDetailPage() {
                     No donors yet
                   </Text>
                 ) : (
-                  <VStack spacing={2} align="stretch">
-                    {leaderboard.map((entry, index) => (
-                      <HStack
-                        key={entry.donor}
-                        justify="space-between"
-                        p={2}
-                        bg={index === 0 ? topDonorBg : "bg.surfaceAlt"}
-                        borderRadius="md"
-                      >
-                        <HStack>
-                          <Text
-                            fontWeight="700"
-                            color={index === 0 ? "primary.600" : "text.secondary"}
-                            minW="24px"
-                          >
-                            #{index + 1}
-                          </Text>
+                  <VStack spacing={3} align="stretch">
+                    {/* Hero: top supporter */}
+                    <HStack
+                      align="center"
+                      spacing={3}
+                      p={3.5}
+                      bg="bg.accentSubtle"
+                      borderWidth="1px"
+                      borderColor="border.accent"
+                      borderRadius="xl"
+                    >
+                      <WalletIdenticon address={leaderboard[0].donor} size={40} />
+                      <Box flex={1} minW={0}>
+                        <MicroLabel>Top supporter</MicroLabel>
+                        <Box mt="2px">
                           <AddressDisplay
-                            address={entry.donor}
+                            address={leaderboard[0].donor}
                             truncateLength={4}
                             showCopy={false}
                             showExplorer={false}
                             size="sm"
                           />
-                        </HStack>
-                        <CombinedAmountDisplay
-                          stxAmount={entry.total_stx}
-                          sbtcAmount={entry.total_sbtc}
-                          stxPrice={prices?.stx}
-                          sbtcPrice={prices?.sbtc}
-                          size="sm"
-                        />
-                      </HStack>
-                    ))}
+                        </Box>
+                      </Box>
+                      <CombinedAmountDisplay
+                        stxAmount={leaderboard[0].total_stx}
+                        sbtcAmount={leaderboard[0].total_sbtc}
+                        stxPrice={prices?.stx}
+                        sbtcPrice={prices?.sbtc}
+                        size="sm"
+                      />
+                    </HStack>
+
+                    {/* Remaining ranks */}
+                    {leaderboard.length > 1 && (
+                      <VStack spacing={0} align="stretch">
+                        {leaderboard.slice(1).map((entry, i) => (
+                          <HStack
+                            key={entry.donor}
+                            justify="space-between"
+                            align="center"
+                            spacing={3}
+                            py={2.5}
+                            borderTopWidth="1px"
+                            borderTopColor="border.subtle"
+                          >
+                            <HStack spacing={3} minW={0}>
+                              <Text
+                                fontFamily="mono"
+                                fontSize="xs"
+                                fontWeight="700"
+                                color="text.tertiary"
+                                minW="16px"
+                                textAlign="center"
+                              >
+                                {i + 2}
+                              </Text>
+                              <WalletIdenticon address={entry.donor} size={24} />
+                              <AddressDisplay
+                                address={entry.donor}
+                                truncateLength={4}
+                                showCopy={false}
+                                showExplorer={false}
+                                size="sm"
+                              />
+                            </HStack>
+                            <CombinedAmountDisplay
+                              stxAmount={entry.total_stx}
+                              sbtcAmount={entry.total_sbtc}
+                              stxPrice={prices?.stx}
+                              sbtcPrice={prices?.sbtc}
+                              size="sm"
+                            />
+                          </HStack>
+                        ))}
+                      </VStack>
+                    )}
                   </VStack>
                 )}
               </CardBody>
