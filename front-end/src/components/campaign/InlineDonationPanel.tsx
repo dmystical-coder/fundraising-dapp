@@ -272,7 +272,7 @@ export function InlineDonationPanel({
           onFinish: (data) => doSuccess(data.txId),
           onCancel: () => {
             toast.info("Cancelled", {
-              description: "Transaction was cancelled",
+              description: "No problem — nothing was sent.",
               duration: 3000,
             });
             setIsLoading(false);
@@ -289,7 +289,7 @@ export function InlineDonationPanel({
           : e instanceof Error
           ? e.message
           : "Failed to make contribution";
-      toast.error(e instanceof FundstacksError ? "Invalid donation" : "Error", {
+      toast.error(e instanceof FundstacksError ? "Invalid donation" : "That didn't go through", {
         description,
       });
       setIsLoading(false);
@@ -381,8 +381,8 @@ export function InlineDonationPanel({
       }
     } catch (e) {
       console.error(e);
-      toast.error("Refund failed", {
-        description: e instanceof Error ? e.message : "Could not process refund",
+      toast.error("Refund didn't go through", {
+        description: e instanceof Error ? e.message : "Please try again in a moment.",
       });
       setRefundLoading(false);
     }

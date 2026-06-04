@@ -45,8 +45,8 @@ export default function useTransactionExecuter() {
             doSuccessToast(data.txId);
           },
           onCancel: () => {
-            toast.info("Transaction not submitted", {
-              description: "Transaction was cancelled",
+            toast.info("Cancelled", {
+              description: "No problem — nothing was sent.",
               duration: 3000,
             });
           },
@@ -54,7 +54,7 @@ export default function useTransactionExecuter() {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Error", {
+      toast.error("That didn't go through", {
         description: errorMessage,
       });
       return false;

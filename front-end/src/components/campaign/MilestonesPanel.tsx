@@ -142,7 +142,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
         ...txOptions,
         onFinish: (data) => onSuccess(data.txId),
         onCancel: () =>
-          toast.info("Cancelled", { description: "Transaction was cancelled" }),
+          toast.info("Cancelled", { description: "No problem — nothing was sent." }),
       });
     }
   };
@@ -165,7 +165,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
       );
     } catch (e) {
       console.error(e);
-      toast.error("Could not create milestones", {
+      toast.error("Couldn't set up milestones", {
         description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
@@ -183,7 +183,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
       );
     } catch (e) {
       console.error(e);
-      toast.error("Could not submit vote", {
+      toast.error("Couldn't submit your vote", {
         description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
@@ -201,7 +201,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
       );
     } catch (e) {
       console.error(e);
-      toast.error("Could not claim tranche", {
+      toast.error("Couldn't claim that tranche", {
         description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
