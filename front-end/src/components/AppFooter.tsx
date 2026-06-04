@@ -141,8 +141,8 @@ export function AppFooter() {
                 </Text>
               </Link>
               <Text fontSize="sm" color="text.secondary" lineHeight="1.7">
-                Raise funds in STX and sBTC. Transparent, on-chain crowdfunding
-                built on the Stacks blockchain — secured by Bitcoin.
+                Fund what matters, together. Raise or give in STX and sBTC —
+                transparent, on-chain, and secured by Bitcoin.
               </Text>
             </VStack>
           </GridItem>
