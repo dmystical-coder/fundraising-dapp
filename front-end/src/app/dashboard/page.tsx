@@ -383,7 +383,7 @@ export default function DashboardPage() {
             variant="ghost"
             justifyContent="flex-start"
             borderRadius="lg"
-            h="44px"
+            h="40px"
             px={3}
             bg={isActive ? "bg.accentSubtle" : "transparent"}
             color={isActive ? "primary.700" : "text.secondary"}
@@ -395,14 +395,14 @@ export default function DashboardPage() {
           </Button>
         );
       })}
-      <Divider my={2} />
+      <Divider my={1.5} />
       <Button
         as={Link}
-        href="/"
+        href="/campaigns"
         variant="ghost"
         justifyContent="flex-start"
         borderRadius="lg"
-        h="44px"
+        h="40px"
         px={3}
         color="text.secondary"
         fontWeight="500"
@@ -416,6 +416,8 @@ export default function DashboardPage() {
   const addressChip = (
     <HStack
       spacing={2}
+      w="fit-content"
+      maxW="full"
       borderWidth="1px"
       borderColor="border.default"
       borderRadius="full"
@@ -511,7 +513,7 @@ export default function DashboardPage() {
                           {supportedCampaignIds.length} campaign{supportedCampaignIds.length === 1 ? "" : "s"} backed
                         </Text>
                       ) : (
-                        <ChakraLink as={Link} href="/" fontSize="xs" color="secondary.600" fontWeight="600" mt={1} display="inline-block">
+                        <ChakraLink as={Link} href="/campaigns" fontSize="xs" color="secondary.600" fontWeight="600" mt={1} display="inline-block">
                           Back a campaign →
                         </ChakraLink>
                       )}
@@ -654,7 +656,7 @@ export default function DashboardPage() {
                   ) : donations.length === 0 ? (
                     <VStack spacing={2} py={4} align="center">
                       <Text fontSize="sm" color="text.secondary">No donations yet.</Text>
-                      <Button as={Link} href="/" size="sm" colorScheme="primary" borderRadius="full" fontWeight="700">
+                      <Button as={Link} href="/campaigns" size="sm" colorScheme="primary" borderRadius="full" fontWeight="700">
                         Browse campaigns
                       </Button>
                     </VStack>
@@ -840,7 +842,7 @@ export default function DashboardPage() {
                     <Text color="text.secondary" fontSize="sm" maxW="300px">
                       You haven&apos;t made any donations yet.
                     </Text>
-                    <Button as={Link} href="/" colorScheme="primary" borderRadius="full" fontWeight="700">
+                    <Button as={Link} href="/campaigns" colorScheme="primary" borderRadius="full" fontWeight="700">
                       Browse Campaigns
                     </Button>
                   </VStack>
@@ -933,9 +935,7 @@ export default function DashboardPage() {
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
-          <Box px={5} pt={5} pb={3}>{addressChip}</Box>
-          <Divider />
-          <DrawerBody py={3}>{navList}</DrawerBody>
+          <DrawerBody pt={14} pb={4}>{navList}</DrawerBody>
         </DrawerContent>
       </Drawer>
     </Box>
