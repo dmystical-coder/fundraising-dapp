@@ -1,7 +1,8 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { Box, Button, Container, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Container, Heading, HStack, Text, VStack } from "@chakra-ui/react";
+import { WarningTwoIcon } from "@chakra-ui/icons";
 
 interface Props {
   children: ReactNode;
@@ -29,8 +30,8 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <Container maxW="container.md" py={20}>
-          <VStack spacing={6} textAlign="center">
+        <Container maxW="container.md" py={{ base: 16, md: 24 }}>
+          <VStack spacing={6} textAlign="center" align="center">
             <Box
               w={16}
               h={16}
@@ -39,22 +40,26 @@ export class ErrorBoundary extends Component<Props, State> {
               display="flex"
               alignItems="center"
               justifyContent="center"
-              mx="auto"
             >
-              <Text fontSize="2xl">⚠️</Text>
+              <WarningTwoIcon boxSize={7} color="error.600" />
             </Box>
-            <Heading size="lg" color="chakra-body-text">
-              Something went wrong
-            </Heading>
-            <Text color="text.secondary" maxW="400px">
-              An unexpected error occurred. Please try refreshing the page.
-            </Text>
+            <VStack spacing={3}>
+              <Heading size="xl" color="text.primary">
+                Something went wrong
+              </Heading>
+              <Text color="text.secondary" maxW="md" fontSize="md" lineHeight="1.6">
+                An unexpected error occurred. Please try refreshing the page.
+              </Text>
+            </VStack>
             {this.state.error && (
               <Box
-                bg="warm.muted"
-                p={4}
+                bg="bg.surfaceAlt"
+                borderWidth="1px"
+                borderColor="border.default"
                 borderRadius="lg"
-                maxW="100%"
+                px={4}
+                py={3}
+                maxW="full"
                 overflow="auto"
               >
                 <Text fontSize="sm" fontFamily="mono" color="error.600">
@@ -62,15 +67,31 @@ export class ErrorBoundary extends Component<Props, State> {
                 </Text>
               </Box>
             )}
-            <Button
-              colorScheme="primary"
-              onClick={() => {
-                this.setState({ hasError: false, error: undefined });
-                window.location.reload();
-              }}
-            >
-              Refresh Page
-            </Button>
+            <HStack spacing={3} flexWrap="wrap" justify="center">
+              <Button
+                colorScheme="primary"
+                borderRadius="full"
+                fontWeight="700"
+                onClick={() => {
+                  this.setState({ hasError: false, error: undefined });
+                  window.location.reload();
+                }}
+              >
+                Refresh Page
+              </Button>
+              <Button
+                as="a"
+                href="/"
+                variant="outline"
+                borderRadius="full"
+                fontWeight="700"
+                borderColor="border.default"
+                color="text.primary"
+                _hover={{ bg: "bg.surfaceAlt" }}
+              >
+                Back to home
+              </Button>
+            </HStack>
           </VStack>
         </Container>
       );

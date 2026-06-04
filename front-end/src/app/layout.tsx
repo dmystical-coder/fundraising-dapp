@@ -49,7 +49,19 @@ export default function RootLayout({
             <AppFooter />
           </Box>
         </Providers>
-        <Toaster richColors position="top-right" />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          toastOptions={{
+            style: {
+              borderRadius: "14px",
+              border: "1px solid rgba(15,23,43,0.08)",
+              fontFamily: "var(--font-inter), 'Inter', sans-serif",
+              fontSize: "14px",
+            },
+          }}
+        />
       </body>
     </html>
   );
