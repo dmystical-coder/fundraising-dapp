@@ -598,7 +598,7 @@ export default function CreateCampaignPage() {
           {!address ? (
             <VStack spacing={4} py={8} textAlign="center">
               <Text color="text.secondary" mb={4}>
-                Connect your wallet to create a campaign
+                Connect a Stacks wallet to start your campaign — it only takes a second.
               </Text>
               <ConnectWallet />
             </VStack>

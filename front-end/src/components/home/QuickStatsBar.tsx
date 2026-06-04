@@ -169,9 +169,9 @@ export function QuickStatsBar() {
           >
             <AlertIcon mt={{ base: "2px", md: 0 }} />
             <Box flex="1">
-              <AlertTitle fontSize="sm">Unable to load platform metrics.</AlertTitle>
+              <AlertTitle fontSize="sm">Couldn&apos;t load the stats.</AlertTitle>
               <AlertDescription fontSize="sm">
-                Stats could not be fetched from the indexer. Try again.
+                We couldn&apos;t reach the indexer just now — give it a moment and try again.
               </AlertDescription>
               {statsError ? (
                 <Text fontSize="xs" color="text.tertiary" mt={1}>
