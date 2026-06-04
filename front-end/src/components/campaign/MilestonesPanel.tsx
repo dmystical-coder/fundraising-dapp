@@ -244,8 +244,8 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
         <CardBody pt={0}>
           <VStack spacing={3} align="stretch">
             <Text fontSize="sm" color="text.secondary">
-              Lock a portion of your raised funds. Donors vote to release each
-              tranche as you deliver on your commitments.
+              Lock up some of your own STX. Donors then vote to release it
+              tranche by tranche as you hit your milestones.
             </Text>
             <FormControl>
               <FormLabel fontSize="xs" color="text.secondary" mb={1}>
