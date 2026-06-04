@@ -406,7 +406,7 @@ export default function CampaignDetailPage() {
                     borderColor="border.default"
                   >
                     <VStack spacing={0}>
-                      <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
+                      <Text fontWeight="700" fontSize="xl" color="text.primary">
                         {campaign.donationCount}
                       </Text>
                       <Text fontSize="sm" color="text.secondary">
@@ -415,7 +415,7 @@ export default function CampaignDetailPage() {
                     </VStack>
                     <Divider orientation="vertical" h="40px" />
                     <VStack spacing={0}>
-                      <Text fontWeight="700" fontSize="xl" color="chakra-body-text">
+                      <Text fontWeight="700" fontSize="xl" color="text.primary">
                         {(() => {
                           if (!campaign.endAt) return "Ongoing";
                           const secs = campaign.endAt - campaign.createdAt;

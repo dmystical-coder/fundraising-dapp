@@ -48,7 +48,7 @@ function StatCard({
   helpText,
   isLoading = false,
   isError = false,
-  color = "chakra-body-text",
+  color = "text.primary",
   accent = false,
 }: StatCardProps) {
   const cardMinHeight = { base: "118px", md: "124px" };
