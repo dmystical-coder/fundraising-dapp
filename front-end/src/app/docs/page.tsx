@@ -142,13 +142,13 @@ function InfoCard({
 }) {
   return (
     <Box
-      bg="surfaceBg"
+      bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
-      borderRadius="surface"
+      borderRadius="2xl"
       p={{ base: 5, md: 6 }}
       transition="border-color 0.15s ease, box-shadow 0.15s ease"
-      _hover={{ borderColor: "border.accent", boxShadow: "card" }}
+      _hover={{ borderColor: "border.accent", boxShadow: "0 1px 2px rgba(15,23,43,0.04)" }}
     >
       <Heading
         as="h3"
@@ -247,7 +247,7 @@ const SYN = {
 function CodeCard({ children }: { children: React.ReactNode }) {
   return (
     <Box
-      bg="surfaceBg"
+      bg="bg.surface"
       borderWidth="1px"
       borderColor="border.subtle"
       borderRadius="lg"
@@ -277,7 +277,7 @@ interface FnDef {
 function FunctionCard({ fn }: { fn: FnDef }) {
   return (
     <Box
-      bg="surfaceBg"
+      bg="bg.surface"
       borderWidth="1px"
       borderColor="border.default"
       borderRadius="lg"
@@ -395,7 +395,7 @@ export default function DocsPage() {
               px={3}
               py={1}
               borderRadius="full"
-              bg="surfaceBg"
+              bg="bg.surface"
               borderWidth="1px"
               borderColor="border.accent"
             >
@@ -449,7 +449,7 @@ export default function DocsPage() {
                     fontSize: "13px",
                     fontWeight: 600,
                     color: "text.secondary",
-                    bg: "surfaceBg",
+                    bg: "bg.surface",
                     borderWidth: "1px",
                     borderColor: "border.default",
                     borderRadius: "full",
@@ -651,10 +651,10 @@ export default function DocsPage() {
             >
               {/* Architecture table */}
               <Box
-                bg="surfaceBg"
+                bg="bg.surface"
                 borderWidth="1px"
                 borderColor="border.default"
-                borderRadius="surface"
+                borderRadius="2xl"
                 overflow="hidden"
               >
                 <Box
@@ -785,11 +785,11 @@ export default function DocsPage() {
             {/* Closing CTA */}
             <Box
               mt={{ base: 14, md: 20 }}
-              bg="surfaceBg"
+              bg="bg.surface"
               borderWidth="1px"
               borderColor="border.default"
-              borderRadius="surface"
-              boxShadow="card"
+              borderRadius="2xl"
+              boxShadow="0 1px 2px rgba(15,23,43,0.04)"
               p={{ base: 6, md: 9 }}
             >
               <Stack
