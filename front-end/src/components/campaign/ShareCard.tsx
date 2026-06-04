@@ -61,7 +61,7 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
   const whatsappUrl = `https://wa.me/?text=${shareText}%20${shareUrl}`;
 
   return (
-    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="2xl" boxShadow="0 1px 2px rgba(15,23,43,0.04)">
       <CardHeader pb={2}>
         <Heading size="md">Share Campaign</Heading>
       </CardHeader>
@@ -76,8 +76,9 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
             flex={1}
             size="md"
             variant="outline"
+            borderRadius="full"
             borderColor="border.default"
-            color="chakra-body-text"
+            color="text.primary"
             aria-label="Share on X"
             transition="all 0.15s"
             _hover={{ bg: "black", color: "white", borderColor: "black" }}
@@ -94,8 +95,9 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
             flex={1}
             size="md"
             variant="outline"
+            borderRadius="full"
             borderColor="border.default"
-            color="chakra-body-text"
+            color="text.primary"
             aria-label="Share on WhatsApp"
             transition="all 0.15s"
             _hover={{ bg: "#25D366", color: "white", borderColor: "#25D366" }}
@@ -109,8 +111,9 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
             flex={1}
             size="md"
             variant="outline"
+            borderRadius="full"
             borderColor={hasCopied ? "success.300" : "border.default"}
-            color={hasCopied ? "success.600" : "chakra-body-text"}
+            color={hasCopied ? "success.600" : "text.primary"}
             aria-label="Copy campaign link"
             transition="all 0.15s"
             _hover={

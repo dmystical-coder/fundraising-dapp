@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import {
+  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
   Heading,
+  HStack,
   Skeleton,
   Text,
   VStack,
@@ -32,11 +34,42 @@ interface RewardsPanelProps {
   campaignId: number;
 }
 
+const CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
+
 function formatFstr(microFstr: bigint): string {
   const fstr = Number(microFstr) / Number(MICRO_FSTR_PER_FSTR);
   if (fstr >= 1000) return fstr.toFixed(0);
   if (fstr >= 1) return fstr.toFixed(2);
   return fstr.toFixed(4);
+}
+
+// FSTR token coin glyph.
+function CoinGlyph({ tone = "primary" }: { tone?: "primary" | "success" }) {
+  return (
+    <Box
+      w="40px"
+      h="40px"
+      borderRadius="full"
+      bg={tone === "success" ? "success.500" : "primary.500"}
+      color="text.inverse"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      fontFamily="mono"
+      fontWeight="800"
+      fontSize="lg"
+      flexShrink={0}
+      boxShadow="inset 0 0 0 2px rgba(255,255,255,0.25)"
+    >
+      F
+    </Box>
+  );
 }
 
 export function RewardsPanel({ campaignId }: RewardsPanelProps) {
@@ -50,12 +83,12 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
   if (!donor) return null;
   if (isLoading) {
     return (
-      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+      <Card {...CARD}>
         <CardHeader pb={2}>
           <Heading size="md">FSTR Rewards</Heading>
         </CardHeader>
         <CardBody pt={0}>
-          <Skeleton height="60px" borderRadius="md" />
+          <Skeleton height="84px" borderRadius="xl" />
         </CardBody>
       </Card>
     );
@@ -98,27 +131,53 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
   };
 
   return (
-    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+    <Card {...CARD}>
       <CardHeader pb={2}>
         <Heading size="md">FSTR Rewards</Heading>
       </CardHeader>
       <CardBody pt={0}>
         {state.status === "claimable" && (
           <VStack align="stretch" spacing={3}>
-            <Text fontSize="sm" color="text.secondary">
-              You&apos;ll earn{" "}
-              <Text as="span" fontWeight="semibold" color="text.primary">
-                ~{formatFstr(state.previewTokens)} FSTR
-              </Text>{" "}
-              for supporting this campaign early.
-            </Text>
+            {/* Reward coin card */}
+            <HStack
+              spacing={3}
+              align="center"
+              p={4}
+              bg="bg.accentSubtle"
+              borderWidth="1px"
+              borderColor="border.accent"
+              borderRadius="xl"
+            >
+              <CoinGlyph />
+              <Box minW={0}>
+                <Text
+                  fontSize="11px"
+                  fontWeight="700"
+                  letterSpacing="0.08em"
+                  textTransform="uppercase"
+                  color="text.tertiary"
+                >
+                  You&apos;ll earn
+                </Text>
+                <Text fontWeight="800" color="primary.600" fontSize="2xl" lineHeight="1.1">
+                  ~{formatFstr(state.previewTokens)}
+                  <Text as="span" fontSize="sm" fontWeight="600" color="text.secondary" ml={1}>
+                    FSTR
+                  </Text>
+                </Text>
+              </Box>
+            </HStack>
+
             <Text fontSize="xs" color="text.tertiary">
-              Rate scales with funding progress — the earlier you claim, the
-              more you earn per STX donated.
+              Rate scales with funding progress — the earlier you claim, the more
+              you earn per STX donated.
             </Text>
+
             <Button
               colorScheme="primary"
               size="md"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleEarn}
               isLoading={isSubmitting}
             >
@@ -128,18 +187,37 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
         )}
 
         {state.status === "claimed" && (
-          <VStack align="stretch" spacing={1}>
-            <Text fontSize="sm" color="text.secondary">
-              You&apos;ve claimed{" "}
-              <Text as="span" fontWeight="semibold" color="text.primary">
-                {formatFstr(state.claimedTokens)} FSTR
-              </Text>{" "}
-              for this campaign.
-            </Text>
-            <Text fontSize="xs" color="text.tertiary">
-              FSTR is in your wallet.
-            </Text>
-          </VStack>
+          <HStack
+            spacing={3}
+            align="center"
+            p={4}
+            bg="success.50"
+            borderWidth="1px"
+            borderColor="success.200"
+            borderRadius="xl"
+          >
+            <CoinGlyph tone="success" />
+            <Box minW={0}>
+              <Text
+                fontSize="11px"
+                fontWeight="700"
+                letterSpacing="0.08em"
+                textTransform="uppercase"
+                color="success.700"
+              >
+                Claimed
+              </Text>
+              <Text fontWeight="800" color="success.700" fontSize="xl" lineHeight="1.1">
+                {formatFstr(state.claimedTokens)}
+                <Text as="span" fontSize="sm" fontWeight="600" color="success.600" ml={1}>
+                  FSTR
+                </Text>
+              </Text>
+              <Text fontSize="xs" color="text.tertiary">
+                In your wallet
+              </Text>
+            </Box>
+          </HStack>
         )}
       </CardBody>
     </Card>

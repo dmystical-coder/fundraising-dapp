@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
-  Badge,
+  Box,
   Button,
   Card,
   CardBody,
@@ -13,6 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { LockIcon } from "@chakra-ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -21,7 +22,14 @@ import {
   BADGE_QUERY_PREFIX,
   useBadgeClaimState,
 } from "@/hooks/donorBadgeQueries";
-import { BadgeTier, tierLabel } from "@/lib/donor-badges-reads";
+import {
+  BadgeTier,
+  TIER_BRONZE,
+  TIER_SILVER,
+  TIER_GOLD,
+  tierForAmount,
+  tierLabel,
+} from "@/lib/donor-badges-reads";
 import { buildClaimBadgeTx } from "@/lib/build-claim-badge-tx";
 import {
   executeContractCall,
@@ -34,38 +42,122 @@ interface DonorBadgePanelProps {
   campaignId: number;
 }
 
-const TIER_COLOR_SCHEME: Record<string, string> = {
-  bronze: "orange",
-  silver: "gray",
-  gold: "yellow",
-};
+const CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
 
-function TierBadge({ tier }: { tier: BadgeTier }) {
-  const label = tierLabel(tier);
-  if (label === "none") return null;
-  const scheme = TIER_COLOR_SCHEME[label];
-  return (
-    <Badge
-      colorScheme={scheme}
-      variant="solid"
-      fontSize="sm"
-      px={3}
-      py={1}
-      borderRadius="full"
-      textTransform="capitalize"
-    >
-      {label}
-    </Badge>
-  );
-}
+const TIER_STEPS = [
+  { tier: TIER_BRONZE, label: "Bronze", stx: 1 },
+  { tier: TIER_SILVER, label: "Silver", stx: 10 },
+  { tier: TIER_GOLD, label: "Gold", stx: 100 },
+] as const;
 
-// Render a clean STX number from microSTX (no currency conversion -- this
-// is the contract's tier-input value, not USD).
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function formatStx(microStx: bigint): string {
   const stx = Number(microStx) / 1_000_000;
   if (stx >= 100) return stx.toFixed(0);
   if (stx >= 1) return stx.toFixed(2);
   return stx.toFixed(4);
+}
+
+// How much more is needed to reach the next tier, or null at the top tier.
+function nextTier(stx: number): { label: string; remaining: number } | null {
+  if (stx < 1) return { label: "Bronze", remaining: 1 - stx };
+  if (stx < 10) return { label: "Silver", remaining: 10 - stx };
+  if (stx < 100) return { label: "Gold", remaining: 100 - stx };
+  return null;
+}
+
+// ─── Hero medallion: badge art on a soft lavender radial ─────────────────────
+function Medallion({
+  label,
+  dim,
+  size = 96,
+}: {
+  label: "none" | "bronze" | "silver" | "gold";
+  dim?: boolean;
+  size?: number;
+}) {
+  return (
+    <Box
+      w={`${size}px`}
+      h={`${size}px`}
+      borderRadius="full"
+      mx="auto"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="bg.accentSubtle"
+      borderWidth="1px"
+      borderColor="border.accent"
+      sx={{
+        backgroundImage:
+          "radial-gradient(circle at 50% 32%, var(--chakra-colors-primary-100), transparent 70%)",
+      }}
+    >
+      {label === "none" ? (
+        <LockIcon boxSize={6} color="primary.400" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/badges/${label}.svg`}
+          alt={`${label} donor badge`}
+          width={Math.round(size * 0.66)}
+          style={dim ? { opacity: 0.55 } : undefined}
+        />
+      )}
+    </Box>
+  );
+}
+
+// ─── Bronze → Silver → Gold ladder with the donor's current standing ─────────
+function TierLadder({ qualified }: { qualified: BadgeTier }) {
+  return (
+    <HStack spacing={0} align="flex-start" w="100%" px={1}>
+      {TIER_STEPS.map((step, i) => {
+        const reached = qualified >= step.tier;
+        return (
+          <Fragment key={step.label}>
+            {i > 0 && (
+              <Box
+                flex="1"
+                h="2px"
+                mt="6px"
+                bg={reached ? "primary.400" : "border.default"}
+              />
+            )}
+            <VStack spacing={1} flexShrink={0} minW="48px">
+              <Box
+                w="14px"
+                h="14px"
+                borderRadius="full"
+                bg={reached ? "primary.500" : "bg.surface"}
+                borderWidth="2px"
+                borderColor={reached ? "primary.500" : "border.default"}
+              />
+              <Text
+                fontSize="10px"
+                fontWeight="700"
+                textTransform="uppercase"
+                letterSpacing="0.04em"
+                color={reached ? "primary.700" : "text.tertiary"}
+              >
+                {step.label}
+              </Text>
+              <Text fontSize="10px" color="text.tertiary" mt="-1">
+                {step.stx} STX
+              </Text>
+            </VStack>
+          </Fragment>
+        );
+      })}
+    </HStack>
+  );
 }
 
 export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
@@ -77,17 +169,16 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
   const { data: state, isLoading } = useBadgeClaimState(campaignId, donor);
 
   // Hide the panel entirely when there's nothing useful to show: no wallet
-  // connected, or wallet connected but hasn't donated yet. Avoids cluttering
-  // the sidebar for visitors browsing campaigns.
+  // connected, or wallet connected but hasn't donated yet.
   if (!donor) return null;
   if (isLoading) {
     return (
-      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+      <Card {...CARD}>
         <CardHeader pb={2}>
           <Heading size="md">Donor Badge</Heading>
         </CardHeader>
         <CardBody pt={0}>
-          <Skeleton height="80px" borderRadius="md" />
+          <Skeleton height="160px" borderRadius="xl" />
         </CardBody>
       </Card>
     );
@@ -134,98 +225,84 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
     }
   };
 
+  // ── Derive the unified medallion + ladder presentation ──────────────────
+  const stxNum = Number(state.donatedStxEquivalent) / 1_000_000;
+  const qualified = tierForAmount(state.donatedStxEquivalent);
+  const next = nextTier(stxNum);
+
+  let medallion: "none" | "bronze" | "silver" | "gold" = "none";
+  let dim = false;
+  let headline = "";
+  let sub = "";
+  let cta: { label: string; tier: BadgeTier } | null = null;
+
+  if (state.status === "not-eligible") {
+    medallion = "none";
+    headline = "Not yet eligible";
+    sub = `${formatStx(state.donatedStxEquivalent)} STX donated`;
+  } else if (state.status === "claimable") {
+    medallion = tierLabel(state.previewTier);
+    dim = true;
+    headline = `Qualifies for ${cap(tierLabel(state.previewTier))}`;
+    sub = `${formatStx(state.donatedStxEquivalent)} STX donated`;
+    cta = { label: `Claim ${cap(tierLabel(state.previewTier))} badge`, tier: state.previewTier };
+  } else if (state.status === "claimed") {
+    medallion = tierLabel(state.metadata.tier);
+    headline = `You're ${cap(tierLabel(state.metadata.tier))}`;
+    sub = `Token #${state.metadata.tokenId.toString()} · soulbound`;
+  } else {
+    // upgradeable
+    medallion = tierLabel(state.previewTier);
+    headline = "Upgrade available";
+    sub = `Now ${cap(tierLabel(state.metadata.tier))} · ${formatStx(state.donatedStxEquivalent)} STX donated`;
+    cta = { label: `Upgrade to ${cap(tierLabel(state.previewTier))}`, tier: state.previewTier };
+  }
+
   return (
-    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+    <Card {...CARD}>
       <CardHeader pb={2}>
         <Heading size="md">Donor Badge</Heading>
       </CardHeader>
       <CardBody pt={0}>
-        {state.status === "not-eligible" && (
-          <VStack align="stretch" spacing={2}>
-            <Text fontSize="sm" color="text.secondary">
-              You&apos;ve donated {formatStx(state.donatedStxEquivalent)} STX equivalent. Donate at
-              least 1 STX to earn a Bronze badge.
+        <VStack align="stretch" spacing={4}>
+          <Medallion label={medallion} dim={dim} />
+
+          <VStack spacing={0.5}>
+            <Text fontWeight="700" color="text.primary" textAlign="center">
+              {headline}
             </Text>
-            <Text fontSize="xs" color="text.tertiary">
-              Tiers: Bronze ≥ 1 STX · Silver ≥ 10 STX · Gold ≥ 100 STX
+            <Text fontSize="sm" color="text.secondary" textAlign="center">
+              {sub}
             </Text>
           </VStack>
-        )}
 
-        {state.status === "claimable" && (
-          <VStack align="stretch" spacing={3}>
-            <VStack align="center" pt={1}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/badges/${tierLabel(state.previewTier)}.svg`}
-                alt={`${tierLabel(state.previewTier)} donor badge`}
-                width={72}
-                style={{ opacity: 0.55 }}
-              />
-            </VStack>
+          <TierLadder qualified={qualified} />
+
+          <Text fontSize="xs" color="text.tertiary" textAlign="center">
+            {next
+              ? `${next.remaining.toFixed(2)} STX to ${next.label}`
+              : "Top tier reached — Gold"}
+          </Text>
+
+          {cta && (
+            <Button
+              colorScheme="primary"
+              size="md"
+              borderRadius="full"
+              fontWeight="700"
+              onClick={() => handleClaim(cta.tier)}
+              isLoading={isSubmitting}
+            >
+              {cta.label}
+            </Button>
+          )}
+
+          {state.status === "claimed" && (
             <Text fontSize="xs" color="text.tertiary" textAlign="center">
               Soulbound NFT · non-transferable · proves you supported this campaign
             </Text>
-            <Button
-              colorScheme="primary"
-              size="md"
-              onClick={() => handleClaim(state.previewTier)}
-              isLoading={isSubmitting}
-            >
-              Claim {tierLabel(state.previewTier)} badge
-            </Button>
-          </VStack>
-        )}
-
-        {state.status === "claimed" && (
-          <VStack align="center" spacing={2} pt={1}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/badges/${tierLabel(state.metadata.tier)}.svg`}
-              alt={`${tierLabel(state.metadata.tier)} donor badge`}
-              width={88}
-            />
-            <Text fontSize="xs" color="text.tertiary">
-              Token #{state.metadata.tokenId.toString()} · soulbound
-            </Text>
-          </VStack>
-        )}
-
-        {state.status === "upgradeable" && (
-          <VStack align="stretch" spacing={3}>
-            <HStack justify="center" spacing={4}>
-              <VStack spacing={1}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/badges/${tierLabel(state.metadata.tier)}.svg`}
-                  alt={`current ${tierLabel(state.metadata.tier)} badge`}
-                  width={56}
-                  style={{ opacity: 0.65 }}
-                />
-                <TierBadge tier={state.metadata.tier} />
-              </VStack>
-              <Text fontSize="xl" color="text.secondary" mt={2}>→</Text>
-              <VStack spacing={1}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/badges/${tierLabel(state.previewTier)}.svg`}
-                  alt={`${tierLabel(state.previewTier)} badge`}
-                  width={56}
-                />
-                <TierBadge tier={state.previewTier} />
-              </VStack>
-            </HStack>
-            <Button
-              colorScheme="primary"
-              size="md"
-              onClick={() => handleClaim(state.previewTier)}
-              isLoading={isSubmitting}
-            >
-              Upgrade to {tierLabel(state.previewTier)}
-            </Button>
-          </VStack>
-        )}
-
+          )}
+        </VStack>
       </CardBody>
     </Card>
   );
