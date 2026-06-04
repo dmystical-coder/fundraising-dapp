@@ -14,7 +14,6 @@ import {
   Heading,
   HStack,
   Input,
-  Progress,
   Select,
   Skeleton,
   Text,
@@ -45,6 +44,14 @@ interface MilestonesPanelProps {
   isOwner: boolean;
 }
 
+const CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
+
 function formatStx(microStx: bigint): string {
   const stx = Number(microStx) / 1_000_000;
   if (stx >= 100) return stx.toFixed(0);
@@ -52,31 +59,49 @@ function formatStx(microStx: bigint): string {
   return stx.toFixed(4);
 }
 
-function TrancheStatus({
-  voteWeight,
-  threshold,
-  claimed,
-}: {
-  voteWeight: bigint;
-  threshold: bigint;
-  claimed: boolean;
-}) {
-  if (claimed)
-    return (
-      <Badge colorScheme="gray" variant="subtle" borderRadius="full" px={2} fontSize="xs">
-        Claimed
-      </Badge>
-    );
-  if (threshold > BigInt(0) && voteWeight >= threshold)
-    return (
-      <Badge colorScheme="green" variant="subtle" borderRadius="full" px={2} fontSize="xs">
-        Ready
-      </Badge>
-    );
+// Status as a colored dot + label, sharing the tranche state's semantic color.
+function StatusTag({ claimed, ready }: { claimed: boolean; ready: boolean }) {
+  const { label, color } = claimed
+    ? { label: "Claimed", color: "text.tertiary" }
+    : ready
+    ? { label: "Ready", color: "success.600" }
+    : { label: "Pending", color: "warning.600" };
   return (
-    <Badge colorScheme="orange" variant="subtle" borderRadius="full" px={2} fontSize="xs">
-      Pending
-    </Badge>
+    <HStack spacing={1.5}>
+      <Box w="8px" h="8px" borderRadius="full" bg={color} flexShrink={0} />
+      <Text fontSize="xs" fontWeight="700" color={color}>
+        {label}
+      </Text>
+    </HStack>
+  );
+}
+
+// Vote-progress meter with quarter tick marks toward the release threshold.
+function MarkedBar({ pct, color }: { pct: number; color: string }) {
+  return (
+    <Box
+      position="relative"
+      w="100%"
+      h="8px"
+      borderRadius="full"
+      bg="bg.surface"
+      borderWidth="1px"
+      borderColor="border.default"
+      overflow="hidden"
+    >
+      <Box h="100%" w={`${pct}%`} minW={pct > 0 ? "6px" : "0"} borderRadius="full" bg={color} />
+      {[25, 50, 75].map((m) => (
+        <Box
+          key={m}
+          position="absolute"
+          top="0"
+          bottom="0"
+          left={`${m}%`}
+          w="1px"
+          bg="rgba(15,23,43,0.12)"
+        />
+      ))}
+    </Box>
   );
 }
 
@@ -186,12 +211,12 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
 
   if (escrowLoading) {
     return (
-      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+      <Card {...CARD}>
         <CardHeader pb={2}>
           <Heading size="md">Milestones</Heading>
         </CardHeader>
         <CardBody pt={0}>
-          <Skeleton height="80px" borderRadius="md" />
+          <Skeleton height="80px" borderRadius="xl" />
         </CardBody>
       </Card>
     );
@@ -212,7 +237,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
         : 0;
 
     return (
-      <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+      <Card {...CARD}>
         <CardHeader pb={2}>
           <Heading size="md">Milestones</Heading>
         </CardHeader>
@@ -233,7 +258,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                 placeholder="e.g. 100"
                 value={amountStx}
                 onChange={(e) => setAmountStx(e.target.value)}
-                borderRadius="md"
+                borderRadius="xl"
               />
             </FormControl>
             <FormControl>
@@ -244,7 +269,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                 size="sm"
                 value={trancheCount}
                 onChange={(e) => setTrancheCount(e.target.value)}
-                borderRadius="md"
+                borderRadius="xl"
               >
                 {[1, 2, 3, 4].map((n) => (
                   <option key={n} value={String(n)}>
@@ -264,7 +289,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                 placeholder="e.g. 50"
                 value={thresholdStx}
                 onChange={(e) => setThresholdStx(e.target.value)}
-                borderRadius="md"
+                borderRadius="xl"
               />
               <FormHelperText fontSize="xs" color="text.tertiary">
                 Total donor vote weight needed to unlock each tranche. Each
@@ -277,14 +302,16 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
               </Text>
             )}
             {dustStx > 0 && (
-              <Text fontSize="xs" color="orange.500">
+              <Text fontSize="xs" color="warning.600">
                 {dustStx.toFixed(6).replace(/\.?0+$/, "")} STX remainder will
                 be permanently locked as dust — use an evenly divisible amount.
               </Text>
             )}
             <Button
               colorScheme="primary"
-              size="sm"
+              size="md"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleCreate}
               isLoading={isCreating}
               isDisabled={!amountStx || !thresholdStx}
@@ -301,7 +328,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
   const threshold = escrow.releaseThreshold;
 
   return (
-    <Card bg="bg.surface" borderColor="border.default" borderWidth="1px" borderRadius="xl">
+    <Card {...CARD}>
       <CardHeader pb={2}>
         <HStack justify="space-between">
           <Heading size="md">Milestones</Heading>
@@ -311,9 +338,9 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
         </HStack>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={2} align="stretch">
+        <VStack spacing={2.5} align="stretch">
           {tranches.length === 0 ? (
-            <Skeleton height="52px" borderRadius="md" />
+            <Skeleton height="64px" borderRadius="xl" />
           ) : (
             tranches.map((t) => {
               const voteWeight = t.info?.voteWeight ?? BigInt(0);
@@ -338,14 +365,14 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
               return (
                 <Box
                   key={t.id}
-                  p={3}
+                  p={3.5}
                   bg="bg.surfaceAlt"
-                  borderRadius="lg"
+                  borderRadius="xl"
                   borderWidth="1px"
                   borderColor="border.default"
                 >
-                  <HStack justify="space-between" mb={2}>
-                    <HStack spacing={2}>
+                  <HStack justify="space-between" mb={2.5} align="center">
+                    <HStack spacing={2.5}>
                       <Text
                         fontSize="xs"
                         fontWeight="700"
@@ -354,16 +381,14 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                       >
                         #{t.id + 1}
                       </Text>
-                      <TrancheStatus
-                        voteWeight={voteWeight}
-                        threshold={threshold}
-                        claimed={claimed}
-                      />
+                      <StatusTag claimed={claimed} ready={isReady} />
                     </HStack>
                     {canClaim && (
                       <Button
                         size="xs"
                         colorScheme="primary"
+                        borderRadius="full"
+                        fontWeight="700"
                         isLoading={submittingTranche === t.id}
                         isDisabled={submittingTranche !== null}
                         onClick={() => handleClaim(t.id)}
@@ -376,6 +401,8 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                         size="xs"
                         variant="outline"
                         colorScheme="primary"
+                        borderRadius="full"
+                        fontWeight="700"
                         isLoading={submittingTranche === t.id}
                         isDisabled={submittingTranche !== null}
                         onClick={() => handleVote(t.id)}
@@ -395,25 +422,14 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
                       </Badge>
                     )}
                   </HStack>
-                  <Progress
-                    value={pct}
-                    size="xs"
-                    borderRadius="full"
-                    bg="bg.surface"
-                    sx={{
-                      "& > div": {
-                        bg: claimed
-                          ? "gray.400"
-                          : isReady
-                          ? "success.500"
-                          : "primary.500",
-                      },
-                    }}
-                    mb={1}
+                  <MarkedBar
+                    pct={pct}
+                    color={
+                      claimed ? "gray.400" : isReady ? "success.500" : "primary.500"
+                    }
                   />
-                  <Text fontSize="xs" color="text.tertiary">
-                    {formatStx(voteWeight)} / {formatStx(threshold)} STX
-                    approved
+                  <Text fontSize="xs" color="text.tertiary" mt={1.5}>
+                    {formatStx(voteWeight)} / {formatStx(threshold)} STX approved
                   </Text>
                 </Box>
               );
