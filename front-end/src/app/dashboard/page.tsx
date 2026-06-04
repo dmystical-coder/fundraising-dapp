@@ -4,22 +4,29 @@ import {
   Badge,
   Box,
   Button,
-  Card,
-  CardBody,
   Divider,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerOverlay,
   Grid,
   GridItem,
   Heading,
   HStack,
+  IconButton,
   Link as ChakraLink,
   Skeleton,
   SimpleGrid,
+  Stack,
+  StackDivider,
   Text,
+  useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, HamburgerIcon } from "@chakra-ui/icons";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet, useAddress } from "@/components/ConnectWallet";
@@ -35,6 +42,7 @@ import { isMainnetEnvironment } from "@/lib/contract-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { SimpleAddress } from "@/components/common/AddressDisplay";
+import { WalletIdenticon } from "@/components/common/WalletIdenticon";
 import { hasClaimed } from "@/lib/fundstacks-rewards-reads";
 import {
   getBadgeMetadata,
@@ -44,8 +52,30 @@ import {
   TIER_NONE,
 } from "@/lib/donor-badges-reads";
 
-type DashboardPanel = "campaigns" | "donations" | "settings";
+type DashboardPanel = "overview" | "campaigns" | "donations" | "settings";
 type CampaignFilter = "active" | "ended" | "all";
+
+const NAV_ITEMS: Array<{ id: DashboardPanel; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "campaigns", label: "My Campaigns" },
+  { id: "donations", label: "My Donations" },
+  { id: "settings", label: "Settings" },
+];
+
+const PANEL_COPY: Record<DashboardPanel, { title: string; sub: string }> = {
+  overview: { title: "Welcome back", sub: "Everything happening with your wallet, in one place." },
+  campaigns: { title: "My Campaigns", sub: "Manage the campaigns you've created." },
+  donations: { title: "My Donations", sub: "Track your contributions, rewards, and badges." },
+  settings: { title: "Settings", sub: "Account and dashboard preferences." },
+};
+
+const CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
 
 function parseRawAmount(value: number | string): number {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -53,9 +83,55 @@ function parseRawAmount(value: number | string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+const usd = (n: number) =>
+  `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+function MicroLabel({ children, color = "text.tertiary" }: { children: ReactNode; color?: string }) {
+  return (
+    <Text fontSize="11px" fontWeight="700" letterSpacing="0.08em" textTransform="uppercase" color={color}>
+      {children}
+    </Text>
+  );
+}
+
+function Tile({ children, ...rest }: { children: ReactNode } & Record<string, unknown>) {
+  return (
+    <Box {...CARD} p={5} {...rest}>
+      {children}
+    </Box>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  sub,
+  valueColor = "text.primary",
+}: {
+  label: string;
+  value: ReactNode;
+  sub?: string;
+  valueColor?: string;
+}) {
+  return (
+    <Tile p={4} h="100%">
+      <MicroLabel>{label}</MicroLabel>
+      <Text fontSize="2xl" fontWeight="800" color={valueColor} lineHeight="1.1" mt={1}>
+        {value}
+      </Text>
+      {sub && (
+        <Text fontSize="xs" color="text.tertiary" mt={1} noOfLines={1}>
+          {sub}
+        </Text>
+      )}
+    </Tile>
+  );
+}
+
 export default function DashboardPage() {
-  const [activePanel, setActivePanel] = useState<DashboardPanel>("campaigns");
+  const [activePanel, setActivePanel] = useState<DashboardPanel>("overview");
   const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>("active");
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const address = useAddress();
   const { data: prices } = useCurrentPrices();
@@ -225,6 +301,34 @@ export default function DashboardPage() {
     }, 0);
   }, [donations, prices]);
 
+  const activeCount = useMemo(
+    () => campaignsWithStatus.filter((c) => c.status === "active").length,
+    [campaignsWithStatus]
+  );
+
+  const fstrDisplay =
+    fstrBalance !== null && fstrBalance !== undefined
+      ? (Number(fstrBalance) / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })
+      : "0";
+
+  // Prioritized actions across both roles (withdraw / claim rewards / claim or upgrade badge).
+  const actionItems = useMemo(() => {
+    const items: Array<{ key: string; label: string; detail: string; href: string; cta: string; scheme: string }> = [];
+    endedAwaitingWithdrawal.forEach((c) =>
+      items.push({ key: `w-${c.campaign_id}`, label: "Withdraw available", detail: `Campaign #${c.campaign_id}`, href: `/campaigns/${c.campaign_id}`, cta: "Open", scheme: "primary" })
+    );
+    (donorEngagement?.claimableRewardCampaignIds ?? []).forEach((id) =>
+      items.push({ key: `r-${id}`, label: "Claim FSTR rewards", detail: `Campaign #${id}`, href: `/campaigns/${id}`, cta: "Claim", scheme: "green" })
+    );
+    (donorEngagement?.claimableBadgeCampaignIds ?? []).forEach((id) =>
+      items.push({ key: `b-${id}`, label: "Claim donor badge", detail: `Campaign #${id}`, href: `/campaigns/${id}`, cta: "Claim", scheme: "blue" })
+    );
+    (donorEngagement?.upgradableBadgeCampaignIds ?? []).forEach((id) =>
+      items.push({ key: `u-${id}`, label: "Upgrade badge tier", detail: `Campaign #${id}`, href: `/campaigns/${id}`, cta: "Upgrade", scheme: "orange" })
+    );
+    return items;
+  }, [endedAwaitingWithdrawal, donorEngagement]);
+
   if (!address) {
     return (
       <Box maxW="container.md" mx="auto" py={{ base: 10, md: 14 }} px={{ base: 4, md: 8 }}>
@@ -251,12 +355,11 @@ export default function DashboardPage() {
               </Badge>
             ) : null}
             <Text color="text.secondary" maxW="md" fontSize="md" lineHeight="1.6">
-              Connect your wallet to see your campaigns, donations, and activity in
-              one place.
+              Connect your wallet to see your campaigns, donations, and activity in one place.
             </Text>
             <Text fontSize="sm" color="text.tertiary" maxW="md">
-              Non-custodial — you approve actions in your wallet. FundStacks never
-              holds your keys or funds.
+              Non-custodial — you approve actions in your wallet. FundStacks never holds your keys
+              or funds.
             </Text>
           </VStack>
           <ConnectWallet size="lg" w={{ base: "full", sm: "auto" }} maxW="sm" />
@@ -265,211 +368,378 @@ export default function DashboardPage() {
     );
   }
 
+  const go = (panel: DashboardPanel) => {
+    setActivePanel(panel);
+    onClose();
+  };
+
+  const navList = (
+    <VStack align="stretch" spacing={1}>
+      {NAV_ITEMS.map((item) => {
+        const isActive = activePanel === item.id;
+        return (
+          <Button
+            key={item.id}
+            variant="ghost"
+            justifyContent="flex-start"
+            borderRadius="lg"
+            h="44px"
+            px={3}
+            bg={isActive ? "bg.accentSubtle" : "transparent"}
+            color={isActive ? "primary.700" : "text.secondary"}
+            fontWeight={isActive ? "700" : "500"}
+            _hover={{ bg: isActive ? "bg.accentSubtle" : "bg.surfaceAlt" }}
+            onClick={() => go(item.id)}
+          >
+            {item.label}
+          </Button>
+        );
+      })}
+      <Divider my={2} />
+      <Button
+        as={Link}
+        href="/"
+        variant="ghost"
+        justifyContent="flex-start"
+        borderRadius="lg"
+        h="44px"
+        px={3}
+        color="text.secondary"
+        fontWeight="500"
+        _hover={{ bg: "bg.surfaceAlt" }}
+      >
+        Browse Campaigns
+      </Button>
+    </VStack>
+  );
+
+  const addressChip = (
+    <HStack
+      spacing={2}
+      borderWidth="1px"
+      borderColor="border.default"
+      borderRadius="full"
+      px={2}
+      py={1}
+      bg="bg.surface"
+    >
+      <WalletIdenticon address={address} size={20} />
+      <SimpleAddress address={address} length={4} fontSize="xs" />
+    </HStack>
+  );
+
+  const copy = PANEL_COPY[activePanel];
+
   return (
-    <Box maxW="container.xl" mx="auto" py={8} px={{ base: 4, md: 8 }}>
-      <Grid templateColumns={{ base: "1fr", lg: "220px 1fr" }} gap={{ base: 6, lg: 8 }}>
-        <GridItem>
-          <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surfaceAlt">
-            <CardBody p={0}>
-              <VStack align="stretch" spacing={0}>
-                <Box px={4} py={4} borderBottomWidth="1px" borderColor="border.default">
-                  <HStack
-                    display="inline-flex"
-                    spacing={2}
-                    borderWidth="1px"
-                    borderColor="border.default"
-                    borderRadius="full"
-                    px={3}
-                    py={1.5}
-                    bg="bg.surface"
-                  >
-                    <Box w={2} h={2} borderRadius="full" bg="primary.500" />
-                    <SimpleAddress address={address} length={4} fontSize="xs" />
-                  </HStack>
-                </Box>
+    <Box maxW="container.xl" mx="auto" py={{ base: 5, md: 8 }} px={{ base: 4, md: 8 }}>
+      {/* Mobile top bar */}
+      <HStack display={{ base: "flex", lg: "none" }} justify="space-between" mb={4}>
+        <IconButton
+          aria-label="Open menu"
+          icon={<HamburgerIcon />}
+          variant="outline"
+          borderRadius="full"
+          onClick={onOpen}
+        />
+        {addressChip}
+      </HStack>
 
-                {(
-                  [
-                    { id: "campaigns", label: "My Campaigns" },
-                    { id: "donations", label: "My Donations" },
-                    { id: "settings", label: "Settings" },
-                  ] as Array<{ id: DashboardPanel; label: string }>
-                ).map((item) => {
-                  const isActive = activePanel === item.id;
-                  return (
-                    <Button
-                      key={item.id}
-                      variant="ghost"
-                      justifyContent="flex-start"
-                      borderRadius="none"
-                      py={6}
-                      px={4}
-                      borderLeftWidth="3px"
-                      borderLeftColor={isActive ? "primary.500" : "transparent"}
-                      bg={isActive ? "bg.surface" : "transparent"}
-                      fontWeight={isActive ? "700" : "500"}
-                      color={isActive ? "chakra-body-text" : "text.secondary"}
-                      onClick={() => setActivePanel(item.id)}
-                    >
-                      {item.label}
-                    </Button>
-                  );
-                })}
-
-                <Divider />
-                <Button
-                  as={Link}
-                  href="/"
-                  variant="ghost"
-                  justifyContent="flex-start"
-                  borderRadius="none"
-                  py={6}
-                  px={4}
-                  color="text.secondary"
-                  fontWeight="500"
-                >
-                  Browse Campaigns
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
+      <Grid templateColumns={{ base: "1fr", lg: "240px 1fr" }} gap={{ base: 5, lg: 8 }}>
+        {/* Sticky sidebar (desktop) */}
+        <GridItem display={{ base: "none", lg: "block" }}>
+          <Box {...CARD} p={3} position="sticky" top="24px">
+            <Box px={1} pb={3}>{addressChip}</Box>
+            <Divider mb={2} />
+            {navList}
+          </Box>
         </GridItem>
 
-        <GridItem>
+        <GridItem minW={0}>
+          {/* Greeting / header */}
           <HStack justify="space-between" align="start" mb={6} flexWrap="wrap" gap={4}>
             <Box>
-              <Heading size="lg">
-                {activePanel === "campaigns"
-                  ? "My Campaigns"
-                  : activePanel === "donations"
-                  ? "My Donations"
-                  : "Settings"}
-              </Heading>
+              <Heading size="lg">{copy.title}</Heading>
               <Text fontSize="sm" color="text.secondary" mt={1}>
-                {activePanel === "campaigns"
-                  ? "Manage your fundraising campaigns"
-                  : activePanel === "donations"
-                  ? "Track your recent contributions"
-                  : "Dashboard preferences and settings"}
+                {copy.sub}
               </Text>
             </Box>
-            <Button as={Link} href="/campaigns/new" leftIcon={<AddIcon />} colorScheme="primary">
+            <Button
+              as={Link}
+              href="/campaigns/new"
+              leftIcon={<AddIcon />}
+              colorScheme="primary"
+              borderRadius="full"
+              fontWeight="700"
+            >
               Create Campaign
             </Button>
           </HStack>
 
-          {(endedAwaitingWithdrawal.length > 0 ||
-            (donorEngagement?.claimableRewardCampaignIds.length ?? 0) > 0 ||
-            (donorEngagement?.claimableBadgeCampaignIds.length ?? 0) > 0 ||
-            (donorEngagement?.upgradableBadgeCampaignIds.length ?? 0) > 0) && (
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface" mb={6}>
-              <CardBody>
-                <VStack align="stretch" spacing={3}>
-                  <Heading size="sm">Action Queue</Heading>
-                  <Text fontSize="sm" color="text.secondary">
-                    Prioritized actions that can unlock funds, rewards, or badge upgrades.
-                  </Text>
-                  <VStack align="stretch" spacing={2}>
-                    {endedAwaitingWithdrawal.slice(0, 3).map((c) => (
-                      <HStack key={`withdraw-${c.campaign_id}`} justify="space-between" flexWrap="wrap" gap={2}>
-                        <Text fontSize="sm" color="chakra-body-text">
-                          Withdraw available: Campaign #{c.campaign_id}
+          {activePanel === "overview" && (
+            <Grid templateColumns={{ base: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4} autoRows="min-content">
+              {/* Hero — dual peer: Raised | Donated */}
+              <GridItem gridColumn={{ base: "1 / -1", xl: "span 2" }}>
+                <Tile bg="bg.accentSubtle" borderColor="border.accent" h="100%" minH="170px" display="flex" alignItems="center">
+                  <Stack
+                    direction={{ base: "column", sm: "row" }}
+                    divider={<StackDivider borderColor="border.accent" />}
+                    spacing={5}
+                    w="100%"
+                  >
+                    <Box flex={1} minW={0}>
+                      <MicroLabel color="primary.700">Raised</MicroLabel>
+                      <Text fontSize="3xl" fontWeight="800" color="primary.700" lineHeight="1.1" mt={1}>
+                        {usd(lifetimeRaisedUsd)}
+                      </Text>
+                      {campaigns.length > 0 ? (
+                        <Text fontSize="xs" color="text.secondary" mt={1}>
+                          {campaigns.length} campaign{campaigns.length === 1 ? "" : "s"} · {usd(currentlyHeldUsd)} held
                         </Text>
-                        <Button as={Link} href={`/campaigns/${c.campaign_id}`} size="sm" colorScheme="primary" variant="outline">
-                          Open
-                        </Button>
-                      </HStack>
-                    ))}
-                    {(donorEngagement?.claimableRewardCampaignIds ?? []).slice(0, 3).map((id) => (
-                      <HStack key={`reward-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
-                        <Text fontSize="sm" color="chakra-body-text">
-                          Claim FSTR rewards: Campaign #{id}
+                      ) : (
+                        <ChakraLink as={Link} href="/campaigns/new" fontSize="xs" color="primary.600" fontWeight="600" mt={1} display="inline-block">
+                          Start your first campaign →
+                        </ChakraLink>
+                      )}
+                    </Box>
+                    <Box flex={1} minW={0}>
+                      <MicroLabel color="secondary.700">Donated</MicroLabel>
+                      <Text fontSize="3xl" fontWeight="800" color="secondary.700" lineHeight="1.1" mt={1}>
+                        {usd(totalDonatedUsd)}
+                      </Text>
+                      {supportedCampaignIds.length > 0 ? (
+                        <Text fontSize="xs" color="text.secondary" mt={1}>
+                          {supportedCampaignIds.length} campaign{supportedCampaignIds.length === 1 ? "" : "s"} backed
                         </Text>
-                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="green" variant="outline">
-                          Claim
-                        </Button>
-                      </HStack>
-                    ))}
-                    {(donorEngagement?.claimableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
-                      <HStack key={`badge-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
-                        <Text fontSize="sm" color="chakra-body-text">
-                          Claim donor badge: Campaign #{id}
-                        </Text>
-                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="blue" variant="outline">
-                          Claim
-                        </Button>
-                      </HStack>
-                    ))}
-                    {(donorEngagement?.upgradableBadgeCampaignIds ?? []).slice(0, 3).map((id) => (
-                      <HStack key={`upgrade-${id}`} justify="space-between" flexWrap="wrap" gap={2}>
-                        <Text fontSize="sm" color="chakra-body-text">
-                          Upgrade badge tier: Campaign #{id}
-                        </Text>
-                        <Button as={Link} href={`/campaigns/${id}`} size="sm" colorScheme="orange" variant="outline">
-                          Upgrade
-                        </Button>
-                      </HStack>
-                    ))}
-                  </VStack>
-                </VStack>
-              </CardBody>
-            </Card>
-          )}
+                      ) : (
+                        <ChakraLink as={Link} href="/" fontSize="xs" color="secondary.600" fontWeight="600" mt={1} display="inline-block">
+                          Back a campaign →
+                        </ChakraLink>
+                      )}
+                    </Box>
+                  </Stack>
+                </Tile>
+              </GridItem>
 
-          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={6}>
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-              <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Lifetime Raised</Text>
-                <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
-                  ${lifetimeRaisedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across all your campaigns</Text>
-              </CardBody>
-            </Card>
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-              <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Currently Held</Text>
-                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
-                  ${currentlyHeldUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>Still in active/cancelled contracts</Text>
-              </CardBody>
-            </Card>
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-              <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns</Text>
-                <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
-                  {campaigns.length}
-                </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
-                  {campaignsWithStatus.filter((c) => c.status === "active").length} active
-                </Text>
-              </CardBody>
-            </Card>
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-              <CardBody py={4}>
-                <Text fontSize="sm" fontWeight="600" color="text.secondary">Supporters</Text>
-                <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
-                  {uniqueSupporters ?? donorAppearances}
-                </Text>
-                <Text fontSize="xs" color="text.tertiary" mt={0.5}>
-                  Unique wallets across your campaigns
-                </Text>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
+              {/* Action Queue */}
+              <GridItem gridColumn={{ base: "1 / -1", xl: "span 2" }}>
+                <Tile h="100%" minH="170px">
+                  <HStack justify="space-between" mb={1}>
+                    <Heading size="sm">Action Queue</Heading>
+                    {actionItems.length > 0 && (
+                      <Badge colorScheme="primary" borderRadius="full" px={2}>
+                        {actionItems.length}
+                      </Badge>
+                    )}
+                  </HStack>
+                  {actionItems.length === 0 ? (
+                    <VStack spacing={1} py={5} color="text.tertiary">
+                      <Text fontSize="sm" fontWeight="600" color="text.secondary">
+                        You&apos;re all caught up
+                      </Text>
+                      <Text fontSize="xs">No pending withdrawals, rewards, or badges.</Text>
+                    </VStack>
+                  ) : (
+                    <VStack align="stretch" spacing={2} mt={2}>
+                      {actionItems.slice(0, 4).map((a) => (
+                        <HStack key={a.key} justify="space-between" gap={2} flexWrap="wrap">
+                          <Box minW={0}>
+                            <Text fontSize="sm" fontWeight="600" color="text.primary" noOfLines={1}>
+                              {a.label}
+                            </Text>
+                            <Text fontSize="xs" color="text.tertiary">
+                              {a.detail}
+                            </Text>
+                          </Box>
+                          <Button
+                            as={Link}
+                            href={a.href}
+                            size="xs"
+                            colorScheme={a.scheme}
+                            variant="outline"
+                            borderRadius="full"
+                            fontWeight="700"
+                          >
+                            {a.cta}
+                          </Button>
+                        </HStack>
+                      ))}
+                      {actionItems.length > 4 && (
+                        <Text fontSize="xs" color="text.tertiary">
+                          +{actionItems.length - 4} more
+                        </Text>
+                      )}
+                    </VStack>
+                  )}
+                </Tile>
+              </GridItem>
+
+              {/* KPI tiles */}
+              <StatTile label="Currently Held" value={usd(currentlyHeldUsd)} sub="In active / cancelled contracts" valueColor="primary.600" />
+              <StatTile label="Campaigns" value={campaigns.length} sub={`${activeCount} active`} />
+              <StatTile label="Supporters" value={uniqueSupporters ?? donorAppearances} sub="Unique wallets" valueColor="secondary.600" />
+              <StatTile label="Backed" value={supportedCampaignIds.length} sub="Campaigns you support" />
+
+              {/* Your campaigns preview */}
+              <GridItem gridColumn={{ base: "1 / -1", xl: "span 2" }}>
+                <Tile h="100%">
+                  <HStack justify="space-between" mb={3}>
+                    <Heading size="sm">Your Campaigns</Heading>
+                    {campaigns.length > 0 && (
+                      <Button variant="link" size="sm" colorScheme="primary" onClick={() => setActivePanel("campaigns")}>
+                        View all
+                      </Button>
+                    )}
+                  </HStack>
+                  {campaignsLoading ? (
+                    <VStack align="stretch" spacing={2}>
+                      {[1, 2, 3].map((i) => <Skeleton key={i} height="44px" borderRadius="lg" />)}
+                    </VStack>
+                  ) : campaignsWithStatus.length === 0 ? (
+                    <VStack spacing={2} py={4} align="center">
+                      <Text fontSize="sm" color="text.secondary">No campaigns yet.</Text>
+                      <Button as={Link} href="/campaigns/new" size="sm" colorScheme="primary" borderRadius="full" fontWeight="700" leftIcon={<AddIcon />}>
+                        Create one
+                      </Button>
+                    </VStack>
+                  ) : (
+                    <VStack align="stretch" spacing={2}>
+                      {campaignsWithStatus.slice(0, 3).map((c) => (
+                        <HStack
+                          key={c.campaign_id}
+                          as={Link}
+                          href={`/campaigns/${c.campaign_id}`}
+                          justify="space-between"
+                          p={2.5}
+                          borderRadius="lg"
+                          bg="bg.surfaceAlt"
+                          _hover={{ bg: "bg.accentSubtle" }}
+                          gap={3}
+                          minW={0}
+                        >
+                          <Box minW={0}>
+                            <Text fontSize="sm" fontWeight="600" noOfLines={1}>
+                              {c.title || `Campaign #${c.campaign_id}`}
+                            </Text>
+                            <StatusBadge status={c.status} size="sm" />
+                          </Box>
+                          <CombinedAmountDisplay
+                            stxAmount={c.total_stx}
+                            sbtcAmount={c.total_sbtc}
+                            stxPrice={prices?.stx}
+                            sbtcPrice={prices?.sbtc}
+                            size="sm"
+                          />
+                        </HStack>
+                      ))}
+                    </VStack>
+                  )}
+                </Tile>
+              </GridItem>
+
+              {/* Recent donations preview */}
+              <GridItem gridColumn={{ base: "1 / -1", xl: "span 2" }}>
+                <Tile h="100%">
+                  <HStack justify="space-between" mb={3}>
+                    <Heading size="sm">Recent Donations</Heading>
+                    {donations.length > 0 && (
+                      <Button variant="link" size="sm" colorScheme="primary" onClick={() => setActivePanel("donations")}>
+                        View all
+                      </Button>
+                    )}
+                  </HStack>
+                  {donationsLoading ? (
+                    <VStack align="stretch" spacing={2}>
+                      {[1, 2, 3].map((i) => <Skeleton key={i} height="44px" borderRadius="lg" />)}
+                    </VStack>
+                  ) : donations.length === 0 ? (
+                    <VStack spacing={2} py={4} align="center">
+                      <Text fontSize="sm" color="text.secondary">No donations yet.</Text>
+                      <Button as={Link} href="/" size="sm" colorScheme="primary" borderRadius="full" fontWeight="700">
+                        Browse campaigns
+                      </Button>
+                    </VStack>
+                  ) : (
+                    <VStack align="stretch" spacing={2}>
+                      {donations.slice(0, 3).map((d, i) => {
+                        const isStx = d.event_name === "donated-stx";
+                        return (
+                          <HStack
+                            key={`${d.txid}-${i}`}
+                            as={Link}
+                            href={`/campaigns/${d.campaign_id}`}
+                            justify="space-between"
+                            p={2.5}
+                            borderRadius="lg"
+                            bg="bg.surfaceAlt"
+                            _hover={{ bg: "bg.accentSubtle" }}
+                            gap={3}
+                            minW={0}
+                          >
+                            <Box minW={0}>
+                              <Text fontSize="sm" fontWeight="600" noOfLines={1}>
+                                Campaign #{d.campaign_id}
+                              </Text>
+                              <Text fontSize="xs" color="text.tertiary">
+                                {new Date(d.inserted_at).toLocaleDateString()}
+                              </Text>
+                            </Box>
+                            <CombinedAmountDisplay
+                              stxAmount={isStx ? d.amount : "0"}
+                              sbtcAmount={!isStx ? d.amount : "0"}
+                              stxPrice={prices?.stx}
+                              sbtcPrice={prices?.sbtc}
+                              size="sm"
+                            />
+                          </HStack>
+                        );
+                      })}
+                    </VStack>
+                  )}
+                </Tile>
+              </GridItem>
+
+              {/* Rewards & badges */}
+              <GridItem gridColumn="1 / -1">
+                <Tile>
+                  <HStack justify="space-between" mb={3} flexWrap="wrap" gap={2}>
+                    <Heading size="sm">Rewards &amp; Badges</Heading>
+                    {((donorEngagement?.claimableBadgesCount ?? 0) > 0 ||
+                      (donorEngagement?.claimableRewardsCount ?? 0) > 0) && (
+                      <Button variant="link" size="sm" colorScheme="primary" onClick={() => setActivePanel("donations")}>
+                        View claims
+                      </Button>
+                    )}
+                  </HStack>
+                  <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                    <Box>
+                      <MicroLabel>FSTR Balance</MicroLabel>
+                      <Text fontSize="xl" fontWeight="800" color="secondary.600" mt={1}>{fstrDisplay}</Text>
+                    </Box>
+                    <Box>
+                      <MicroLabel>Badges Owned</MicroLabel>
+                      <Text fontSize="xl" fontWeight="800" mt={1}>{donorEngagement?.badgesOwnedCount ?? 0}</Text>
+                    </Box>
+                    <Box>
+                      <MicroLabel>Claimable</MicroLabel>
+                      <Text fontSize="xl" fontWeight="800" color="primary.600" mt={1}>{donorEngagement?.claimableBadgesCount ?? 0}</Text>
+                    </Box>
+                    <Box>
+                      <MicroLabel>Upgradable</MicroLabel>
+                      <Text fontSize="xl" fontWeight="800" color="warning.600" mt={1}>{donorEngagement?.upgradableBadgesCount ?? 0}</Text>
+                    </Box>
+                  </SimpleGrid>
+                </Tile>
+              </GridItem>
+            </Grid>
+          )}
 
           {activePanel === "campaigns" && (
             <>
-              <HStack spacing={2} borderBottomWidth="1px" borderColor="border.default" mb={4} pb={1}>
+              <HStack spacing={2} mb={4} flexWrap="wrap">
                 {(
                   [
-                    { id: "active", label: "Active", count: campaignsWithStatus.filter((c) => c.status === "active").length },
-                    {
-                      id: "ended",
-                      label: "Ended",
-                      count: campaignsWithStatus.filter((c) => c.status !== "active").length,
-                    },
+                    { id: "active", label: "Active", count: activeCount },
+                    { id: "ended", label: "Ended", count: campaignsWithStatus.filter((c) => c.status !== "active").length },
                     { id: "all", label: "All", count: campaignsWithStatus.length },
                   ] as Array<{ id: CampaignFilter; label: string; count: number }>
                 ).map((tab) => {
@@ -477,18 +747,17 @@ export default function DashboardPage() {
                   return (
                     <Button
                       key={tab.id}
-                      variant="ghost"
-                      borderRadius="none"
-                      borderBottomWidth="3px"
-                      borderBottomColor={selected ? "primary.500" : "transparent"}
-                      color={selected ? "chakra-body-text" : "text.secondary"}
-                      fontWeight={selected ? "700" : "500"}
+                      size="sm"
+                      variant={selected ? "solid" : "outline"}
+                      colorScheme="primary"
+                      borderRadius="full"
+                      fontWeight="700"
+                      borderColor={selected ? "primary.500" : "border.default"}
+                      color={selected ? undefined : "text.secondary"}
                       onClick={() => setCampaignFilter(tab.id)}
-                      px={3}
-                      py={2}
                     >
                       {tab.label}
-                      <Badge ml={2} colorScheme={selected ? "primary" : "gray"} borderRadius="full">
+                      <Badge ml={2} colorScheme={selected ? "whiteAlpha" : "gray"} borderRadius="full">
                         {tab.count}
                       </Badge>
                     </Button>
@@ -498,85 +767,53 @@ export default function DashboardPage() {
 
               {campaignsLoading ? (
                 <VStack align="stretch" spacing={3}>
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} height="84px" borderRadius="lg" />
-                  ))}
+                  {[1, 2, 3].map((i) => <Skeleton key={i} height="84px" borderRadius="2xl" />)}
                 </VStack>
               ) : filteredCampaigns.length === 0 ? (
-                <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
-                  <CardBody py={10} textAlign="center">
-                    <VStack spacing={2}>
-                      <Heading size="md">No campaigns here</Heading>
-                      <Text color="text.secondary" fontSize="sm">
-                        Try another filter or create a new campaign.
-                      </Text>
-                    </VStack>
-                  </CardBody>
-                </Card>
+                <Tile bg="bg.surfaceAlt" py={10}>
+                  <VStack spacing={2} textAlign="center">
+                    <Heading size="md">No campaigns here</Heading>
+                    <Text color="text.secondary" fontSize="sm">Try another filter or create a new campaign.</Text>
+                  </VStack>
+                </Tile>
               ) : (
                 <VStack align="stretch" spacing={3}>
                   {filteredCampaigns.map((campaign) => (
-                    <Card
+                    <Box
                       key={campaign.campaign_id}
                       as={Link}
                       href={`/campaigns/${campaign.campaign_id}`}
-                      borderWidth="1px"
-                      borderColor="border.default"
-                      borderRadius="lg"
-                      bg="bg.surface"
+                      {...CARD}
+                      p={4}
                       _hover={{ borderColor: "border.accent", boxShadow: "sm" }}
                     >
-                      <CardBody py={4}>
-                        <HStack justify="space-between" align="center" gap={4} flexWrap="wrap">
-                          <HStack spacing={3} minW={0}>
-                            <VStack align="start" spacing={0} minW={0}>
-                              <Text fontWeight="700" noOfLines={1}>
-                                {campaign.title || `Campaign #${campaign.campaign_id}`}
-                              </Text>
-                              <HStack spacing={2} flexWrap="wrap">
-                                <StatusBadge status={campaign.status} size="sm" />
-                                <Text fontSize="xs" color="text.tertiary">
-                                  {campaign.donor_count ?? 0} donors
-                                </Text>
-                              </HStack>
-                            </VStack>
-                          </HStack>
-
-                          <VStack align={{ base: "start", md: "end" }} spacing={0}>
-                            <CombinedAmountDisplay
-                              stxAmount={campaign.total_stx}
-                              sbtcAmount={campaign.total_sbtc}
-                              stxPrice={prices?.stx}
-                              sbtcPrice={prices?.sbtc}
-                              size="sm"
-                            />
+                      <HStack justify="space-between" align="center" gap={4} flexWrap="wrap">
+                        <VStack align="start" spacing={1} minW={0}>
+                          <Text fontWeight="700" noOfLines={1}>
+                            {campaign.title || `Campaign #${campaign.campaign_id}`}
+                          </Text>
+                          <HStack spacing={2} flexWrap="wrap">
+                            <StatusBadge status={campaign.status} size="sm" />
                             <Text fontSize="xs" color="text.tertiary">
-                              Created {new Date(campaign.created_at).toLocaleDateString()}
+                              {campaign.donor_count ?? 0} donors
                             </Text>
-                            <Button
-                              as={Link}
-                              href={`/campaigns/${campaign.campaign_id}`}
-                              size="xs"
-                              mt={1}
-                              colorScheme={
-                                campaign.status === "ended"
-                                  ? "primary"
-                                  : campaign.status === "cancelled"
-                                  ? "orange"
-                                  : "gray"
-                              }
-                              variant="outline"
-                            >
-                              {campaign.status === "ended"
-                                ? "Review Withdraw"
-                                : campaign.status === "cancelled"
-                                ? "View Refunds"
-                                : "Open"}
-                            </Button>
-                          </VStack>
-                        </HStack>
-                      </CardBody>
-                    </Card>
+                          </HStack>
+                        </VStack>
+
+                        <VStack align={{ base: "start", md: "end" }} spacing={0}>
+                          <CombinedAmountDisplay
+                            stxAmount={campaign.total_stx}
+                            sbtcAmount={campaign.total_sbtc}
+                            stxPrice={prices?.stx}
+                            sbtcPrice={prices?.sbtc}
+                            size="sm"
+                          />
+                          <Text fontSize="xs" color="text.tertiary">
+                            Created {new Date(campaign.created_at).toLocaleDateString()}
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </Box>
                   ))}
                 </VStack>
               )}
@@ -585,149 +822,122 @@ export default function DashboardPage() {
 
           {activePanel === "donations" && (
             <>
-              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3} mb={4}>
-                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-                  <CardBody py={4}>
-                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Total Donated</Text>
-                    <Text fontSize="2xl" fontWeight="800" color="primary.600" mt={0.5} lineHeight="1.1">
-                      ${totalDonatedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                    </Text>
-                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Lifetime by this wallet</Text>
-                  </CardBody>
-                </Card>
-                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-                  <CardBody py={4}>
-                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Campaigns Supported</Text>
-                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
-                      {supportedCampaignIds.length}
-                    </Text>
-                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Distinct campaigns donated to</Text>
-                  </CardBody>
-                </Card>
-                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-                  <CardBody py={4}>
-                    <Text fontSize="sm" fontWeight="600" color="text.secondary">FSTR Balance</Text>
-                    <Text fontSize="2xl" fontWeight="800" color="secondary.600" mt={0.5} lineHeight="1.1">
-                      {fstrBalance !== null && fstrBalance !== undefined
-                        ? (Number(fstrBalance) / 1_000_000).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })
-                        : "0"}
-                    </Text>
-                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Rewards token in wallet</Text>
-                  </CardBody>
-                </Card>
-                <Card borderWidth="1px" borderColor="border.default" borderRadius="lg" bg="bg.surface">
-                  <CardBody py={4}>
-                    <Text fontSize="sm" fontWeight="600" color="text.secondary">Badges Owned</Text>
-                    <Text fontSize="2xl" fontWeight="800" color="chakra-body-text" mt={0.5} lineHeight="1.1">
-                      {donorEngagement?.badgesOwnedCount ?? 0}
-                    </Text>
-                    <Text fontSize="xs" color="text.tertiary" mt={0.5}>Across supported campaigns</Text>
-                  </CardBody>
-                </Card>
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} mb={4}>
+                <StatTile label="Total Donated" value={usd(totalDonatedUsd)} sub="Lifetime by this wallet" valueColor="primary.600" />
+                <StatTile label="Campaigns Supported" value={supportedCampaignIds.length} sub="Distinct campaigns" />
+                <StatTile label="FSTR Balance" value={fstrDisplay} sub="Rewards token in wallet" valueColor="secondary.600" />
+                <StatTile label="Badges Owned" value={donorEngagement?.badgesOwnedCount ?? 0} sub="Across supported campaigns" />
               </SimpleGrid>
 
               {donationsLoading ? (
                 <VStack spacing={3} align="stretch">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} height="80px" width="100%" borderRadius="xl" />
-                  ))}
+                  {[1, 2, 3].map((i) => <Skeleton key={i} height="64px" borderRadius="2xl" />)}
                 </VStack>
               ) : donations.length === 0 ? (
-                <Card bg="bg.surfaceAlt" borderRadius="xl" borderWidth="1px" borderColor="border.default">
-                  <CardBody py={12} textAlign="center">
-                    <VStack spacing={3}>
-                      <Heading size="md">No donations yet</Heading>
-                      <Text color="text.secondary" fontSize="sm" maxW="300px">
-                        You haven&apos;t made any donations yet.
-                      </Text>
-                      <Button as={Link} href="/" colorScheme="primary">
-                        Browse Campaigns
-                      </Button>
-                    </VStack>
-                  </CardBody>
-                </Card>
+                <Tile bg="bg.surfaceAlt" py={12}>
+                  <VStack spacing={3} textAlign="center">
+                    <Heading size="md">No donations yet</Heading>
+                    <Text color="text.secondary" fontSize="sm" maxW="300px">
+                      You haven&apos;t made any donations yet.
+                    </Text>
+                    <Button as={Link} href="/" colorScheme="primary" borderRadius="full" fontWeight="700">
+                      Browse Campaigns
+                    </Button>
+                  </VStack>
+                </Tile>
               ) : (
-                <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surface">
-                  <CardBody p={0}>
-                    <VStack spacing={0} align="stretch" divider={<Divider borderColor="border.subtle" />}>
-                      {donations.map((donation, index) => {
-                        const isStx = donation.event_name === "donated-stx";
-                        const explorerUrl = donation.txid
-                          ? `https://explorer.stacks.co/txid/${donation.txid}`
-                          : null;
+                <Tile p={0}>
+                  <VStack spacing={0} align="stretch" divider={<Divider borderColor="border.subtle" />}>
+                    {donations.map((donation, index) => {
+                      const isStx = donation.event_name === "donated-stx";
+                      const explorerUrl = donation.txid
+                        ? `https://explorer.stacks.co/txid/${donation.txid}`
+                        : null;
+                      return (
+                        <HStack key={`${donation.txid}-${index}`} px={4} py={3} justify="space-between" flexWrap="wrap" gap={2}>
+                          <VStack align="start" spacing={0}>
+                            <ChakraLink
+                              as={Link}
+                              href={`/campaigns/${donation.campaign_id}`}
+                              fontWeight="600"
+                              fontSize="sm"
+                              color="text.primary"
+                              _hover={{ color: "primary.600" }}
+                            >
+                              Campaign #{donation.campaign_id}
+                            </ChakraLink>
+                            <Text fontSize="xs" color="text.tertiary">
+                              {new Date(donation.inserted_at).toLocaleDateString()}
+                            </Text>
+                          </VStack>
 
-                        return (
-                          <HStack
-                            key={`${donation.txid}-${index}`}
-                            px={4}
-                            py={3}
-                            justify="space-between"
-                            flexWrap="wrap"
-                            gap={2}
-                          >
-                            <VStack align="start" spacing={0}>
-                              <HStack spacing={1.5}>
-                                <ChakraLink
-                                  as={Link}
-                                  href={`/campaigns/${donation.campaign_id}`}
-                                  fontWeight="600"
-                                  fontSize="sm"
-                                  color="chakra-body-text"
-                                  _hover={{ color: "primary.600" }}
-                                >
-                                  Campaign #{donation.campaign_id}
-                                </ChakraLink>
-                              </HStack>
-                              <Text fontSize="xs" color="text.tertiary">
-                                {new Date(donation.inserted_at).toLocaleDateString()}
-                              </Text>
-                            </VStack>
-
-                            <HStack spacing={2}>
-                              <CombinedAmountDisplay
-                                stxAmount={isStx ? donation.amount : "0"}
-                                sbtcAmount={!isStx ? donation.amount : "0"}
-                                stxPrice={prices?.stx}
-                                sbtcPrice={prices?.sbtc}
-                                size="sm"
-                              />
-                              {explorerUrl && (
-                                <ChakraLink
-                                  href={explorerUrl}
-                                  isExternal
-                                  color="primary.500"
-                                  fontSize="sm"
-                                  aria-label="View transaction"
-                                  _hover={{ color: "primary.700" }}
-                                >
-                                  ↗
-                                </ChakraLink>
-                              )}
-                            </HStack>
+                          <HStack spacing={2}>
+                            <CombinedAmountDisplay
+                              stxAmount={isStx ? donation.amount : "0"}
+                              sbtcAmount={!isStx ? donation.amount : "0"}
+                              stxPrice={prices?.stx}
+                              sbtcPrice={prices?.sbtc}
+                              size="sm"
+                            />
+                            {explorerUrl && (
+                              <ChakraLink
+                                href={explorerUrl}
+                                isExternal
+                                color="primary.500"
+                                fontSize="sm"
+                                aria-label="View transaction"
+                                _hover={{ color: "primary.700" }}
+                              >
+                                ↗
+                              </ChakraLink>
+                            )}
                           </HStack>
-                        );
-                      })}
-                    </VStack>
-                  </CardBody>
-                </Card>
+                        </HStack>
+                      );
+                    })}
+                  </VStack>
+                </Tile>
               )}
             </>
           )}
 
           {activePanel === "settings" && (
-            <Card borderWidth="1px" borderColor="border.default" borderRadius="xl" bg="bg.surfaceAlt">
-              <CardBody py={10}>
+            <VStack align="stretch" spacing={4}>
+              <Tile>
+                <MicroLabel>Connected wallet</MicroLabel>
+                <HStack mt={2} justify="space-between" flexWrap="wrap" gap={3}>
+                  <HStack spacing={3} minW={0}>
+                    <WalletIdenticon address={address} size={36} />
+                    <SimpleAddress address={address} length={6} fontSize="sm" />
+                  </HStack>
+                  {isMainnetEnvironment() && (
+                    <Badge variant="active" fontSize="xs">Stacks mainnet</Badge>
+                  )}
+                </HStack>
+              </Tile>
+              <Tile bg="bg.surfaceAlt" py={10}>
                 <VStack spacing={2} textAlign="center">
-                  <Heading size="md">Settings coming soon</Heading>
-                  <Text color="text.secondary" fontSize="sm">Account and dashboard preferences will appear here.</Text>
+                  <Heading size="md">More settings coming soon</Heading>
+                  <Text color="text.secondary" fontSize="sm">
+                    Notification and dashboard preferences will appear here.
+                  </Text>
                 </VStack>
-              </CardBody>
-            </Card>
+              </Tile>
+            </VStack>
           )}
         </GridItem>
       </Grid>
+
+      {/* Mobile nav drawer */}
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <Box px={5} pt={5} pb={3}>{addressChip}</Box>
+          <Divider />
+          <DrawerBody py={3}>{navList}</DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 }
