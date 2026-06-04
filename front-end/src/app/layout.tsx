@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "@/components/ui/Providers";
 import { Navbar } from "@/components/Navbar";
 import { AppFooter } from "@/components/AppFooter";
-import { Box } from "@chakra-ui/react";
+import { Box, ColorModeScript } from "@chakra-ui/react";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -27,8 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        <ColorModeScript initialColorMode="system" />
         <a className="skip-to-main" href="#main-content">
           Skip to main content
         </a>

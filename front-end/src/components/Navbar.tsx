@@ -26,6 +26,7 @@ import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { DevnetWalletButton } from "./DevnetWalletButton";
 import { ConnectWalletButton } from "./ConnectWallet";
 import { FundStacksMark } from "./common/FundStacksMark";
+import { ColorModeToggle } from "./ColorModeToggle";
 
 const focusRing = {
   _focusVisible: { boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" },
@@ -148,6 +149,8 @@ export const Navbar = () => {
 
           {/* Right — primary CTA + wallet */}
           <Flex flex="1" justify="flex-end" align="center" gap={{ base: 2, md: 3 }}>
+            <ColorModeToggle hideBelow="lg" />
+
             <Button
               as={NextLink}
               href="/campaigns/new"
@@ -250,6 +253,21 @@ export const Navbar = () => {
                   );
                 })}
               </VStack>
+
+              <Flex
+                align="center"
+                justify="space-between"
+                px={3}
+                py={2}
+                borderWidth="1px"
+                borderColor="border.default"
+                borderRadius="xl"
+              >
+                <Text fontSize="sm" fontWeight="600" color="text.secondary">
+                  Theme
+                </Text>
+                <ColorModeToggle />
+              </Flex>
 
               <Button
                 as={NextLink}

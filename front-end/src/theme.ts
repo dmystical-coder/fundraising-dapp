@@ -419,7 +419,9 @@ const components = {
 };
 
 const config: ThemeConfig = {
-  initialColorMode: "light",
+  // Follow the visitor's OS preference on first visit; once they use the
+  // toggle, Chakra persists that choice to localStorage and stops following.
+  initialColorMode: "system",
   useSystemColorMode: false,
 };
 
