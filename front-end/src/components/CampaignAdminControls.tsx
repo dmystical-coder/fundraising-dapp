@@ -9,13 +9,11 @@ import {
   isTestnetEnvironment,
 } from "@/lib/contract-utils";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Button,
   Checkbox,
   Heading,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -29,10 +27,167 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { useContext, useState } from "react";
+import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import { useContext, useState, type ReactNode } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";
 import { getStacksNetworkString } from "@/lib/stacks-api";
+
+const CARD = {
+  bg: "bg.surface",
+  borderColor: "border.default",
+  borderWidth: "1px",
+  borderRadius: "2xl",
+  boxShadow: "0 1px 2px rgba(15,23,43,0.04)",
+} as const;
+
+function MicroLabel({
+  children,
+  color = "text.tertiary",
+}: {
+  children: ReactNode;
+  color?: string;
+}) {
+  return (
+    <Text
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.08em"
+      textTransform="uppercase"
+      color={color}
+    >
+      {children}
+    </Text>
+  );
+}
+
+type CampaignState = "active" | "ended" | "withdrawn" | "cancelled";
+
+function StatusChip({ state }: { state: CampaignState }) {
+  const map: Record<CampaignState, { label: string; bg: string; color: string }> = {
+    active: { label: "Active", bg: "primary.50", color: "primary.700" },
+    ended: { label: "Ended", bg: "bg.surfaceAlt", color: "text.secondary" },
+    withdrawn: { label: "Withdrawn", bg: "success.50", color: "success.700" },
+    cancelled: { label: "Cancelled", bg: "error.50", color: "error.600" },
+  };
+  const s = map[state];
+  return (
+    <Box
+      px={2.5}
+      py={1}
+      borderRadius="full"
+      bg={s.bg}
+      color={s.color}
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.06em"
+      textTransform="uppercase"
+      flexShrink={0}
+    >
+      {s.label}
+    </Box>
+  );
+}
+
+type NodeVariant = "done" | "current" | "upcoming" | "success" | "cancelled";
+
+function StageNode({
+  variant,
+  label,
+  sub,
+  isLast = false,
+  children,
+}: {
+  variant: NodeVariant;
+  label: string;
+  sub?: string;
+  isLast?: boolean;
+  children?: ReactNode;
+}) {
+  const visuals: Record<
+    NodeVariant,
+    { bg: string; border: string; icon: ReactNode; label: string; lit: boolean }
+  > = {
+    done: {
+      bg: "primary.500",
+      border: "primary.500",
+      icon: <CheckIcon boxSize="9px" color="white" />,
+      label: "text.primary",
+      lit: true,
+    },
+    success: {
+      bg: "success.500",
+      border: "success.500",
+      icon: <CheckIcon boxSize="9px" color="white" />,
+      label: "success.700",
+      lit: true,
+    },
+    current: {
+      bg: "bg.surface",
+      border: "primary.500",
+      icon: <Box w="8px" h="8px" borderRadius="full" bg="primary.500" />,
+      label: "primary.700",
+      lit: false,
+    },
+    upcoming: {
+      bg: "bg.surface",
+      border: "border.default",
+      icon: null,
+      label: "text.tertiary",
+      lit: false,
+    },
+    cancelled: {
+      bg: "error.500",
+      border: "error.500",
+      icon: <CloseIcon boxSize="7px" color="white" />,
+      label: "error.600",
+      lit: false,
+    },
+  };
+  const v = visuals[variant];
+
+  return (
+    <HStack align="stretch" spacing={3} minW={0}>
+      <VStack spacing={0} align="center" flexShrink={0}>
+        <Box
+          w="26px"
+          h="26px"
+          borderRadius="full"
+          borderWidth="2px"
+          borderColor={v.border}
+          bg={v.bg}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          boxShadow={variant === "current" ? "0 0 0 4px var(--chakra-colors-primary-50)" : undefined}
+        >
+          {v.icon}
+        </Box>
+        {!isLast && (
+          <Box
+            flex="1"
+            w="2px"
+            minH="16px"
+            my="6px"
+            bg={v.lit ? "primary.200" : "border.subtle"}
+          />
+        )}
+      </VStack>
+
+      <Box flex={1} minW={0} pb={isLast ? 0 : 5} pt="2px">
+        <Text fontSize="sm" fontWeight="700" color={v.label}>
+          {label}
+        </Text>
+        {sub && (
+          <Text fontSize="sm" color="text.secondary" mt="2px">
+            {sub}
+          </Text>
+        )}
+        {children && <Box mt={3}>{children}</Box>}
+      </Box>
+    </HStack>
+  );
+}
 
 export default function CampaignAdminControls({
   campaignId,
@@ -175,181 +330,184 @@ export default function CampaignAdminControls({
   const isAnyActionPending =
     isInitializingCampaign || isCancellingCampaign || isWithdrawingFunds;
 
-  const cancelDisabledReason = campaignIsCancelled
-    ? "This campaign is already cancelled."
-    : campaignIsExpired
-    ? "You cannot cancel a campaign after it has ended."
+  // Lifecycle state (derived) — drives the stepper.
+  const state: CampaignState = campaignIsCancelled
+    ? "cancelled"
     : campaignIsWithdrawn
-    ? "This campaign has already been withdrawn."
-    : null;
+    ? "withdrawn"
+    : campaignIsExpired
+    ? "ended"
+    : "active";
 
-  const withdrawDisabledReason = campaignIsWithdrawn
-    ? "Funds are already withdrawn."
-    : campaignIsCancelled
-    ? "Cancelled campaigns cannot be withdrawn."
-    : !campaignIsExpired
-    ? "Withdrawal becomes available after the campaign ends."
-    : null;
+  // Cancel is only available while the campaign is still running.
+  const canCancel = state === "active";
 
   return (
     <>
       <Box
         p={5}
-        borderWidth="1px"
-        borderColor="border.default"
-        borderRadius="xl"
-        bg="bg.surface"
+        {...CARD}
         role="region"
         aria-label="Campaign owner controls"
         aria-busy={isAnyActionPending}
       >
-        <VStack align="stretch" spacing={4}>
-          <Box>
-            <Heading size="md" mb={1}>
-              Owner Controls
-            </Heading>
-            <Text fontSize="sm" color="text.secondary">
-              Manage campaign lifecycle actions safely. Destructive actions require confirmation.
-            </Text>
-          </Box>
-
+        <VStack align="stretch" spacing={5}>
           {campaignIsUninitialized ? (
-            <Box
-              p={4}
-              borderWidth="1px"
-              borderColor="border.default"
-              borderRadius="lg"
-              bg="bg.surfaceAlt"
-            >
-              <VStack align="stretch" spacing={3}>
-                <Box>
-                  <Text fontWeight="600" color="chakra-body-text">
-                    Publish campaign
-                  </Text>
-                  <Text fontSize="sm" color="text.secondary">
-                    Set the goal and optional end date before opening donations.
-                  </Text>
-                </Box>
-
-                <NumberInput
-                  bg="bg.field"
-                  min={1}
-                  value={goal}
-                  onChange={handleGoalChange}
-                  isDisabled={isAnyActionPending}
-                >
-                  <NumberInputField placeholder="Enter goal (USD)" />
-                </NumberInput>
-
-                <Input
-                  bg="bg.field"
-                  type="datetime-local"
-                  value={endDateTimeLocal}
-                  onChange={(e) => setEndDateTimeLocal(e.target.value)}
-                  isDisabled={isAnyActionPending}
-                />
-
-                <Button
-                  colorScheme="primary"
-                  onClick={handleInitializeCampaign}
-                  isDisabled={!goal || isAnyActionPending}
-                  isLoading={isInitializingCampaign}
-                  loadingText="Starting campaign"
-                >
-                  Start campaign for ${Number(goal || 0).toLocaleString()}
-                </Button>
-              </VStack>
-            </Box>
-          ) : (
             <>
-              {campaignIsCancelled && (
-                <Alert status="warning" borderRadius="lg">
-                  <Box>
-                    <AlertTitle fontSize="sm">Campaign cancelled</AlertTitle>
-                    <AlertDescription fontSize="sm">
-                      Contributors can now claim refunds, and new donations are disabled.
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              )}
+              <Box>
+                <Heading size="md" mb={1}>
+                  Owner Controls
+                </Heading>
+                <Text fontSize="sm" color="text.secondary">
+                  Set the goal and optional end date, then publish to open donations.
+                </Text>
+              </Box>
 
-              {campaignIsWithdrawn && (
-                <Alert status="success" borderRadius="lg">
-                  <Box>
-                    <AlertTitle fontSize="sm">Funds withdrawn</AlertTitle>
-                    <AlertDescription fontSize="sm">
-                      Withdrawal has already been submitted for this campaign.
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              )}
-
-              <Box
-                p={4}
-                borderWidth="1px"
-                borderColor="border.default"
-                borderRadius="lg"
-                bg="bg.surfaceAlt"
-              >
+              <Box p={4} bg="bg.surfaceAlt" borderRadius="xl">
                 <VStack align="stretch" spacing={3}>
-                  <Box>
-                    <Text fontWeight="600" color="chakra-body-text">
-                      Withdraw raised funds
-                    </Text>
-                    <Text fontSize="sm" color="text.secondary">
-                      Available once the campaign has ended and has not been cancelled.
-                    </Text>
-                  </Box>
+                  <MicroLabel>Publish campaign</MicroLabel>
+
+                  <NumberInput
+                    bg="bg.field"
+                    min={1}
+                    value={goal}
+                    onChange={handleGoalChange}
+                    isDisabled={isAnyActionPending}
+                  >
+                    <NumberInputField placeholder="Enter goal (USD)" borderRadius="xl" />
+                  </NumberInput>
+
+                  <Input
+                    bg="bg.field"
+                    borderRadius="xl"
+                    type="datetime-local"
+                    value={endDateTimeLocal}
+                    onChange={(e) => setEndDateTimeLocal(e.target.value)}
+                    isDisabled={isAnyActionPending}
+                  />
+
                   <Button
                     colorScheme="primary"
-                    onClick={() => setIsWithdrawConfirmationModalOpen(true)}
-                    isDisabled={!!withdrawDisabledReason || isAnyActionPending}
-                    isLoading={isWithdrawingFunds}
-                    loadingText="Withdrawing"
+                    borderRadius="full"
+                    fontWeight="700"
+                    onClick={handleInitializeCampaign}
+                    isDisabled={!goal || isAnyActionPending}
+                    isLoading={isInitializingCampaign}
+                    loadingText="Starting campaign"
                   >
-                    Withdraw funds
+                    Start campaign for ${Number(goal || 0).toLocaleString()}
                   </Button>
-                  {withdrawDisabledReason && (
-                    <Text fontSize="sm" color="text.tertiary">
-                      {withdrawDisabledReason}
-                    </Text>
-                  )}
                 </VStack>
+              </Box>
+            </>
+          ) : (
+            <>
+              <HStack justify="space-between" align="flex-start" gap={3}>
+                <Box>
+                  <Heading size="md" mb={1}>
+                    Owner Controls
+                  </Heading>
+                  <Text fontSize="sm" color="text.secondary">
+                    Track where this campaign sits in its lifecycle.
+                  </Text>
+                </Box>
+                <StatusChip state={state} />
+              </HStack>
+
+              {/* Lifecycle stepper */}
+              <Box>
+                <StageNode
+                  variant="done"
+                  label="Published"
+                  sub="The campaign is live on-chain."
+                />
+
+                {state === "cancelled" ? (
+                  <StageNode
+                    variant="cancelled"
+                    isLast
+                    label="Cancelled"
+                    sub="New donations are disabled and contributors can claim refunds."
+                  />
+                ) : (
+                  <>
+                    <StageNode
+                      variant={state === "active" ? "current" : "done"}
+                      label={state === "active" ? "Active" : "Ended"}
+                      sub={
+                        state === "active"
+                          ? "Accepting donations until the campaign ends."
+                          : "The campaign has reached its end."
+                      }
+                    />
+
+                    <StageNode
+                      variant={
+                        state === "withdrawn"
+                          ? "success"
+                          : state === "ended"
+                          ? "current"
+                          : "upcoming"
+                      }
+                      isLast
+                      label="Withdrawn"
+                      sub={
+                        state === "withdrawn"
+                          ? "Funds have been settled to the beneficiary."
+                          : state === "ended"
+                          ? "Funds are ready to withdraw."
+                          : "Available once the campaign ends."
+                      }
+                    >
+                      {state === "ended" && (
+                        <Button
+                          colorScheme="primary"
+                          borderRadius="full"
+                          fontWeight="700"
+                          size="sm"
+                          onClick={() => setIsWithdrawConfirmationModalOpen(true)}
+                          isDisabled={isAnyActionPending}
+                          isLoading={isWithdrawingFunds}
+                          loadingText="Withdrawing"
+                        >
+                          Withdraw funds
+                        </Button>
+                      )}
+                    </StageNode>
+                  </>
+                )}
               </Box>
 
-              <Box
-                p={4}
-                borderWidth="1px"
-                borderColor="border.default"
-                borderRadius="lg"
-                bg="bg.surfaceAlt"
-              >
-                <VStack align="stretch" spacing={3}>
-                  <Box>
-                    <Text fontWeight="600" color="chakra-body-text">
-                      Cancel campaign
-                    </Text>
+              {/* Off-path escape: cancel early (only while running) */}
+              {canCancel && (
+                <Box
+                  pt={4}
+                  borderTopWidth="1px"
+                  borderTopColor="border.default"
+                  borderStyle="dashed"
+                >
+                  <VStack align="stretch" spacing={2}>
+                    <MicroLabel color="error.600">End early</MicroLabel>
                     <Text fontSize="sm" color="text.secondary">
-                      Cancellation is irreversible and enables contributor refunds.
+                      Cancelling is irreversible and enables contributor refunds.
                     </Text>
-                  </Box>
-                  <Button
-                    colorScheme="red"
-                    variant="outline"
-                    onClick={() => setIsCancelConfirmationModalOpen(true)}
-                    isDisabled={!!cancelDisabledReason || isAnyActionPending}
-                    isLoading={isCancellingCampaign}
-                    loadingText="Cancelling"
-                  >
-                    Cancel campaign
-                  </Button>
-                  {cancelDisabledReason && (
-                    <Text fontSize="sm" color="text.tertiary">
-                      {cancelDisabledReason}
-                    </Text>
-                  )}
-                </VStack>
-              </Box>
+                    <Button
+                      alignSelf="flex-start"
+                      variant="outline"
+                      colorScheme="red"
+                      borderRadius="full"
+                      fontWeight="700"
+                      size="sm"
+                      onClick={() => setIsCancelConfirmationModalOpen(true)}
+                      isDisabled={isAnyActionPending}
+                      isLoading={isCancellingCampaign}
+                      loadingText="Cancelling"
+                    >
+                      Cancel campaign
+                    </Button>
+                  </VStack>
+                </Box>
+              )}
             </>
           )}
         </VStack>
@@ -363,17 +521,21 @@ export default function CampaignAdminControls({
         }}
         isCentered
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Cancel Campaign?</ModalHeader>
-          <ModalCloseButton />
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <ModalContent borderRadius="2xl">
+          <ModalHeader pb={1}>
+            <MicroLabel color="error.600">Irreversible</MicroLabel>
+            <Text mt={1}>Cancel Campaign?</Text>
+          </ModalHeader>
+          <ModalCloseButton borderRadius="full" />
           <ModalBody>
             <VStack align="stretch" spacing={3}>
-              <Text>
+              <Text color="text.secondary">
                 This action is irreversible. Contributors will become eligible for refunds, and the
                 campaign will stop accepting new donations.
               </Text>
               <Checkbox
+                colorScheme="red"
                 isChecked={hasConfirmedCancel}
                 onChange={(e) => setHasConfirmedCancel(e.target.checked)}
               >
@@ -383,6 +545,8 @@ export default function CampaignAdminControls({
           </ModalBody>
           <ModalFooter>
             <Button
+              variant="ghost"
+              borderRadius="full"
               onClick={() => {
                 setIsCancelConfirmationModalOpen(false);
                 setHasConfirmedCancel(false);
@@ -393,6 +557,8 @@ export default function CampaignAdminControls({
             </Button>
             <Button
               colorScheme="red"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleCancel}
               isDisabled={!hasConfirmedCancel}
               isLoading={isCancellingCampaign}
@@ -412,17 +578,21 @@ export default function CampaignAdminControls({
         }}
         isCentered
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Withdraw Funds?</ModalHeader>
-          <ModalCloseButton />
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <ModalContent borderRadius="2xl">
+          <ModalHeader pb={1}>
+            <MicroLabel color="primary.600">Settle campaign</MicroLabel>
+            <Text mt={1}>Withdraw Funds?</Text>
+          </ModalHeader>
+          <ModalCloseButton borderRadius="full" />
           <ModalBody>
             <VStack align="stretch" spacing={3}>
-              <Text>
+              <Text color="text.secondary">
                 Withdrawals should only be submitted when you are ready to settle this campaign.
                 Please confirm to continue.
               </Text>
               <Checkbox
+                colorScheme="primary"
                 isChecked={hasConfirmedWithdraw}
                 onChange={(e) => setHasConfirmedWithdraw(e.target.checked)}
               >
@@ -432,6 +602,8 @@ export default function CampaignAdminControls({
           </ModalBody>
           <ModalFooter>
             <Button
+              variant="ghost"
+              borderRadius="full"
               onClick={() => {
                 setIsWithdrawConfirmationModalOpen(false);
                 setHasConfirmedWithdraw(false);
@@ -442,6 +614,8 @@ export default function CampaignAdminControls({
             </Button>
             <Button
               colorScheme="primary"
+              borderRadius="full"
+              fontWeight="700"
               onClick={handleWithdraw}
               isDisabled={!hasConfirmedWithdraw}
               isLoading={isWithdrawingFunds}
