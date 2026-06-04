@@ -40,7 +40,6 @@ import {
   Alert,
   AlertIcon,
   Spinner,
-  Tooltip,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, ArrowForwardIcon, CheckIcon } from "@chakra-ui/icons";
 import Link from "next/link";
@@ -471,11 +470,11 @@ export default function CreateCampaignPage() {
                 <VStack spacing={4} align="stretch">
                   <Box>
                     <Text fontSize="sm" color="text.secondary">Title</Text>
-                    <Text fontWeight="600" color="chakra-body-text">{formData.title || "Untitled Campaign"}</Text>
+                    <Text fontWeight="600" color="text.primary">{formData.title || "Untitled Campaign"}</Text>
                   </Box>
                   <Box>
                     <Text fontSize="sm" color="text.secondary">Description</Text>
-                    <Text noOfLines={3} color="chakra-body-text">{formData.description || "No description"}</Text>
+                    <Text noOfLines={3} color="text.primary">{formData.description || "No description"}</Text>
                   </Box>
                   <HStack justify="space-between">
                     <Box>
@@ -486,7 +485,7 @@ export default function CreateCampaignPage() {
                     </Box>
                     <Box textAlign="right">
                       <Text fontSize="sm" color="text.secondary">End Date</Text>
-                      <Text fontWeight="600" color="chakra-body-text">
+                      <Text fontWeight="600" color="text.primary">
                         {formData.endDate 
                           ? new Date(formData.endDate).toLocaleString() 
                           : "Not set"}
@@ -495,7 +494,7 @@ export default function CreateCampaignPage() {
                   </HStack>
                   <Box>
                     <Text fontSize="sm" color="text.secondary">Beneficiary</Text>
-                    <Text fontFamily="mono" fontSize="sm" color="chakra-body-text">
+                    <Text fontFamily="mono" fontSize="sm" color="text.primary">
                       {formData.beneficiary || address || "Not set"}
                     </Text>
                   </Box>
@@ -532,23 +531,43 @@ export default function CreateCampaignPage() {
         Back to Campaigns
       </Button>
 
-      <Heading size="xl" mb={2}>
+      <Heading size={{ base: "lg", md: "xl" }} mb={2}>
         Create a Campaign
       </Heading>
-      <Text color="text.secondary" mb={8}>
+      <Text color="text.secondary" mb={{ base: 6, md: 8 }}>
         Start raising funds in STX and sBTC on the Stacks blockchain.
       </Text>
 
-      {/* Stepper — shows abbreviated labels on mobile via Tooltip */}
-      <Box mb={8}>
-        <Stepper index={activeStep} colorScheme="primary">
-          {steps.map((step, index) => (
-            <Step key={index} onClick={() => index <= activeStep && setActiveStep(index)}>
-              <Tooltip
-                label={`${step.title}: ${step.description}`}
-                display={{ md: "none" }}
-                hasArrow
-              >
+      {/* Progress — compact bar on mobile, labeled stepper on desktop */}
+      <Box mb={{ base: 6, md: 8 }}>
+        {/* Mobile: compact "Step X of N" + progress bar */}
+        <Box display={{ base: "block", md: "none" }}>
+          <Text
+            fontSize="11px"
+            fontWeight="700"
+            letterSpacing="0.08em"
+            textTransform="uppercase"
+            color="text.tertiary"
+            mb={2}
+          >
+            Step {activeStep + 1} of {steps.length} · {steps[activeStep].title}
+          </Text>
+          <Box h="6px" borderRadius="full" bg="bg.surfaceAlt" overflow="hidden">
+            <Box
+              h="100%"
+              borderRadius="full"
+              bg="primary.500"
+              transition="width 0.25s ease"
+              w={`${((activeStep + 1) / steps.length) * 100}%`}
+            />
+          </Box>
+        </Box>
+
+        {/* Desktop: full labeled stepper */}
+        <Box display={{ base: "none", md: "block" }}>
+          <Stepper index={activeStep} colorScheme="primary">
+            {steps.map((step, index) => (
+              <Step key={index} onClick={() => index <= activeStep && setActiveStep(index)}>
                 <StepIndicator cursor={index <= activeStep ? "pointer" : "default"}>
                   <StepStatus
                     complete={<StepIcon />}
@@ -556,28 +575,15 @@ export default function CreateCampaignPage() {
                     active={<StepNumber />}
                   />
                 </StepIndicator>
-              </Tooltip>
-
-              <Box flexShrink={0}>
-                <Box display={{ base: "none", md: "block" }}>
+                <Box flexShrink={0}>
                   <StepTitle>{step.title}</StepTitle>
                   <StepDescription>{step.description}</StepDescription>
                 </Box>
-                {/* Abbreviated label on mobile */}
-                <Text
-                  display={{ base: "block", md: "none" }}
-                  fontSize="xs"
-                  fontWeight={index === activeStep ? "bold" : "normal"}
-                  color={index <= activeStep ? "primary.600" : "text.tertiary"}
-                >
-                  {step.title}
-                </Text>
-              </Box>
-
-              <StepSeparator />
-            </Step>
-          ))}
-        </Stepper>
+                <StepSeparator />
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
       </Box>
 
       <Card
@@ -588,7 +594,7 @@ export default function CreateCampaignPage() {
         boxShadow="0 1px 2px rgba(15,23,43,0.04)"
         mb={6}
       >
-        <CardBody py={8}>
+        <CardBody py={{ base: 6, md: 8 }}>
           {!address ? (
             <VStack spacing={4} py={8} textAlign="center">
               <Text color="text.secondary" mb={4}>
@@ -603,42 +609,54 @@ export default function CreateCampaignPage() {
       </Card>
 
       {address && (
-        <HStack justify="space-between">
-          <Button
-            leftIcon={<ArrowBackIcon />}
-            variant="ghost"
-            borderRadius="full"
-            fontWeight="700"
-            onClick={goToPrevious}
-            isDisabled={activeStep === 0}
-          >
-            Previous
-          </Button>
+        <Box
+          position={{ base: "sticky", md: "static" }}
+          bottom={0}
+          zIndex={1}
+          bg="bg.canvas"
+          borderTopWidth={{ base: "1px", md: 0 }}
+          borderColor="border.default"
+          py={{ base: 3, md: 0 }}
+        >
+          <HStack justify="space-between" spacing={3}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              borderRadius="full"
+              fontWeight="700"
+              onClick={goToPrevious}
+              isDisabled={activeStep === 0}
+            >
+              Previous
+            </Button>
 
-          {activeStep < steps.length - 1 ? (
-            <Button
-              rightIcon={<ArrowForwardIcon />}
-              colorScheme="primary"
-              borderRadius="full"
-              fontWeight="700"
-              onClick={handleNext}
-            >
-              Next
-            </Button>
-          ) : (
-            <Button
-              leftIcon={isSubmitting ? <Spinner size="sm" /> : <CheckIcon />}
-              colorScheme="primary"
-              borderRadius="full"
-              fontWeight="700"
-              onClick={handleSubmit}
-              isLoading={isSubmitting}
-              loadingText="Creating..."
-            >
-              Create Campaign
-            </Button>
-          )}
-        </HStack>
+            {activeStep < steps.length - 1 ? (
+              <Button
+                rightIcon={<ArrowForwardIcon />}
+                colorScheme="primary"
+                borderRadius="full"
+                fontWeight="700"
+                onClick={handleNext}
+                flex={{ base: 1, md: "initial" }}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button
+                leftIcon={isSubmitting ? <Spinner size="sm" /> : <CheckIcon />}
+                colorScheme="primary"
+                borderRadius="full"
+                fontWeight="700"
+                onClick={handleSubmit}
+                isLoading={isSubmitting}
+                loadingText="Creating..."
+                flex={{ base: 1, md: "initial" }}
+              >
+                Create Campaign
+              </Button>
+            )}
+          </HStack>
+        </Box>
       )}
     </Container>
   );
