@@ -358,8 +358,8 @@ export default function DashboardPage() {
               Connect your wallet to see your campaigns, donations, and activity in one place.
             </Text>
             <Text fontSize="sm" color="text.tertiary" maxW="md">
-              Non-custodial — you approve actions in your wallet. FundStacks never holds your keys
-              or funds.
+              You stay in control — every action is approved in your wallet, and
+              we never touch your funds.
             </Text>
           </VStack>
           <ConnectWallet size="lg" w={{ base: "full", sm: "auto" }} maxW="sm" />
@@ -839,11 +839,12 @@ export default function DashboardPage() {
                 <Tile bg="bg.surfaceAlt" py={12}>
                   <VStack spacing={3} textAlign="center">
                     <Heading size="md">No donations yet</Heading>
-                    <Text color="text.secondary" fontSize="sm" maxW="300px">
-                      You haven&apos;t made any donations yet.
+                    <Text color="text.secondary" fontSize="sm" maxW="320px">
+                      Find a cause you believe in and chip in — your support
+                      shows up here.
                     </Text>
                     <Button as={Link} href="/campaigns" colorScheme="primary" borderRadius="full" fontWeight="700">
-                      Browse Campaigns
+                      Browse campaigns
                     </Button>
                   </VStack>
                 </Tile>

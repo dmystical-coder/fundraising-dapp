@@ -125,9 +125,9 @@ export function HowItWorksSection() {
                   lineHeight="1.75"
                   maxW="36ch"
                 >
-                  FundStacks makes it straightforward to discover credible
-                  causes and move value on-chain — with full transparency at
-                  every step.
+                  Find a cause worth backing, or start your own. It all
+                  happens on-chain — so you can always see exactly where the
+                  money goes.
                 </Text>
 
                 {/* Asset footnote */}
@@ -149,7 +149,7 @@ export function HowItWorksSection() {
                 fontWeight="700"
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
-                Get Started
+                Get started
               </Button>
             </Box>
 

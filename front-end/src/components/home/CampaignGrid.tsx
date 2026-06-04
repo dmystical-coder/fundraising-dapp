@@ -521,8 +521,8 @@ export function CampaignGrid({
               No campaigns yet
             </Heading>
             <Text color="text.secondary" maxW="380px" fontSize="sm">
-              Be the first to create a fundraising campaign and start accepting
-              donations in STX and sBTC.
+              Be the first to start one — set a goal, share your story, and
+              start accepting STX and sBTC.
             </Text>
             <Button
               as={NextLink}

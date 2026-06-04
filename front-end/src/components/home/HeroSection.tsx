@@ -246,19 +246,22 @@ export function HeroSection() {
               letterSpacing="-0.02em"
               maxW={{ base: "16ch", lg: "18ch" }}
             >
-              Raise and discover campaigns with{" "}
+              Fund what matters,{" "}
               <Text as="span" color="primary.500">
-                STX
-              </Text>{" "}
-              and{" "}
-              <Text as="span" color="warning.500">
-                sBTC
+                together
               </Text>
             </Heading>
 
             <Text fontSize={{ base: "md", md: "xl" }} color="text.secondary" maxW="48ch" lineHeight="1.65">
-              FundStacks helps supporters find credible causes quickly and gives creators a straightforward
-              path to launch with visible on-chain donation activity.
+              Back a cause you believe in — or raise for your own. Donations in{" "}
+              <Text as="span" color="primary.500" fontWeight="600">
+                STX
+              </Text>{" "}
+              and{" "}
+              <Text as="span" color="warning.500" fontWeight="600">
+                sBTC
+              </Text>{" "}
+              are tracked on-chain and paid out transparently. We never hold your funds.
             </Text>
 
             <Stack
@@ -279,7 +282,7 @@ export function HeroSection() {
                 minH={{ base: "46px", md: "48px" }}
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
-                Explore Campaigns
+                Explore campaigns
               </Button>
               <Button
                 as={Link}
@@ -293,7 +296,7 @@ export function HeroSection() {
                 minH={{ base: "46px", md: "48px" }}
                 _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
               >
-                Start a Campaign
+                Start a campaign
               </Button>
             </Stack>
           </VStack>
