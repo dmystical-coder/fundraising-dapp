@@ -810,7 +810,12 @@ export default function DocsPage() {
                     escrow for yourself.
                   </Text>
                 </Box>
-                <HStack spacing={3} flexShrink={0}>
+                <Stack
+                  direction={{ base: "column", sm: "row" }}
+                  spacing={3}
+                  flexShrink={0}
+                  w={{ base: "full", md: "auto" }}
+                >
                   <Button
                     as={NextLink}
                     href="/campaigns"
@@ -818,6 +823,7 @@ export default function DocsPage() {
                     size="lg"
                     rightIcon={<ArrowForwardIcon />}
                     fontWeight={700}
+                    w={{ base: "full", sm: "auto" }}
                   >
                     Explore campaigns
                   </Button>
@@ -828,10 +834,11 @@ export default function DocsPage() {
                     colorScheme="primary"
                     size="lg"
                     fontWeight={700}
+                    w={{ base: "full", sm: "auto" }}
                   >
                     Start a campaign
                   </Button>
-                </HStack>
+                </Stack>
               </Stack>
             </Box>
           </GridItem>
