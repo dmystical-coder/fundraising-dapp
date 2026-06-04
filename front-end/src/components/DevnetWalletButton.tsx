@@ -55,7 +55,7 @@ export const DevnetWalletButton = ({
             overflow="hidden"
             textOverflow="ellipsis"
             whiteSpace="nowrap"
-            color="chakra-body-text"
+            color="text.primary"
           >
             {formatStxAddress(currentAddress)}
           </Text>

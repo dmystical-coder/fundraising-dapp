@@ -492,7 +492,7 @@ export function InlineDonationPanel({
             <VStack spacing={4} align="stretch">
               <HStack spacing={2}>
                 <WarningIcon color="warning.500" boxSize={4} flexShrink={0} />
-                <Text fontSize="sm" fontWeight="600" color="chakra-body-text">
+                <Text fontSize="sm" fontWeight="600" color="text.primary">
                   This campaign was cancelled
                 </Text>
               </HStack>
@@ -510,12 +510,12 @@ export function InlineDonationPanel({
                 </Text>
                 <VStack align="start" spacing={0.5}>
                   {previousDonation!.stxAmount > 0 && (
-                    <Text fontSize="sm" color="chakra-body-text">
+                    <Text fontSize="sm" color="text.primary">
                       {Number(ustxToStx(previousDonation!.stxAmount)).toFixed(2)} STX
                     </Text>
                   )}
                   {previousDonation!.sbtcAmount > 0 && (
-                    <Text fontSize="sm" color="chakra-body-text">
+                    <Text fontSize="sm" color="text.primary">
                       {satsToSbtc(previousDonation!.sbtcAmount).toFixed(8)} sBTC
                     </Text>
                   )}
@@ -565,7 +565,7 @@ export function InlineDonationPanel({
                   </svg>
                 </Box>
               </Box>
-              <Text fontWeight="600" color="chakra-body-text" fontSize="sm">
+              <Text fontWeight="600" color="text.primary" fontSize="sm">
                 Refund claimed
               </Text>
               <Text fontSize="xs" color="text.secondary">
@@ -575,7 +575,7 @@ export function InlineDonationPanel({
           ) : (
             <VStack spacing={2} py={2} textAlign="center">
               <WarningIcon color="warning.400" boxSize={5} />
-              <Text fontWeight="600" color="chakra-body-text" fontSize="sm">
+              <Text fontWeight="600" color="text.primary" fontSize="sm">
                 This campaign was cancelled
               </Text>
               <Text fontSize="xs" color="text.secondary">

@@ -130,13 +130,13 @@ export const Navbar = () => {
                   fontSize="sm"
                   fontWeight={active ? "700" : "600"}
                   color={active ? "text.accent" : "text.secondary"}
-                  bg={active ? "surfaceBg" : "transparent"}
+                  bg={active ? "bg.surface" : "transparent"}
                   boxShadow={active ? "0 1px 2px rgba(15,23,43,0.08)" : "none"}
                   transition="all 0.15s ease"
                   _hover={{
                     textDecoration: "none",
                     color: "text.accent",
-                    bg: active ? "surfaceBg" : "whiteAlpha.700",
+                    bg: active ? "bg.surface" : "whiteAlpha.700",
                   }}
                   {...focusRing}
                 >
