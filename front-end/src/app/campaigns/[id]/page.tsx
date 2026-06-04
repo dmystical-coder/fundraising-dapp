@@ -488,25 +488,23 @@ export default function CampaignDetailPage() {
                       borderRadius="xl"
                     >
                       <WalletIdenticon address={leaderboard[0].donor} size={40} />
-                      <Box flex={1} minW={0}>
+                      <VStack align="stretch" spacing={1} flex={1} minW={0}>
                         <MicroLabel>Top supporter</MicroLabel>
-                        <Box mt="2px">
-                          <AddressDisplay
-                            address={leaderboard[0].donor}
-                            truncateLength={4}
-                            showCopy={false}
-                            showExplorer={false}
-                            size="sm"
-                          />
-                        </Box>
-                      </Box>
-                      <CombinedAmountDisplay
-                        stxAmount={leaderboard[0].total_stx}
-                        sbtcAmount={leaderboard[0].total_sbtc}
-                        stxPrice={prices?.stx}
-                        sbtcPrice={prices?.sbtc}
-                        size="sm"
-                      />
+                        <AddressDisplay
+                          address={leaderboard[0].donor}
+                          truncateLength={4}
+                          showCopy={false}
+                          showExplorer={false}
+                          size="sm"
+                        />
+                        <CombinedAmountDisplay
+                          stxAmount={leaderboard[0].total_stx}
+                          sbtcAmount={leaderboard[0].total_sbtc}
+                          stxPrice={prices?.stx}
+                          sbtcPrice={prices?.sbtc}
+                          size="sm"
+                        />
+                      </VStack>
                     </HStack>
 
                     {/* Remaining ranks */}
