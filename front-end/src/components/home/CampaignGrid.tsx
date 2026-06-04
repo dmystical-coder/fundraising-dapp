@@ -19,8 +19,8 @@ import {
   AspectRatio,
   Wrap,
   WrapItem,
-  useColorModeValue,
 } from "@chakra-ui/react";
+import { AddIcon } from "@chakra-ui/icons";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import NextLink from "next/link";
@@ -62,6 +62,8 @@ interface CampaignGridProps {
   actionLabel?: string;
   actionHref?: string;
   showFilters?: boolean;
+  showHeader?: boolean;
+  subtitle?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -168,6 +170,8 @@ export function CampaignGrid({
   actionLabel,
   actionHref,
   showFilters = false,
+  showHeader = false,
+  subtitle,
 }: CampaignGridProps) {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
@@ -175,11 +179,13 @@ export function CampaignGrid({
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
   const address = useAddress();
 
-  const filterActiveBg = useColorModeValue("gray.800", "gray.100");
-  const filterActiveColor = useColorModeValue("white", "gray.900");
-  const filterActiveBorder = useColorModeValue("gray.800", "gray.100");
-  const filterActiveHoverBg = useColorModeValue("gray.900", "white");
-  const filterActiveHoverColor = useColorModeValue("white", "gray.900");
+  // Active states use the violet brand accent (kept consistent with the rest
+  // of the app's pill language).
+  const filterActiveBg = "primary.500";
+  const filterActiveColor = "white";
+  const filterActiveBorder = "primary.500";
+  const filterActiveHoverBg = "primary.600";
+  const filterActiveHoverColor = "white";
 
   const {
     data: indexerCampaigns,
@@ -365,6 +371,58 @@ export function CampaignGrid({
   const isLoading = propIsLoading !== undefined ? propIsLoading : indexerLoading;
   const skeletonCount = limit ? Math.min(limit, 6) : 6;
 
+  // ── Lavender page-header band (campaigns discovery page only) ─────────────
+  const headerBand = (count?: number) =>
+    showHeader ? (
+      <Box
+        bg="bg.accentSubtle"
+        borderWidth="1px"
+        borderColor="border.accent"
+        borderRadius="2xl"
+        px={{ base: 5, md: 8 }}
+        py={{ base: 6, md: 7 }}
+        mb={6}
+      >
+        <Flex
+          justify="space-between"
+          align={{ base: "flex-start", md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          gap={4}
+        >
+          <Box>
+            <Heading size="lg" color="text.primary">
+              {title}
+            </Heading>
+            {subtitle && (
+              <Text fontSize="sm" color="text.secondary" mt={1.5} maxW="52ch">
+                {subtitle}
+              </Text>
+            )}
+            {count !== undefined && (
+              <Text fontSize="sm" color="text.tertiary" mt={1}>
+                {count === 1 ? "1 campaign" : `${count} campaigns`}
+                {!limit && totalPages > 1 && (
+                  <> · page {currentPage} of {totalPages}</>
+                )}
+              </Text>
+            )}
+          </Box>
+          <Button
+            as={NextLink}
+            href="/campaigns/new"
+            leftIcon={<AddIcon />}
+            colorScheme="primary"
+            borderRadius="full"
+            fontWeight="700"
+            flexShrink={0}
+            _focusVisible={{ boxShadow: "0 0 0 3px var(--chakra-colors-focus-ring)" }}
+          >
+            Create Campaign
+          </Button>
+        </Flex>
+      </Box>
+    ) : null;
+
   // ─── Loading: initial skeleton ───────────────────────────────────────────
   if (isLoading) {
     return (
@@ -374,10 +432,14 @@ export function CampaignGrid({
         scrollMarginTop={{ base: "88px", md: "112px" }}
       >
         <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
-          <HStack justify="space-between" mb={6} flexWrap="wrap" gap={4}>
-            <Skeleton height="32px" width="180px" borderRadius="md" />
-            {(showSort || actionHref) && <Skeleton height="40px" width="180px" borderRadius="md" />}
-          </HStack>
+          {showHeader ? (
+            headerBand()
+          ) : (
+            <HStack justify="space-between" mb={6} flexWrap="wrap" gap={4}>
+              <Skeleton height="32px" width="180px" borderRadius="md" />
+              {(showSort || actionHref) && <Skeleton height="40px" width="180px" borderRadius="md" />}
+            </HStack>
+          )}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <CampaignCardSkeleton key={i} />
@@ -397,6 +459,7 @@ export function CampaignGrid({
         scrollMarginTop={{ base: "88px", md: "112px" }}
       >
         <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
+          {headerBand()}
           <Alert
             status="error"
             borderRadius="xl"
@@ -441,6 +504,7 @@ export function CampaignGrid({
         scrollMarginTop={{ base: "88px", md: "112px" }}
       >
         <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
+          {headerBand()}
           <VStack spacing={5} py={16} textAlign="center">
             <Box
               w={16}
@@ -483,7 +547,10 @@ export function CampaignGrid({
       scrollMarginTop={{ base: "88px", md: "112px" }}
     >
       <Container maxW="container.xl" px={{ base: 4, md: 8 }}>
+        {showHeader && headerBand(filteredCampaigns.length)}
+
         {/* Toolbar */}
+        {!showHeader && (
         <Flex
           justify="space-between"
           align={{ base: "flex-start", sm: "center" }}
@@ -543,6 +610,7 @@ export function CampaignGrid({
             </HStack>
           )}
         </Flex>
+        )}
 
         {/* Filter bar */}
         {showFilters && !limit && (
