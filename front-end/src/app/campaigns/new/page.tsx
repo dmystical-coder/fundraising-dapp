@@ -141,7 +141,7 @@ export default function CreateCampaignPage() {
           newErrors.title = "Campaign title is required";
         }
         if (formData.description.trim().length < 20) {
-          newErrors.description = "Description must be at least 20 characters";
+          newErrors.description = "Add at least 20 characters so donors know what they're supporting";
         }
         // Cover is optional, but if provided it must be a usable image URL.
         if (formData.coverUrl.trim()) {
@@ -197,8 +197,8 @@ export default function CreateCampaignPage() {
 
   const handleSubmit = async () => {
     if (!address) {
-      toast.error("Wallet not connected", {
-        description: "Please connect your wallet to create a campaign",
+      toast.error("Connect your wallet first", {
+        description: "You'll need a connected Stacks wallet to create one.",
         duration: 5000,
       });
       return;
@@ -235,8 +235,8 @@ export default function CreateCampaignPage() {
           queryClient.invalidateQueries({ queryKey: ["indexer", "campaigns"] });
           queryClient.invalidateQueries({ queryKey: ["campaigns"] });
           
-          toast.success("Campaign Created!", {
-            description: "Your campaign has been submitted. Metadata will be saved once confirmed.",
+          toast.success("Campaign submitted!", {
+            description: "It'll appear here once the transaction confirms — usually a minute or two.",
             duration: 8000,
           });
           router.push("/");
@@ -244,7 +244,8 @@ export default function CreateCampaignPage() {
         onCancel: () => {
           setIsSubmitting(false);
           localStorage.removeItem(`pending_campaign_metadata_${address}`);
-          toast.warning("Transaction Cancelled", {
+          toast.warning("Cancelled", {
+            description: "No problem — your campaign wasn't created.",
             duration: 3000,
           });
         },
@@ -252,7 +253,7 @@ export default function CreateCampaignPage() {
     } catch (error) {
       console.error("Failed to create campaign:", error);
       localStorage.removeItem(`pending_campaign_metadata_${address}`);
-      toast.error("Failed to create campaign", {
+      toast.error("Couldn't create your campaign", {
         description: error instanceof Error ? error.message : "Unknown error occurred",
         duration: 5000,
       });
@@ -535,7 +536,7 @@ export default function CreateCampaignPage() {
         Create a Campaign
       </Heading>
       <Text color="text.secondary" mb={{ base: 6, md: 8 }}>
-        Start raising funds in STX and sBTC on the Stacks blockchain.
+        Set your goal, tell your story, and start accepting STX and sBTC.
       </Text>
 
       {/* Progress — compact bar on mobile, labeled stepper on desktop */}

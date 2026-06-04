@@ -127,7 +127,7 @@ export const ConnectWalletButton = (buttonProps: ConnectWalletButtonProps) => {
       const message = error instanceof Error ? error.message : String(error);
       const isProviderConflict =
         /Cannot redefine property:\s*StacksProvider/i.test(message);
-      toast.error("Wallet connection failed", {
+      toast.error("Couldn't connect your wallet", {
         description: isProviderConflict
           ? "Multiple Stacks wallet extensions are conflicting. Disable one of Leather/Xverse and try again."
           : "Unable to connect wallet. Ensure a Stacks wallet extension is installed and unlocked, then retry.",

@@ -211,14 +211,14 @@ export function DonorBadgePanel({ campaignId }: DonorBadgePanelProps) {
           ...txOptions,
           onFinish: (data) => onSuccess(data.txId),
           onCancel: () => {
-            toast.info("Cancelled", { description: "Transaction was cancelled" });
+            toast.info("Cancelled", { description: "No problem — nothing was sent." });
             setIsSubmitting(false);
           },
         });
       }
     } catch (e) {
       console.error(e);
-      toast.error("Could not submit badge claim", {
+      toast.error("Couldn't claim your badge", {
         description: e instanceof Error ? e.message : "Unknown error",
       });
       setIsSubmitting(false);
