@@ -1,7 +1,7 @@
 "use client";
 
 import { HStack, Text, TextProps, IconButton, Tooltip, Link, VisuallyHidden } from "@chakra-ui/react";
-import { CopyIcon, ExternalLinkIcon, CheckIcon } from "@chakra-ui/icons";
+import { CopyIcon, ExternalLinkIcon, CheckIcon } from "@/components/icons";
 import { useState, useCallback } from "react";
 
 interface AddressDisplayProps extends Omit<TextProps, "children"> {

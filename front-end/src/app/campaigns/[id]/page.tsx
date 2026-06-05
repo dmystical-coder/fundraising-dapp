@@ -25,7 +25,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ArrowBackIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon } from "@/components/icons";
 import Link from "next/link";
 
 import {

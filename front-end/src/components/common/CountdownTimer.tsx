@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HStack, Text, TextProps, Icon } from "@chakra-ui/react";
-import { TimeIcon } from "@chakra-ui/icons";
+import { TimeIcon } from "@/components/icons";
 
 interface CountdownTimerProps extends Omit<TextProps, "children"> {
   endAt: number; // Unix timestamp in seconds

@@ -6,7 +6,7 @@ import {
   useColorModeValue,
   type IconButtonProps,
 } from "@chakra-ui/react";
-import { MoonIcon, SunIcon } from "@chakra-ui/icons";
+import { MoonIcon, SunIcon } from "@/components/icons";
 
 /**
  * Light/dark theme toggle. Shows the icon for the mode you'd switch *to*

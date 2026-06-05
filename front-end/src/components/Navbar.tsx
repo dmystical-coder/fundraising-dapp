@@ -18,7 +18,7 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { HamburgerIcon } from "@chakra-ui/icons";
+import { HamburgerIcon } from "@/components/icons";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { isDevnetEnvironment } from "@/lib/contract-utils";

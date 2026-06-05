@@ -13,7 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { LockIcon } from "@chakra-ui/icons";
+import { LockIcon } from "@/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 

@@ -13,7 +13,7 @@ import {
   Image,
   usePrefersReducedMotion,
 } from "@chakra-ui/react";
-import { ArrowForwardIcon } from "@chakra-ui/icons";
+import { ArrowForwardIcon } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { StatusBadge, getCampaignStatus } from "../common/StatusBadge";
 import { CombinedAmountDisplay } from "../common/AmountDisplay";

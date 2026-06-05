@@ -27,7 +27,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import { CheckIcon, CloseIcon } from "@/components/icons";
 import { useContext, useState, type ReactNode } from "react";
 import HiroWalletContext from "./HiroWalletProvider";
 import { useDevnetWallet } from "@/lib/devnet-wallet-context";

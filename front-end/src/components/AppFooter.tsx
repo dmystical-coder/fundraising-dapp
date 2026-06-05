@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { FundStacksMark } from "./common/FundStacksMark";
+import { ArrowUpRightIcon } from "./icons";
 
 // ─── Link data ────────────────────────────────────────────────────────────────
 
@@ -30,34 +31,7 @@ const ECOSYSTEM_LINKS = [
 
 const GITHUB_URL = "https://github.com/dmystical-coder/fundraising-dapp";
 
-// ─── Inline icons (no icon dep needed) ───────────────────────────────────────
-
-function ExternalIcon() {
-  return (
-    <Box
-      as="svg"
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 12 12"
-      w="10px"
-      h="10px"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      display="inline-block"
-      ml="4px"
-      verticalAlign="middle"
-      opacity={0.6}
-      flexShrink={0}
-      aria-hidden="true"
-    >
-      <path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7" />
-      <polyline points="8 1 11 1 11 4" />
-      <line x1="5" y1="7" x2="11" y2="1" />
-    </Box>
-  );
-}
+// ─── Inline brand icon (Lucide ships no brand logos, so GitHub stays SVG) ────
 
 function GitHubIcon() {
   return (
@@ -184,7 +158,7 @@ export function AppFooter() {
                   {...focusRing}
                 >
                   {link.label}
-                  <ExternalIcon />
+                  <ArrowUpRightIcon boxSize="12px" ml="3px" opacity={0.6} flexShrink={0} aria-hidden="true" />
                 </Link>
               ))}
             </VStack>

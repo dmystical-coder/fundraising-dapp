@@ -12,7 +12,7 @@ import {
   Link,
   useClipboard,
 } from "@chakra-ui/react";
-import { CheckIcon, CopyIcon } from "@chakra-ui/icons";
+import { CheckIcon, CopyIcon } from "@/components/icons";
 import { useState, useEffect } from "react";
 
 interface ShareCardProps {

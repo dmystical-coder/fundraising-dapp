@@ -13,7 +13,7 @@ import {
   MenuDivider,
   Text,
 } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon } from "@/components/icons";
 import NextLink from "next/link";
 import { DevnetWallet } from "@/lib/devnet-wallet-context";
 import { formatStxAddress } from "@/lib/address-utils";
