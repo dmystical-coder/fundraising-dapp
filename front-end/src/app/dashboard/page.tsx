@@ -24,7 +24,7 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { AddIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { AddIcon, HamburgerIcon } from "@/components/icons";
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 

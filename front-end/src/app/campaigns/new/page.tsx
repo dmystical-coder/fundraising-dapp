@@ -23,7 +23,6 @@ import {
   InputRightAddon,
   Image,
   AspectRatio,
-  Icon,
   Textarea,
   NumberInput,
   NumberInputField,
@@ -41,7 +40,7 @@ import {
   AlertIcon,
   Spinner,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, ArrowForwardIcon, CheckIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, ArrowForwardIcon, CheckIcon, ImageIcon } from "@/components/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { uintCV, principalCV } from "@stacks/transactions";
@@ -75,27 +74,6 @@ const initialFormData: FormData = {
   endDate: "",
   beneficiary: "",
 };
-
-// Minimal outline "image" glyph for the empty cover-preview placeholder.
-function ImageGlyph(props: React.ComponentProps<typeof Icon>) {
-  return (
-    <Icon viewBox="0 0 24 24" fill="none" {...props}>
-      <path
-        d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" />
-      <path
-        d="m4 17 4.5-4.5a2 2 0 0 1 2.8 0L17 18"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Icon>
-  );
-}
 
 /** A cover image must be a real http(s) URL we can render in an <img>. */
 function isHttpUrl(value: string): boolean {
@@ -350,7 +328,7 @@ export default function CreateCampaignPage() {
                       borderRadius="xl"
                       color="text.tertiary"
                     >
-                      <Icon as={ImageGlyph} boxSize={6} />
+                      <ImageIcon boxSize={6} />
                       <Text fontSize="sm" fontWeight="500" textAlign="center" px={4}>
                         {coverLoadFailed
                           ? "Couldn't load that image — check the link"

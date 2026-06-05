@@ -11,7 +11,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { WarningTwoIcon } from "@chakra-ui/icons";
+import { WarningTwoIcon } from "@/components/icons";
 
 export default function ErrorPage({
   error,

@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.5",
     "@dmystical-coder/fundstacks-headless-sdk": "0.2.0",
     "@stacks/blockchain-api-client": "^7.2.2",
@@ -19,10 +18,12 @@
     "@stacks/wallet-sdk": "^7.0.4",
     "@tanstack/react-query": "^5.66.0",
     "ethereum-blockies-base64": "^1.0.2",
+    "lucide-react": "^1.17.0",
     "next": "^15.5.9",
     "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.6.0",
     "sonner": "^2.0.7",
     "timeago.js": "^4.0.2"
   },

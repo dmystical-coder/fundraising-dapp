@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode } from "react";
 import { Box, Button, Container, Heading, HStack, Text, VStack } from "@chakra-ui/react";
-import { WarningTwoIcon } from "@chakra-ui/icons";
+import { WarningTwoIcon } from "@/components/icons";
 
 interface Props {
   children: ReactNode;

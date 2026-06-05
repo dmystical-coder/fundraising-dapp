@@ -16,7 +16,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon, LockIcon, WarningIcon } from "@chakra-ui/icons";
+import { CheckIcon, ExternalLinkIcon, LockIcon, WarningIcon } from "@/components/icons";
 import { useState, useContext } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -112,20 +112,7 @@ function SuccessMark({ size = 52 }: { size?: number }) {
       justifyContent="center"
       mx="auto"
     >
-      <Box color="success.500">
-        <svg
-          width={icon}
-          height={icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </Box>
+      <CheckIcon boxSize={`${icon}px`} color="success.500" strokeWidth={2.5} />
     </Box>
   );
 }
