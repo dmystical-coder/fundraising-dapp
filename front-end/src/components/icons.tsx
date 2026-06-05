@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * App icon set — Lucide glyphs wrapped in Chakra's `Icon` so they accept
  * Chakra style props (`boxSize`, `color`, `mr`, …) exactly like the old
