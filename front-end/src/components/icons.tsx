@@ -10,7 +10,9 @@
  *
  * Stroke weight etc. can be tuned here once and apply everywhere.
  */
+import { type ElementType } from "react";
 import { Icon, type IconProps } from "@chakra-ui/react";
+import { SiX, SiWhatsapp, SiGithub } from "react-icons/si";
 import {
   Plus,
   ArrowLeft,
@@ -55,3 +57,16 @@ export const WarningIcon = lucide(TriangleAlert, "WarningIcon");
 export const WarningTwoIcon = lucide(CircleAlert, "WarningTwoIcon");
 export const ArrowUpRightIcon = lucide(ArrowUpRight, "ArrowUpRightIcon");
 export const ImageIcon = lucide(Image, "ImageIcon");
+
+// ── Brand glyphs (simple-icons via react-icons) — logos Lucide doesn't ship.
+// These are filled single-path marks, used only for share targets / external
+// links (not general product chrome).
+function brand(Glyph: ElementType, displayName: string) {
+  const Wrapped = (props: IconProps) => <Icon as={Glyph} {...props} />;
+  Wrapped.displayName = displayName;
+  return Wrapped;
+}
+
+export const XIcon = brand(SiX, "XIcon");
+export const WhatsAppIcon = brand(SiWhatsapp, "WhatsAppIcon");
+export const GithubIcon = brand(SiGithub, "GithubIcon");
