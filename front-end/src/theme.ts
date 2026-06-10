@@ -83,6 +83,17 @@ const colors = {
     800: "#4C1D95",
     900: "#3B0764",
   },
+  // Dark-mode surface ramp — a restrained violet-tinted near-black so dark mode
+  // reads on-brand rather than generic neutral gray. Calibrated to Better Stack's
+  // layered-surface elevation (base→panel→overlay) with a faint Reflect-style
+  // violet cast. Elevation comes from these tonal steps + borders, never shadow.
+  ink: {
+    canvas: "#0D0A14", // L0 page background
+    surface: "#18141F", // L1 cards / panels / fields
+    surfaceAlt: "#221C30", // L2 muted / elevated fills
+    border: "#3D3656", // primary separating border — must read as a visible ring
+    borderSubtle: "#2A2440", // faint divider
+  },
 };
 
 const fonts = {
@@ -442,20 +453,21 @@ const theme = extendTheme({
   config,
   semanticTokens: {
     colors: {
-      "chakra-body-bg": { _light: "warm.bg", _dark: "gray.950" },
+      "chakra-body-bg": { _light: "warm.bg", _dark: "ink.canvas" },
       "chakra-body-text": { _light: "gray.800", _dark: "gray.100" },
-      "chakra-border-color": { _light: "warm.border", _dark: "gray.700" },
-      surfaceBg: { _light: "warm.surface", _dark: "gray.900" },
-      mutedBg: { _light: "warm.muted", _dark: "gray.800" },
+      "chakra-border-color": { _light: "warm.border", _dark: "ink.border" },
+      surfaceBg: { _light: "warm.surface", _dark: "ink.surface" },
+      mutedBg: { _light: "warm.muted", _dark: "ink.surfaceAlt" },
       linkColor: { _light: "primary.600", _dark: "primary.300" },
       linkHoverColor: { _light: "primary.700", _dark: "primary.200" },
       heroBg: {
         _light: "linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%)",
-        _dark: "linear-gradient(180deg, #111827 0%, #1f2937 100%)",
+        // Deep violet wash fading to canvas — the dark twin of the lavender hero.
+        _dark: "linear-gradient(180deg, #1C1630 0%, #15111E 100%)",
       },
-      "bg.canvas": { _light: "warm.bg", _dark: "gray.950" },
-      "bg.surface": { _light: "warm.surface", _dark: "gray.900" },
-      "bg.surfaceAlt": { _light: "warm.muted", _dark: "gray.800" },
+      "bg.canvas": { _light: "warm.bg", _dark: "ink.canvas" },
+      "bg.surface": { _light: "warm.surface", _dark: "ink.surface" },
+      "bg.surfaceAlt": { _light: "warm.muted", _dark: "ink.surfaceAlt" },
       "bg.accentSubtle": { _light: "primary.50", _dark: "primary.900" },
       "bg.field": { _light: "warm.surface", _dark: "gray.900" },
       "bg.nav": { _light: "whiteAlpha.900", _dark: "blackAlpha.500" },
@@ -468,11 +480,11 @@ const theme = extendTheme({
       "text.success": { _light: "success.700", _dark: "success.300" },
       "text.warning": { _light: "warning.700", _dark: "warning.300" },
       "text.danger": { _light: "error.700", _dark: "error.300" },
-      "border.default": { _light: "warm.border", _dark: "gray.700" },
-      "border.subtle": { _light: "gray.100", _dark: "gray.800" },
+      "border.default": { _light: "warm.border", _dark: "ink.border" },
+      "border.subtle": { _light: "gray.100", _dark: "ink.borderSubtle" },
       "border.accent": { _light: "primary.300", _dark: "primary.500" },
       "focus.ring": { _light: "primary.300", _dark: "primary.500" },
-      "scrollbar.track": { _light: "warm.muted", _dark: "gray.800" },
+      "scrollbar.track": { _light: "warm.muted", _dark: "ink.surfaceAlt" },
       "scrollbar.thumb": { _light: "primary.500", _dark: "primary.400" },
       "scrollbar.thumbHover": { _light: "primary.600", _dark: "primary.300" },
     },
