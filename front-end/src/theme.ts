@@ -218,6 +218,20 @@ const components = {
             bg: `${c}.100`,
             color: `${c}.900`,
           },
+          // Dark mode: lighter ink + deep-tint hover/active (the light .50/.100
+          // fills and .700 text are near-invisible on gray.900).
+          _dark: {
+            color: `${c}.300`,
+            _hover: {
+              bg: `${c}.900`,
+              color: `${c}.100`,
+              borderColor: `${c}.400`,
+            },
+            _active: {
+              bg: `${c}.800`,
+              color: `${c}.50`,
+            },
+          },
         };
       },
       ghost: {
@@ -256,26 +270,33 @@ const components = {
       fontSize: "xs",
       textTransform: "uppercase",
     },
+    // Status pills: light tint + dark text in light mode; deep tint + light
+    // text in dark mode so they stay legible on gray.900 surfaces.
     variants: {
       active: {
         bg: "success.100",
         color: "success.700",
+        _dark: { bg: "success.900", color: "success.200" },
       },
       ended: {
         bg: "gray.100",
         color: "gray.600",
+        _dark: { bg: "gray.700", color: "gray.300" },
       },
       cancelled: {
         bg: "error.100",
         color: "error.700",
+        _dark: { bg: "error.900", color: "error.200" },
       },
       withdrawn: {
         bg: "secondary.100",
         color: "secondary.700",
+        _dark: { bg: "secondary.900", color: "secondary.200" },
       },
       warning: {
         bg: "warning.100",
         color: "warning.700",
+        _dark: { bg: "warning.900", color: "warning.200" },
       },
     },
   },
@@ -469,13 +490,21 @@ const theme = extendTheme({
       "bg.surface": { _light: "warm.surface", _dark: "ink.surface" },
       "bg.surfaceAlt": { _light: "warm.muted", _dark: "ink.surfaceAlt" },
       "bg.accentSubtle": { _light: "primary.50", _dark: "primary.900" },
-      "bg.field": { _light: "warm.surface", _dark: "gray.900" },
+      // Status panel/pill fills — light pastels in light mode, deep tints in
+      // dark so they read as tinted panels (not glaring near-white) on gray.900.
+      "bg.successSubtle": { _light: "success.50", _dark: "success.900" },
+      "bg.warningSubtle": { _light: "warning.50", _dark: "warning.900" },
+      "bg.errorSubtle": { _light: "error.50", _dark: "error.900" },
+      "bg.field": { _light: "warm.surface", _dark: "ink.surface" },
       "bg.nav": { _light: "whiteAlpha.900", _dark: "blackAlpha.500" },
       "bg.overlay": { _light: "blackAlpha.300", _dark: "blackAlpha.600" },
       "text.primary": { _light: "gray.800", _dark: "gray.100" },
       "text.secondary": { _light: "gray.600", _dark: "gray.300" },
       "text.tertiary": { _light: "gray.500", _dark: "gray.400" },
       "text.accent": { _light: "primary.600", _dark: "primary.300" },
+      // Teal accent text/numbers — lifts to a bright legible teal on dark
+      // (saturated secondary.600/700 goes muddy on near-black).
+      "text.accentSecondary": { _light: "secondary.700", _dark: "secondary.300" },
       "text.inverse": { _light: "white", _dark: "white" },
       "text.success": { _light: "success.700", _dark: "success.300" },
       "text.warning": { _light: "warning.700", _dark: "warning.300" },
