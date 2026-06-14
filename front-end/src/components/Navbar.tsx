@@ -69,7 +69,7 @@ export const Navbar = () => {
         fontWeight="900"
         letterSpacing="0.08em"
         textTransform="uppercase"
-        color="primary.700"
+        color="text.accent"
         lineHeight="1"
         whiteSpace="nowrap"
       >
@@ -137,7 +137,7 @@ export const Navbar = () => {
                   _hover={{
                     textDecoration: "none",
                     color: "text.accent",
-                    bg: active ? "bg.surface" : "whiteAlpha.700",
+                    bg: "bg.surface",
                   }}
                   {...focusRing}
                 >

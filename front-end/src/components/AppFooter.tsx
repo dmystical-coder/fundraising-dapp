@@ -91,7 +91,7 @@ export function AppFooter() {
                   fontWeight="900"
                   letterSpacing="0.08em"
                   textTransform="uppercase"
-                  color="primary.700"
+                  color="text.accent"
                   lineHeight="1"
                 >
                   FundStacks
