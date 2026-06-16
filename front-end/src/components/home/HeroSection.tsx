@@ -100,7 +100,7 @@ function HeroPreviewCard() {
             spacing={4}
             align="stretch"
             p={4}
-            bg="bg.accentSubtle"
+            bg="bg.surfaceAlt"
             borderRadius="xl"
             borderWidth="1px"
             borderColor="border.accent"
@@ -116,7 +116,7 @@ function HeroPreviewCard() {
                 Raised
               </Text>
               <HStack spacing={2} align="baseline" mt={1}>
-                <Text fontFamily="mono" fontWeight="600" color="primary.600">
+                <Text fontFamily="mono" fontWeight="600" color="text.accent">
                   12.4
                 </Text>
                 <Text fontSize="sm" color="text.secondary">
@@ -138,7 +138,7 @@ function HeroPreviewCard() {
                 >
                   Progress
                 </Text>
-                <Text fontSize="xs" fontWeight="700" color="primary.700">
+                <Text fontSize="xs" fontWeight="700" color="text.accent">
                   68%
                 </Text>
               </HStack>
@@ -247,14 +247,14 @@ export function HeroSection() {
               maxW={{ base: "16ch", lg: "18ch" }}
             >
               Fund what matters,{" "}
-              <Text as="span" color="primary.500">
+              <Text as="span" color="text.accent">
                 together
               </Text>
             </Heading>
 
             <Text fontSize={{ base: "md", md: "xl" }} color="text.secondary" maxW="48ch" lineHeight="1.65">
               Back a cause you believe in — or raise for your own. Donations in{" "}
-              <Text as="span" color="primary.500" fontWeight="600">
+              <Text as="span" color="text.accent" fontWeight="600">
                 STX
               </Text>{" "}
               and{" "}
