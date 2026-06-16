@@ -57,7 +57,7 @@ function StatCard({
     <Stat
       px={4}
       py={3.5}
-      bg={accent ? "bg.accentSubtle" : "bg.surface"}
+      bg="bg.surface"
       borderRadius="xl"
       borderWidth="1px"
       borderColor={accent ? "border.accent" : "border.default"}
@@ -198,7 +198,7 @@ export function QuickStatsBar() {
             helpText={hasPricesError ? "Price feed unavailable" : "All campaigns combined"}
             isLoading={totalRaisedLoading}
             isError={isError}
-            color="primary.600"
+            color="text.accent"
             accent
           />
           <StatCard
@@ -214,7 +214,7 @@ export function QuickStatsBar() {
             helpText="Community supporters"
             isLoading={isLoading}
             isError={isError}
-            color="secondary.600"
+            color="text.accentSecondary"
           />
           <StatCard
             label="Donations"
@@ -222,7 +222,7 @@ export function QuickStatsBar() {
             helpText="Total contributions"
             isLoading={isLoading}
             isError={isError}
-            color="success.600"
+            color="text.success"
           />
         </SimpleGrid>
       </Container>

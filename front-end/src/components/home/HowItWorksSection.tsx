@@ -112,7 +112,7 @@ export function HowItWorksSection() {
                   color="text.primary"
                 >
                   From zero to{" "}
-                  <Box as="span" color="primary.500">
+                  <Box as="span" color="text.accent">
                     funded
                   </Box>
                   , in four steps
@@ -179,7 +179,7 @@ export function HowItWorksSection() {
                           justifyContent="center"
                           flexShrink={0}
                         >
-                          <Text fontSize="11px" fontWeight="800" color="primary.600" fontFamily="mono">
+                          <Text fontSize="11px" fontWeight="800" color="text.accent" fontFamily="mono">
                             {String(item.step).padStart(2, "0")}
                           </Text>
                         </Box>

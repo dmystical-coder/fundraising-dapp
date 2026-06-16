@@ -12,9 +12,11 @@ import { Box, Heading, SimpleGrid, Text, VStack } from "@chakra-ui/react";
  * its vote weight clears the threshold.
  */
 
-const PANEL_BG = "#0D0F1A";
+// Lifted off near-black so the panel separates from the (now violet-tinted)
+// dark canvas; still reads as a deep feature panel against the light canvas.
+const PANEL_BG = "#191526";
 const CARD_BG = "rgba(255,255,255,0.04)";
-const BORDER = "rgba(255,255,255,0.08)";
+const BORDER = "rgba(255,255,255,0.12)";
 const VIOLET = "#A78BFA";
 const TEAL = "#2DD4BF";
 const INK_HI = "#F3F4F6";
