@@ -270,7 +270,7 @@ export function CampaignCard({
             spacing={4}
             align="stretch"
             p={4}
-            bg="bg.accentSubtle"
+            bg="bg.surfaceAlt"
             borderRadius="xl"
             borderWidth="1px"
             borderColor="border.accent"
@@ -303,10 +303,10 @@ export function CampaignCard({
                     fontWeight="700"
                     color={
                       goalMet
-                        ? "success.600"
+                        ? "text.success"
                         : isActive
-                        ? "primary.700"
-                        : "secondary.600"
+                        ? "text.accent"
+                        : "text.accentSecondary"
                     }
                   >
                     {isActive ? progressLabel : `${progressLabel} of goal`}
@@ -349,7 +349,7 @@ export function CampaignCard({
               </Text>
             </HStack>
             {isPending ? (
-              <Text fontSize="xs" color="warning.600" fontWeight="700">
+              <Text fontSize="xs" color="text.warning" fontWeight="700">
                 Confirming…
               </Text>
             ) : (
