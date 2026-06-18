@@ -65,10 +65,10 @@ type CampaignState = "active" | "ended" | "withdrawn" | "cancelled";
 
 function StatusChip({ state }: { state: CampaignState }) {
   const map: Record<CampaignState, { label: string; bg: string; color: string }> = {
-    active: { label: "Active", bg: "primary.50", color: "primary.700" },
+    active: { label: "Active", bg: "bg.accentSubtle", color: "text.accent" },
     ended: { label: "Ended", bg: "bg.surfaceAlt", color: "text.secondary" },
-    withdrawn: { label: "Withdrawn", bg: "success.50", color: "success.700" },
-    cancelled: { label: "Cancelled", bg: "error.50", color: "error.600" },
+    withdrawn: { label: "Withdrawn", bg: "bg.successSubtle", color: "text.success" },
+    cancelled: { label: "Cancelled", bg: "bg.errorSubtle", color: "text.danger" },
   };
   const s = map[state];
   return (
@@ -581,7 +581,7 @@ export default function CampaignAdminControls({
         <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
         <ModalContent borderRadius="2xl">
           <ModalHeader pb={1}>
-            <MicroLabel color="primary.600">Settle campaign</MicroLabel>
+            <MicroLabel color="text.accent">Settle campaign</MicroLabel>
             <Text mt={1}>Withdraw Funds?</Text>
           </ModalHeader>
           <ModalCloseButton borderRadius="full" />

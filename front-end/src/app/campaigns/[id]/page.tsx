@@ -331,7 +331,7 @@ export default function CampaignDetailPage() {
                     <Box mb={1}>
                       <MicroLabel>Raised</MicroLabel>
                     </Box>
-                    <Text fontWeight="800" color="primary.600" fontSize="2xl" lineHeight="1.1">
+                    <Text fontWeight="800" color="text.accent" fontSize="2xl" lineHeight="1.1">
                       ${totalUsd.toFixed(2)}
                       <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
                         USD
@@ -352,7 +352,7 @@ export default function CampaignDetailPage() {
                       <Box mb={1}>
                         <MicroLabel>Refunded</MicroLabel>
                       </Box>
-                      <Text fontWeight="700" color="warning.600" fontSize="lg" lineHeight="1.1">
+                      <Text fontWeight="700" color="text.warning" fontSize="lg" lineHeight="1.1">
                         ${refundedUsd.toFixed(2)}
                         <Text as="span" fontSize="sm" fontWeight="500" color="text.tertiary" ml={1}>
                           USD
@@ -380,7 +380,7 @@ export default function CampaignDetailPage() {
                         <Text
                           fontSize="sm"
                           fontWeight="700"
-                          color={progress >= 100 ? "success.600" : "primary.700"}
+                          color={progress >= 100 ? "text.success" : "text.accent"}
                         >
                           {progress.toFixed(0)}%
                         </Text>

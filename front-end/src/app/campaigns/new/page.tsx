@@ -458,7 +458,7 @@ export default function CreateCampaignPage() {
                   <HStack justify="space-between">
                     <Box>
                       <Text fontSize="sm" color="text.secondary">Goal</Text>
-                      <Text fontWeight="600" color="primary.600">
+                      <Text fontWeight="600" color="text.accent">
                         ${formData.goal.toLocaleString()} USD
                       </Text>
                     </Box>
