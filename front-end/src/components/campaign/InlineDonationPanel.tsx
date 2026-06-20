@@ -104,7 +104,7 @@ function SuccessMark({ size = 52 }: { size?: number }) {
       w={`${size}px`}
       h={`${size}px`}
       borderRadius="full"
-      bg="success.50"
+      bg="bg.successSubtle"
       border="1.5px solid"
       borderColor="success.300"
       display="flex"
@@ -419,7 +419,7 @@ export function InlineDonationPanel({
               alignItems="center"
               justifyContent="center"
             >
-              <LockIcon boxSize={4} color="primary.600" />
+              <LockIcon boxSize={4} color="text.accent" />
             </Box>
             <VStack spacing={1}>
               <Text fontWeight="700" textAlign="center" color="text.primary">
@@ -485,14 +485,14 @@ export function InlineDonationPanel({
               </HStack>
 
               <Box
-                bg="warning.50"
+                bg="bg.warningSubtle"
                 borderLeft="3px solid"
                 borderLeftColor="warning.400"
                 borderRadius="lg"
                 px={3}
                 py={2.5}
               >
-                <Text fontSize="xs" fontWeight="600" color="warning.700" mb={1}>
+                <Text fontSize="xs" fontWeight="600" color="text.warning" mb={1}>
                   Your contribution
                 </Text>
                 <VStack align="start" spacing={0.5}>
@@ -529,7 +529,7 @@ export function InlineDonationPanel({
                 w="40px"
                 h="40px"
                 borderRadius="full"
-                bg="success.50"
+                bg="bg.successSubtle"
                 border="1.5px solid"
                 borderColor="success.300"
                 display="flex"
@@ -623,7 +623,7 @@ export function InlineDonationPanel({
                   Pay {feeLabel} platform fee
                 </Button>
               ) : feePaid ? (
-                <Text fontSize="sm" color="success.600" textAlign="center" fontWeight="600">
+                <Text fontSize="sm" color="text.success" textAlign="center" fontWeight="600">
                   Platform fee paid ✓
                 </Text>
               ) : null;
@@ -688,11 +688,11 @@ export function InlineDonationPanel({
                       borderRadius="full"
                       fontSize="sm"
                       fontWeight={active ? "700" : "600"}
-                      color={active ? "primary.700" : "text.secondary"}
+                      color={active ? "text.accent" : "text.secondary"}
                       bg={active ? "bg.surface" : "transparent"}
                       boxShadow={active ? "0 1px 3px rgba(15,23,43,0.12)" : "none"}
                       transition="color 0.15s ease, background 0.15s ease"
-                      _hover={{ color: active ? "primary.700" : "text.primary" }}
+                      _hover={{ color: active ? "text.accent" : "text.primary" }}
                       onClick={() => handleTokenChange(tok)}
                     >
                       {tok === "stx" ? "STX" : "sBTC"}
@@ -716,7 +716,7 @@ export function InlineDonationPanel({
                     fontSize="sm"
                     fontWeight={selected ? "700" : "600"}
                     bg={selected ? "bg.accentSubtle" : "bg.surface"}
-                    color={selected ? "primary.700" : "text.secondary"}
+                    color={selected ? "text.accent" : "text.secondary"}
                     borderColor={selected ? "primary.300" : "border.default"}
                     _hover={{
                       borderColor: "border.accent",
