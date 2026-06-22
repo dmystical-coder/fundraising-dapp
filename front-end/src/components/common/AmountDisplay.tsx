@@ -22,13 +22,13 @@ const sizeStyles = {
 const tokenConfig = {
   stx: {
     symbol: "STX",
-    color: "primary.600",
+    color: "text.accent",
     decimals: 6,
     convert: (raw: number) => ustxToStx(raw),
   },
   sbtc: {
     symbol: "sBTC",
-    color: "warning.600",
+    color: "text.warning",
     decimals: 8,
     convert: (raw: number) => satsToSbtc(raw),
   },

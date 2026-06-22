@@ -145,7 +145,7 @@ function TierLadder({ qualified }: { qualified: BadgeTier }) {
                 fontWeight="700"
                 textTransform="uppercase"
                 letterSpacing="0.04em"
-                color={reached ? "primary.700" : "text.tertiary"}
+                color={reached ? "text.accent" : "text.tertiary"}
               >
                 {step.label}
               </Text>

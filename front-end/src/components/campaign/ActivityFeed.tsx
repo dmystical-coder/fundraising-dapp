@@ -154,7 +154,7 @@ export function ActivityFeedItem({
             {showCampaignLink && campaignId && (
               <Link
                 href={`/campaigns/${campaignId}`}
-                color="secondary.600"
+                color="text.accentSecondary"
                 fontSize="sm"
                 flexShrink={0}
               >
@@ -173,8 +173,8 @@ export function ActivityFeedItem({
                 href={getTxExplorerUrl(txid)}
                 isExternal
                 fontSize="xs"
-                color="primary.500"
-                _hover={{ color: "primary.700" }}
+                color="text.accent"
+                _hover={{ color: "text.accent" }}
                 whiteSpace="nowrap"
                 aria-label="View transaction"
               >
