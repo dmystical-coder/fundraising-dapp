@@ -302,7 +302,7 @@ export function MilestonesPanel({ campaignId, isOwner }: MilestonesPanelProps) {
               </Text>
             )}
             {dustStx > 0 && (
-              <Text fontSize="xs" color="warning.600">
+              <Text fontSize="xs" color="text.warning">
                 {dustStx.toFixed(6).replace(/\.?0+$/, "")} STX remainder will
                 be permanently locked as dust — use an evenly divisible amount.
               </Text>

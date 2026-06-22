@@ -99,7 +99,7 @@ export const ShareCard = ({ title, campaignId }: ShareCardProps) => {
             transition="all 0.15s"
             _hover={
               hasCopied
-                ? { bg: "success.50" }
+                ? { bg: "bg.successSubtle" }
                 : { bg: "bg.surfaceAlt", borderColor: "primary.300" }
             }
           >

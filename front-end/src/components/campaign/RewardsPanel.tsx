@@ -159,7 +159,7 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
                 >
                   You&apos;ll earn
                 </Text>
-                <Text fontWeight="800" color="primary.600" fontSize="2xl" lineHeight="1.1">
+                <Text fontWeight="800" color="text.accent" fontSize="2xl" lineHeight="1.1">
                   ~{formatFstr(state.previewTokens)}
                   <Text as="span" fontSize="sm" fontWeight="600" color="text.secondary" ml={1}>
                     FSTR
@@ -191,7 +191,7 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
             spacing={3}
             align="center"
             p={4}
-            bg="success.50"
+            bg="bg.successSubtle"
             borderWidth="1px"
             borderColor="success.200"
             borderRadius="xl"
@@ -203,13 +203,13 @@ export function RewardsPanel({ campaignId }: RewardsPanelProps) {
                 fontWeight="700"
                 letterSpacing="0.08em"
                 textTransform="uppercase"
-                color="success.700"
+                color="text.success"
               >
                 Claimed
               </Text>
-              <Text fontWeight="800" color="success.700" fontSize="xl" lineHeight="1.1">
+              <Text fontWeight="800" color="text.success" fontSize="xl" lineHeight="1.1">
                 {formatFstr(state.claimedTokens)}
-                <Text as="span" fontSize="sm" fontWeight="600" color="success.600" ml={1}>
+                <Text as="span" fontSize="sm" fontWeight="600" color="text.success" ml={1}>
                   FSTR
                 </Text>
               </Text>
