@@ -337,7 +337,7 @@ export default function DashboardPage() {
             w={16}
             h={16}
             borderRadius="full"
-            bg="primary.100"
+            bg="bg.accentSubtle"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -386,7 +386,7 @@ export default function DashboardPage() {
             h="40px"
             px={3}
             bg={isActive ? "bg.accentSubtle" : "transparent"}
-            color={isActive ? "primary.700" : "text.secondary"}
+            color={isActive ? "text.accent" : "text.secondary"}
             fontWeight={isActive ? "700" : "500"}
             _hover={{ bg: isActive ? "bg.accentSubtle" : "bg.surfaceAlt" }}
             onClick={() => go(item.id)}
@@ -481,7 +481,7 @@ export default function DashboardPage() {
             <Grid templateColumns={{ base: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4} autoRows="min-content">
               {/* Hero — dual peer: Raised | Donated */}
               <GridItem gridColumn={{ base: "1 / -1", xl: "span 2" }}>
-                <Tile bg="bg.accentSubtle" borderColor="border.accent" h="100%" minH="170px" display="flex" alignItems="center">
+                <Tile bg="bg.surface" borderColor="border.accent" h="100%" minH="170px" display="flex" alignItems="center">
                   <Stack
                     direction={{ base: "column", sm: "row" }}
                     divider={<StackDivider borderColor="border.accent" />}
@@ -489,8 +489,8 @@ export default function DashboardPage() {
                     w="100%"
                   >
                     <Box flex={1} minW={0}>
-                      <MicroLabel color="primary.700">Raised</MicroLabel>
-                      <Text fontSize="3xl" fontWeight="800" color="primary.700" lineHeight="1.1" mt={1}>
+                      <MicroLabel color="text.accent">Raised</MicroLabel>
+                      <Text fontSize="3xl" fontWeight="800" color="text.accent" lineHeight="1.1" mt={1}>
                         {usd(lifetimeRaisedUsd)}
                       </Text>
                       {campaigns.length > 0 ? (
@@ -498,14 +498,14 @@ export default function DashboardPage() {
                           {campaigns.length} campaign{campaigns.length === 1 ? "" : "s"} · {usd(currentlyHeldUsd)} held
                         </Text>
                       ) : (
-                        <ChakraLink as={Link} href="/campaigns/new" fontSize="xs" color="primary.600" fontWeight="600" mt={1} display="inline-block">
+                        <ChakraLink as={Link} href="/campaigns/new" fontSize="xs" color="text.accent" fontWeight="600" mt={1} display="inline-block">
                           Start your first campaign →
                         </ChakraLink>
                       )}
                     </Box>
                     <Box flex={1} minW={0}>
-                      <MicroLabel color="secondary.700">Donated</MicroLabel>
-                      <Text fontSize="3xl" fontWeight="800" color="secondary.700" lineHeight="1.1" mt={1}>
+                      <MicroLabel color="text.accentSecondary">Donated</MicroLabel>
+                      <Text fontSize="3xl" fontWeight="800" color="text.accentSecondary" lineHeight="1.1" mt={1}>
                         {usd(totalDonatedUsd)}
                       </Text>
                       {supportedCampaignIds.length > 0 ? (
@@ -513,7 +513,7 @@ export default function DashboardPage() {
                           {supportedCampaignIds.length} campaign{supportedCampaignIds.length === 1 ? "" : "s"} backed
                         </Text>
                       ) : (
-                        <ChakraLink as={Link} href="/campaigns" fontSize="xs" color="secondary.600" fontWeight="600" mt={1} display="inline-block">
+                        <ChakraLink as={Link} href="/campaigns" fontSize="xs" color="text.accentSecondary" fontWeight="600" mt={1} display="inline-block">
                           Back a campaign →
                         </ChakraLink>
                       )}
@@ -576,7 +576,7 @@ export default function DashboardPage() {
               </GridItem>
 
               {/* KPI tiles */}
-              <StatTile label="Currently Held" value={usd(currentlyHeldUsd)} sub="In active / cancelled contracts" valueColor="primary.600" />
+              <StatTile label="Currently Held" value={usd(currentlyHeldUsd)} sub="In active / cancelled contracts" valueColor="text.accent" />
               <StatTile label="Campaigns" value={campaigns.length} sub={`${activeCount} active`} />
               <StatTile label="Supporters" value={uniqueSupporters ?? donorAppearances} sub="Unique wallets" valueColor="secondary.600" />
               <StatTile label="Backed" value={supportedCampaignIds.length} sub="Campaigns you support" />
@@ -715,7 +715,7 @@ export default function DashboardPage() {
                   <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
                     <Box>
                       <MicroLabel>FSTR Balance</MicroLabel>
-                      <Text fontSize="xl" fontWeight="800" color="secondary.600" mt={1}>{fstrDisplay}</Text>
+                      <Text fontSize="xl" fontWeight="800" color="text.accentSecondary" mt={1}>{fstrDisplay}</Text>
                     </Box>
                     <Box>
                       <MicroLabel>Badges Owned</MicroLabel>
@@ -723,11 +723,11 @@ export default function DashboardPage() {
                     </Box>
                     <Box>
                       <MicroLabel>Claimable</MicroLabel>
-                      <Text fontSize="xl" fontWeight="800" color="primary.600" mt={1}>{donorEngagement?.claimableBadgesCount ?? 0}</Text>
+                      <Text fontSize="xl" fontWeight="800" color="text.accent" mt={1}>{donorEngagement?.claimableBadgesCount ?? 0}</Text>
                     </Box>
                     <Box>
                       <MicroLabel>Upgradable</MicroLabel>
-                      <Text fontSize="xl" fontWeight="800" color="warning.600" mt={1}>{donorEngagement?.upgradableBadgesCount ?? 0}</Text>
+                      <Text fontSize="xl" fontWeight="800" color="text.warning" mt={1}>{donorEngagement?.upgradableBadgesCount ?? 0}</Text>
                     </Box>
                   </SimpleGrid>
                 </Tile>
@@ -825,7 +825,7 @@ export default function DashboardPage() {
           {activePanel === "donations" && (
             <>
               <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} mb={4}>
-                <StatTile label="Total Donated" value={usd(totalDonatedUsd)} sub="Lifetime by this wallet" valueColor="primary.600" />
+                <StatTile label="Total Donated" value={usd(totalDonatedUsd)} sub="Lifetime by this wallet" valueColor="text.accent" />
                 <StatTile label="Campaigns Supported" value={supportedCampaignIds.length} sub="Distinct campaigns" />
                 <StatTile label="FSTR Balance" value={fstrDisplay} sub="Rewards token in wallet" valueColor="secondary.600" />
                 <StatTile label="Badges Owned" value={donorEngagement?.badgesOwnedCount ?? 0} sub="Across supported campaigns" />
@@ -865,7 +865,7 @@ export default function DashboardPage() {
                               fontWeight="600"
                               fontSize="sm"
                               color="text.primary"
-                              _hover={{ color: "primary.600" }}
+                              _hover={{ color: "text.accent" }}
                             >
                               Campaign #{donation.campaign_id}
                             </ChakraLink>
@@ -886,10 +886,10 @@ export default function DashboardPage() {
                               <ChakraLink
                                 href={explorerUrl}
                                 isExternal
-                                color="primary.500"
+                                color="text.accent"
                                 fontSize="sm"
                                 aria-label="View transaction"
-                                _hover={{ color: "primary.700" }}
+                                _hover={{ color: "text.accent" }}
                               >
                                 ↗
                               </ChakraLink>
