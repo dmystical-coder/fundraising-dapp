@@ -36,12 +36,12 @@ export class ErrorBoundary extends Component<Props, State> {
               w={16}
               h={16}
               borderRadius="full"
-              bg="error.100"
+              bg="bg.errorSubtle"
               display="flex"
               alignItems="center"
               justifyContent="center"
             >
-              <WarningTwoIcon boxSize={7} color="error.600" />
+              <WarningTwoIcon boxSize={7} color="text.danger" />
             </Box>
             <VStack spacing={3}>
               <Heading size="xl" color="text.primary">
@@ -62,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 maxW="full"
                 overflow="auto"
               >
-                <Text fontSize="sm" fontFamily="mono" color="error.600">
+                <Text fontSize="sm" fontFamily="mono" color="text.danger">
                   {this.state.error.message}
                 </Text>
               </Box>
