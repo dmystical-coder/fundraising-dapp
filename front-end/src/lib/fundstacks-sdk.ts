@@ -6,7 +6,7 @@ import {
 import { FUNDRAISING_CONTRACT, SBTC_CONTRACT } from "@/constants/contracts";
 import { getStacksNetworkString } from "@/lib/stacks-api";
 import type { ContractCallOptions } from "@/lib/contract-utils";
-import { PostConditionMode, type PostCondition } from "@stacks/transactions";
+import { Pc, PostConditionMode, type PostCondition } from "@stacks/transactions";
 
 const network = getStacksNetworkString();
 
@@ -33,10 +33,19 @@ export const buildFundstacksDonateTx = (
       : tx.postConditionMode === "deny"
       ? PostConditionMode.Deny
       : (tx.postConditionMode as PostConditionMode | undefined);
+  const amount = BigInt(input.amount);
+  const postConditions =
+    input.asset === "sbtc"
+      ? [
+          Pc.principal(input.senderAddress)
+            .willSendEq(amount)
+            .ft(`${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}`, "sbtc-token"),
+        ]
+      : [Pc.principal(input.senderAddress).willSendEq(amount).ustx()];
 
   return {
     ...tx,
-    postConditions: tx.postConditions as PostCondition[] | undefined,
+    postConditions: postConditions as PostCondition[],
     postConditionMode,
   };
 };
