@@ -34,18 +34,17 @@ export const buildFundstacksDonateTx = (
       ? PostConditionMode.Deny
       : (tx.postConditionMode as PostConditionMode | undefined);
   const amount = BigInt(input.amount);
+  const isSbtcDonation = input.asset === "sbtc";
   const postConditions =
-    input.asset === "sbtc"
-      ? [
-          Pc.principal(input.senderAddress)
-            .willSendEq(amount)
-            .ft(`${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}`, "sbtc-token"),
-        ]
+    isSbtcDonation
+      ? []
       : [Pc.principal(input.senderAddress).willSendEq(amount).ustx()];
 
   return {
     ...tx,
     postConditions: postConditions as PostCondition[],
-    postConditionMode,
+    postConditionMode: isSbtcDonation
+      ? PostConditionMode.Allow
+      : postConditionMode,
   };
 };
