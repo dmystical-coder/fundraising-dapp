@@ -40,7 +40,12 @@ const PAGE_SIZE = 9;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
+type SortOption =
+  | "active-first"
+  | "newest"
+  | "most-funded"
+  | "ending-soon"
+  | "most-donors";
 type FilterOption = "all" | "active" | "ended" | "cancelled";
 
 const FILTERS: { key: FilterOption; label: string }[] = [
@@ -79,8 +84,26 @@ function sortCampaigns(
 ): CampaignWithOnChain[] {
   const sorted = [...campaigns];
   const now = Math.floor(Date.now() / 1000);
+  const isActiveCampaign = (campaign: CampaignWithOnChain) =>
+    !campaign.is_cancelled &&
+    !campaign.is_withdrawn &&
+    !(campaign.isExpired || (!!campaign.endAt && campaign.endAt <= now));
+  const endedAt = (campaign: CampaignWithOnChain) =>
+    campaign.endAt && campaign.endAt > 0
+      ? campaign.endAt
+      : new Date(campaign.created_at).getTime() / 1000;
 
   switch (sortBy) {
+    case "active-first":
+      return sorted.sort((a, b) => {
+        const aActive = isActiveCampaign(a);
+        const bActive = isActiveCampaign(b);
+        if (aActive !== bActive) return aActive ? -1 : 1;
+        if (aActive && bActive) return endedAt(a) - endedAt(b);
+
+        if (a.is_cancelled !== b.is_cancelled) return a.is_cancelled ? 1 : -1;
+        return endedAt(b) - endedAt(a);
+      });
     case "newest":
       return sorted.sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -179,7 +202,7 @@ export function CampaignGrid({
   showHeader = false,
   subtitle,
 }: CampaignGridProps) {
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [sortBy, setSortBy] = useState<SortOption>("active-first");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
@@ -594,6 +617,7 @@ export function CampaignGrid({
                   _hover={{ borderColor: "primary.300" }}
                   _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
                 >
+                  <option value="active-first">Active First</option>
                   <option value="newest">Newest First</option>
                   <option value="most-funded">Most Funded</option>
                   <option value="ending-soon">Ending Soon</option>
@@ -668,6 +692,7 @@ export function CampaignGrid({
                 _hover={{ borderColor: "primary.300" }}
                 _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
               >
+                <option value="active-first">Sort: Active First</option>
                 <option value="newest">Sort: Newest First</option>
                 <option value="most-funded">Sort: Most Funded</option>
                 <option value="ending-soon">Sort: Ending Soon</option>
