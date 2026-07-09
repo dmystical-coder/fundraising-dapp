@@ -27,7 +27,11 @@ import NextLink from "next/link";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
-import { useCurrentPrices } from "@/lib/currency-utils";
+import {
+  getMixedFundingSortValue,
+  type PriceData,
+  useCurrentPrices,
+} from "@/lib/currency-utils";
 import { useAddress } from "@/components/ConnectWallet";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -36,7 +40,12 @@ const PAGE_SIZE = 9;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type SortOption = "newest" | "most-funded" | "ending-soon" | "most-donors";
+type SortOption =
+  | "active-first"
+  | "newest"
+  | "most-funded"
+  | "ending-soon"
+  | "most-donors";
 type FilterOption = "all" | "active" | "ended" | "cancelled";
 
 const FILTERS: { key: FilterOption; label: string }[] = [
@@ -70,24 +79,44 @@ interface CampaignGridProps {
 
 function sortCampaigns(
   campaigns: CampaignWithOnChain[],
-  sortBy: SortOption
+  sortBy: SortOption,
+  prices?: PriceData
 ): CampaignWithOnChain[] {
   const sorted = [...campaigns];
+  const now = Math.floor(Date.now() / 1000);
+  const isActiveCampaign = (campaign: CampaignWithOnChain) =>
+    !campaign.is_cancelled &&
+    !campaign.is_withdrawn &&
+    !(campaign.isExpired || (!!campaign.endAt && campaign.endAt <= now));
+  const endedAt = (campaign: CampaignWithOnChain) =>
+    campaign.endAt && campaign.endAt > 0
+      ? campaign.endAt
+      : new Date(campaign.created_at).getTime() / 1000;
+
   switch (sortBy) {
+    case "active-first":
+      return sorted.sort((a, b) => {
+        const aActive = isActiveCampaign(a);
+        const bActive = isActiveCampaign(b);
+        if (aActive !== bActive) return aActive ? -1 : 1;
+        if (aActive && bActive) return endedAt(a) - endedAt(b);
+
+        if (a.is_cancelled !== b.is_cancelled) return a.is_cancelled ? 1 : -1;
+        return endedAt(b) - endedAt(a);
+      });
     case "newest":
       return sorted.sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     case "most-funded":
       return sorted.sort((a, b) => {
-        const aTotal = parseInt(a.total_stx, 10) + parseInt(a.total_sbtc, 10) * 10_000;
-        const bTotal = parseInt(b.total_stx, 10) + parseInt(b.total_sbtc, 10) * 10_000;
+        const aTotal = getMixedFundingSortValue(a.total_stx, a.total_sbtc, prices);
+        const bTotal = getMixedFundingSortValue(b.total_stx, b.total_sbtc, prices);
         return bTotal - aTotal;
       });
     case "ending-soon": {
       // Pure sort — soonest still-open deadline first, everything without a
       // future deadline sinks to the end (never dropped from the list).
-      const now = Math.floor(Date.now() / 1000);
       const key = (c: CampaignWithOnChain) =>
         c.endAt && c.endAt > now && !c.is_cancelled ? c.endAt : Infinity;
       return sorted.sort((a, b) => key(a) - key(b));
@@ -173,7 +202,7 @@ export function CampaignGrid({
   showHeader = false,
   subtitle,
 }: CampaignGridProps) {
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [sortBy, setSortBy] = useState<SortOption>("active-first");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingCampaign, setPendingCampaign] = useState<CampaignWithOnChain | null>(null);
@@ -320,8 +349,8 @@ export function CampaignGrid({
       };
     });
 
-    return sortCampaigns(enriched, sortBy);
-  }, [propCampaigns, indexerCampaigns, sortBy, pendingCampaign, onChainMap]);
+    return sortCampaigns(enriched, sortBy, prices);
+  }, [propCampaigns, indexerCampaigns, sortBy, pendingCampaign, onChainMap, prices]);
 
   const filteredCampaigns = useMemo(() => {
     if (!showFilters || filterBy === "all") return allCampaigns;
@@ -588,6 +617,7 @@ export function CampaignGrid({
                   _hover={{ borderColor: "primary.300" }}
                   _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
                 >
+                  <option value="active-first">Active First</option>
                   <option value="newest">Newest First</option>
                   <option value="most-funded">Most Funded</option>
                   <option value="ending-soon">Ending Soon</option>
@@ -662,6 +692,7 @@ export function CampaignGrid({
                 _hover={{ borderColor: "primary.300" }}
                 _focusVisible={{ borderColor: "primary.500", boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)" }}
               >
+                <option value="active-first">Sort: Active First</option>
                 <option value="newest">Sort: Newest First</option>
                 <option value="most-funded">Sort: Most Funded</option>
                 <option value="ending-soon">Sort: Ending Soon</option>

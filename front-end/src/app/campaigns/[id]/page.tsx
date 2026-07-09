@@ -34,7 +34,11 @@ import {
   useCampaignLeaderboard,
   useIndexerCampaign,
 } from "@/hooks/indexerQueries";
-import { useCurrentPrices } from "@/lib/currency-utils";
+import {
+  getMixedFundingSortValue,
+  parseRawTokenAmount,
+  useCurrentPrices,
+} from "@/lib/currency-utils";
 import { StatusBadge, getCampaignStatus } from "@/components/common/StatusBadge";
 import { CombinedAmountDisplay } from "@/components/common/AmountDisplay";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
@@ -111,15 +115,6 @@ export default function CampaignDetailPage() {
     | null
     | undefined;
   const coverUrl = indexedExtra?.cover_url || indexedExtra?.coverUrl || null;
-  const parseAmount = (v: unknown): number => {
-    if (typeof v === "number") return Number.isFinite(v) ? v : 0;
-    if (typeof v === "string") {
-      const n = Number.parseInt(v, 10);
-      return Number.isFinite(n) ? n : 0;
-    }
-    return 0;
-  };
-
   if (isLoading || pricesLoading) {
     return (
       <Container maxW="container.xl" py={8}>
@@ -176,16 +171,16 @@ export default function CampaignDetailPage() {
     isExpired: campaign.isExpired,
   });
 
-  const raisedStxAmount = parseAmount(
+  const raisedStxAmount = parseRawTokenAmount(
     (indexedCampaign as { raised_stx?: string | number | null } | null | undefined)?.raised_stx
   ) || campaign.totalStx;
-  const raisedSbtcAmount = parseAmount(
+  const raisedSbtcAmount = parseRawTokenAmount(
     (indexedCampaign as { raised_sbtc?: string | number | null } | null | undefined)?.raised_sbtc
   ) || campaign.totalSbtc;
-  const refundedStxAmount = parseAmount(
+  const refundedStxAmount = parseRawTokenAmount(
     (indexedCampaign as { refunded_stx?: string | number | null } | null | undefined)?.refunded_stx
   );
-  const refundedSbtcAmount = parseAmount(
+  const refundedSbtcAmount = parseRawTokenAmount(
     (indexedCampaign as { refunded_sbtc?: string | number | null } | null | undefined)?.refunded_sbtc
   );
 
@@ -201,6 +196,13 @@ export default function CampaignDetailPage() {
     (refundedSbtcAmount / 100_000_000) * sbtcPrice;
   const progress =
     campaign.goal > 0 ? Math.min((totalUsd / campaign.goal) * 100, 100) : 0;
+  const sortedLeaderboard = leaderboard
+    ? [...leaderboard].sort((a, b) => {
+        const bValue = getMixedFundingSortValue(b.total_stx, b.total_sbtc, prices);
+        const aValue = getMixedFundingSortValue(a.total_stx, a.total_sbtc, prices);
+        return bValue - aValue;
+      })
+    : leaderboard;
 
   const campaignTitle = indexedCampaign?.title || "Community Fundraiser";
 
@@ -471,7 +473,7 @@ export default function CampaignDetailPage() {
                       <Skeleton key={i} height="32px" borderRadius="md" />
                     ))}
                   </VStack>
-                ) : !leaderboard || leaderboard.length === 0 ? (
+                ) : !sortedLeaderboard || sortedLeaderboard.length === 0 ? (
                   <Text color="text.secondary" textAlign="center" py={4}>
                     No donors yet
                   </Text>
@@ -487,19 +489,19 @@ export default function CampaignDetailPage() {
                       borderColor="border.accent"
                       borderRadius="xl"
                     >
-                      <WalletIdenticon address={leaderboard[0].donor} size={40} />
+                      <WalletIdenticon address={sortedLeaderboard[0].donor} size={40} />
                       <VStack align="stretch" spacing={1} flex={1} minW={0}>
                         <MicroLabel>Top supporter</MicroLabel>
                         <AddressDisplay
-                          address={leaderboard[0].donor}
+                          address={sortedLeaderboard[0].donor}
                           truncateLength={4}
                           showCopy={false}
                           showExplorer={false}
                           size="sm"
                         />
                         <CombinedAmountDisplay
-                          stxAmount={leaderboard[0].total_stx}
-                          sbtcAmount={leaderboard[0].total_sbtc}
+                          stxAmount={sortedLeaderboard[0].total_stx}
+                          sbtcAmount={sortedLeaderboard[0].total_sbtc}
                           stxPrice={prices?.stx}
                           sbtcPrice={prices?.sbtc}
                           size="sm"
@@ -508,9 +510,9 @@ export default function CampaignDetailPage() {
                     </HStack>
 
                     {/* Remaining ranks */}
-                    {leaderboard.length > 1 && (
+                    {sortedLeaderboard.length > 1 && (
                       <VStack spacing={0} align="stretch">
-                        {leaderboard.slice(1).map((entry, i) => (
+                        {sortedLeaderboard.slice(1).map((entry, i) => (
                           <HStack
                             key={entry.donor}
                             justify="space-between"
