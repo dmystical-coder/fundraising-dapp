@@ -27,7 +27,11 @@ import NextLink from "next/link";
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { useIndexerCampaigns, IndexedCampaign } from "@/hooks/indexerQueries";
 import { fetchCampaignFromChain, CampaignInfo } from "@/hooks/campaignQueries";
-import { useCurrentPrices } from "@/lib/currency-utils";
+import {
+  getMixedFundingSortValue,
+  type PriceData,
+  useCurrentPrices,
+} from "@/lib/currency-utils";
 import { useAddress } from "@/components/ConnectWallet";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -70,9 +74,12 @@ interface CampaignGridProps {
 
 function sortCampaigns(
   campaigns: CampaignWithOnChain[],
-  sortBy: SortOption
+  sortBy: SortOption,
+  prices?: PriceData
 ): CampaignWithOnChain[] {
   const sorted = [...campaigns];
+  const now = Math.floor(Date.now() / 1000);
+
   switch (sortBy) {
     case "newest":
       return sorted.sort(
@@ -80,14 +87,13 @@ function sortCampaigns(
       );
     case "most-funded":
       return sorted.sort((a, b) => {
-        const aTotal = parseInt(a.total_stx, 10) + parseInt(a.total_sbtc, 10) * 10_000;
-        const bTotal = parseInt(b.total_stx, 10) + parseInt(b.total_sbtc, 10) * 10_000;
+        const aTotal = getMixedFundingSortValue(a.total_stx, a.total_sbtc, prices);
+        const bTotal = getMixedFundingSortValue(b.total_stx, b.total_sbtc, prices);
         return bTotal - aTotal;
       });
     case "ending-soon": {
       // Pure sort — soonest still-open deadline first, everything without a
       // future deadline sinks to the end (never dropped from the list).
-      const now = Math.floor(Date.now() / 1000);
       const key = (c: CampaignWithOnChain) =>
         c.endAt && c.endAt > now && !c.is_cancelled ? c.endAt : Infinity;
       return sorted.sort((a, b) => key(a) - key(b));
@@ -320,8 +326,8 @@ export function CampaignGrid({
       };
     });
 
-    return sortCampaigns(enriched, sortBy);
-  }, [propCampaigns, indexerCampaigns, sortBy, pendingCampaign, onChainMap]);
+    return sortCampaigns(enriched, sortBy, prices);
+  }, [propCampaigns, indexerCampaigns, sortBy, pendingCampaign, onChainMap, prices]);
 
   const filteredCampaigns = useMemo(() => {
     if (!showFilters || filterBy === "all") return allCampaigns;
