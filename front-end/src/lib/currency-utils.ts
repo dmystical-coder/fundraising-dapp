@@ -87,6 +87,47 @@ export interface PriceData {
   sbtc: number;
 }
 
+export const DEFAULT_SBTC_TO_USTX_RATE = 100;
+
+export function parseRawTokenAmount(amount: number | string | null | undefined): number {
+  if (typeof amount === "number") {
+    return Number.isFinite(amount) ? amount : 0;
+  }
+  if (typeof amount === "string") {
+    const parsed = Number.parseInt(amount, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+export function getMixedFundingUsdValue(
+  stxAmount: number | string | null | undefined,
+  sbtcAmount: number | string | null | undefined,
+  prices?: Partial<PriceData> | null
+): number | null {
+  const stxPrice = prices?.stx;
+  const sbtcPrice = prices?.sbtc;
+  if (!stxPrice || !sbtcPrice) return null;
+
+  const stxRaw = parseRawTokenAmount(stxAmount);
+  const sbtcRaw = parseRawTokenAmount(sbtcAmount);
+  return Number(ustxToStx(stxRaw)) * stxPrice + satsToSbtc(sbtcRaw) * sbtcPrice;
+}
+
+export function getMixedFundingSortValue(
+  stxAmount: number | string | null | undefined,
+  sbtcAmount: number | string | null | undefined,
+  prices?: Partial<PriceData> | null
+): number {
+  const usdValue = getMixedFundingUsdValue(stxAmount, sbtcAmount, prices);
+  if (usdValue !== null) return usdValue;
+
+  return (
+    parseRawTokenAmount(stxAmount) +
+    parseRawTokenAmount(sbtcAmount) * DEFAULT_SBTC_TO_USTX_RATE
+  );
+}
+
 const getCurrentPrices = async () =>
   fetch(
     "https://api.coingecko.com/api/v3/simple/price?ids=blockstack,bitcoin&vs_currencies=usd"

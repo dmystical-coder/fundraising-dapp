@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchEventsForCampaign } from "@/lib/contract-events";
 
+const DEFAULT_SBTC_TO_USTX_RATE = BigInt(100);
+
+function mixedFundingFallbackValue(row: {
+  total_stx: bigint;
+  total_sbtc: bigint;
+}): bigint {
+  return row.total_stx + row.total_sbtc * DEFAULT_SBTC_TO_USTX_RATE;
+}
+
 // Per-campaign donor leaderboard. Bounded scan (stops at the campaign's
 // creation event), then groups donations by donor in memory. Cached at
 // the client's refetch cadence (60s).
@@ -39,13 +48,15 @@ export async function GET(
       byDonor.set(ev.donor, row);
     }
 
-    // Match the previous SQL ordering: STX-heavy donors first, sBTC as
-    // tie-breaker. donation_count is informational.
+    // Use the same deterministic fallback rate as badge/reward previews:
+    // 1 satoshi counts as 100 microSTX. The client re-sorts by live USD value
+    // when prices are available.
     const leaderboard = Array.from(byDonor.entries())
       .sort(([, a], [, b]) => {
-        if (a.total_stx !== b.total_stx) return a.total_stx < b.total_stx ? 1 : -1;
-        if (a.total_sbtc !== b.total_sbtc) return a.total_sbtc < b.total_sbtc ? 1 : -1;
-        return 0;
+        const aValue = mixedFundingFallbackValue(a);
+        const bValue = mixedFundingFallbackValue(b);
+        if (aValue !== bValue) return aValue < bValue ? 1 : -1;
+        return b.donation_count - a.donation_count;
       })
       .slice(0, limit)
       .map(([donor, row]) => ({
