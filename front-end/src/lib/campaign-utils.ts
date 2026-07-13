@@ -159,6 +159,7 @@ export const getWithdrawTx = (
     // Caller should not send any STX out as part of withdrawing.
     Pc.principal(address).willSendEq(0).ustx(),
   ];
+  let hasExactContractPayoutCondition = false;
 
   if (
     typeof FUNDRAISING_CONTRACT.address === "string" &&
@@ -168,6 +169,7 @@ export const getWithdrawTx = (
       postConditions.push(
         Pc.principal(fundraisingContractId).willSendEq(totalStxUstx).ustx()
       );
+      hasExactContractPayoutCondition = true;
     }
     if (BigInt(totalSbtcSats) > BigInt(0)) {
       postConditions.push(
@@ -175,12 +177,15 @@ export const getWithdrawTx = (
           .willSendEq(totalSbtcSats)
           .ft(sbtcContractId, "sbtc-token")
       );
+      hasExactContractPayoutCondition = true;
     }
   }
 
   return {
     anchorMode: AnchorMode.Any,
-    postConditionMode: PostConditionMode.Deny,
+    postConditionMode: hasExactContractPayoutCondition
+      ? PostConditionMode.Deny
+      : PostConditionMode.Allow,
     contractAddress: FUNDRAISING_CONTRACT.address || "",
     contractName: FUNDRAISING_CONTRACT.name,
     network,
