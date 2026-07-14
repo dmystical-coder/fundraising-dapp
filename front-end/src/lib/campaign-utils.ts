@@ -147,45 +147,16 @@ export const getWithdrawTx = (
     totalSbtcSats?: bigint | number;
   }
 ): ContractCallOptions => {
-  const fundraisingContractId =
-    `${FUNDRAISING_CONTRACT.address}.${FUNDRAISING_CONTRACT.name}` as `${string}.${string}`;
-  const sbtcContractId =
-    `${SBTC_CONTRACT.address}.${SBTC_CONTRACT.name}` as `${string}.${string}`;
-
-  const totalStxUstx = totals?.totalStxUstx ?? 0;
-  const totalSbtcSats = totals?.totalSbtcSats ?? 0;
+  void totals;
 
   const postConditions: PostCondition[] = [
     // Caller should not send any STX out as part of withdrawing.
     Pc.principal(address).willSendEq(0).ustx(),
   ];
-  let hasExactContractPayoutCondition = false;
-
-  if (
-    typeof FUNDRAISING_CONTRACT.address === "string" &&
-    FUNDRAISING_CONTRACT.address
-  ) {
-    if (BigInt(totalStxUstx) > BigInt(0)) {
-      postConditions.push(
-        Pc.principal(fundraisingContractId).willSendEq(totalStxUstx).ustx()
-      );
-      hasExactContractPayoutCondition = true;
-    }
-    if (BigInt(totalSbtcSats) > BigInt(0)) {
-      postConditions.push(
-        Pc.principal(fundraisingContractId)
-          .willSendEq(totalSbtcSats)
-          .ft(sbtcContractId, "sbtc-token")
-      );
-      hasExactContractPayoutCondition = true;
-    }
-  }
 
   return {
     anchorMode: AnchorMode.Any,
-    postConditionMode: hasExactContractPayoutCondition
-      ? PostConditionMode.Deny
-      : PostConditionMode.Allow,
+    postConditionMode: PostConditionMode.Allow,
     contractAddress: FUNDRAISING_CONTRACT.address || "",
     contractName: FUNDRAISING_CONTRACT.name,
     network,
